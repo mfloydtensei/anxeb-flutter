@@ -4,46 +4,48 @@ import 'package:flutter/material.dart';
 
 class GradientContainer extends StatelessWidget {
   final Widget child;
-  final EdgeInsets fadding;
-  final EdgeInsets padding;
-  final Gradient gradient;
+  final EdgeInsets? fadding;
+  final EdgeInsets? padding;
+  final Gradient? gradient;
   final Scope scope;
-  final Image image;
+  final Image? image;
 
-  GradientContainer({
-    Key key,
-    @required this.child,
-    @required this.scope,
+  const GradientContainer({
+    super.key,
+    required this.child,
+    required this.scope,
     this.fadding,
     this.padding,
     this.gradient,
     this.image,
-  })  : assert(child != null),
-        super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      child: Container(
+      child: SizedBox(
         height: scope.window.available.height,
         child: Stack(
-          children: <Widget>[
-            Container(
-              decoration: gradient != null
-                  ? BoxDecoration(
-                      gradient: gradient,
-                    )
-                  : null,
-            ),
-            image ?? Container(),
+          children: [
+            // Fondo con gradiente (si existe)
+            if (gradient != null)
+              Container(
+                decoration: BoxDecoration(gradient: gradient),
+              ),
+
+            // Imagen superpuesta opcional
+            if (image != null) image!,
+
+            // Contenido principal
             Padding(
               padding: padding ?? EdgeInsets.zero,
-              child: fadding != null
-                  ? Container(
-                      padding: Utils.convert.fromInsetToFraction(fadding, scope.window.size),
-                      child: this.child,
-                    )
-                  : this.child,
+              child: Container(
+                padding: Utils.convert.fromInsetToFraction(
+                  fadding,
+                  scope.window.size,
+                ),
+                child: child,
+              ),
             ),
           ],
         ),

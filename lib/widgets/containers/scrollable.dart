@@ -4,43 +4,43 @@ import 'package:flutter/material.dart';
 
 class ScrollableContainer extends StatelessWidget {
   final Widget child;
-  final EdgeInsets fadding;
-  final EdgeInsets padding;
-  final Gradient gradient;
-  final ScrollController controller;
+  final EdgeInsets? fadding;
+  final EdgeInsets? padding;
+  final Gradient? gradient;
+  final ScrollController? controller;
   final Scope scope;
   final bool fixedHeight;
   final bool disablePhysics;
 
-  ScrollableContainer({
-    Key key,
-    @required this.child,
-    @required this.scope,
+  const ScrollableContainer({
+    super.key,
+    required this.child,
+    required this.scope,
     this.fadding,
     this.padding,
     this.gradient,
     this.controller,
-    this.fixedHeight,
-    this.disablePhysics,
-  })  : assert(child != null),
-        super(key: key);
+    this.fixedHeight = false,
+    this.disablePhysics = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: gradient != null
-          ? BoxDecoration(
-        gradient: gradient,
-      )
-          : null,
-      height: fixedHeight == true ? scope.window.available.height : null,
+      decoration: gradient != null ? BoxDecoration(gradient: gradient) : null,
+      height: fixedHeight ? scope.window.available.height : null,
       child: SingleChildScrollView(
-        physics: disablePhysics == true ? NeverScrollableScrollPhysics() : null,
+        physics: disablePhysics
+            ? const NeverScrollableScrollPhysics()
+            : const BouncingScrollPhysics(),
         controller: controller,
         child: Container(
-          padding: fadding != null ? Utils.convert.fromInsetToFraction(fadding, scope.window.size) : null,
+          padding: Utils.convert.fromInsetToFraction(
+            fadding ?? EdgeInsets.zero,
+            scope.window.size,
+          ),
           child: Padding(
-            padding: padding != null ? padding : const EdgeInsets.all(0),
+            padding: padding ?? EdgeInsets.zero,
             child: child,
           ),
         ),
