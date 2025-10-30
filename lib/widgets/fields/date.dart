@@ -4,44 +4,42 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class DateInputField extends FieldWidget<DateTime> {
-  final String displayFormat;
-  final String Function(DateTime value) displayText;
-  final dynamic Function(DateTime value) dataValue;
-  final String locale;
+  final String? displayFormat;
+  final String Function(DateTime?)? displayText;
+  final dynamic Function(DateTime?)? dataValue;
+  final String? locale;
   final bool pickTime;
 
-  DateInputField({
-    @required Scope scope,
-    Key key,
-    @required String name,
-    String group,
-    String label,
-    IconData icon,
-    EdgeInsets margin,
-    EdgeInsets padding,
-    bool readonly,
-    bool visible,
-    ValueChanged<DateTime> onSubmitted,
-    ValueChanged<DateTime> onApplied,
-    ValueChanged<DateTime> onChanged,
-    GestureTapCallback onTab,
-    GestureTapCallback onBlur,
-    GestureTapCallback onFocus,
-    FormFieldValidator<DateTime> validator,
-    DateTime Function(dynamic value) parser,
-    FieldFocusType focusType,
-    Future<DateTime> Function() fetcher,
-    Function(DateTime value) applier,
-    FieldWidgetTheme theme,
-    this.displayFormat,
+   DateInputField({
+    required Scope scope,
+    required String name,
+    super.key,
+    String? group,
+    String? label,
+    IconData? icon,
+    EdgeInsets? margin,
+    EdgeInsets? padding,
+    bool readonly = false,
+    bool visible = true,
+    ValueChanged<DateTime?>? onSubmitted,
+    ValueChanged<DateTime?>? onApplied,
+    ValueChanged<DateTime?>? onChanged,
+    GestureTapCallback? onTab,
+    GestureTapCallback? onBlur,
+    GestureTapCallback? onFocus,
+    FormFieldValidator<DateTime?>? validator,
+    DateTime? Function(dynamic value)? parser,
+    FieldFocusType? focusType,
+    Future<DateTime?> Function()? fetcher,
+    Function(DateTime?)? applier,
+    FieldWidgetTheme? theme,
+    this.displayFormat = 'dd/MM/yyyy',
     this.displayText,
     this.dataValue,
-    this.locale,
-    this.pickTime,
-  })  : assert(name != null),
-        super(
+    this.locale = 'es_DO',
+    this.pickTime = false,
+  }) : super(
           scope: scope,
-          key: key,
           name: name,
           group: group,
           label: label,
@@ -66,23 +64,38 @@ class DateInputField extends FieldWidget<DateTime> {
         );
 
   @override
-  _DateInputFieldState createState() => _DateInputFieldState();
+  State<DateInputField> createState() => _DateInputFieldState();
 }
 
 class _DateInputFieldState extends Field<DateTime, DateInputField> {
-  DateFormat _dateFormat;
+  late DateFormat _dateFormat;
 
   @override
   void init() {
-    _dateFormat = widget.displayFormat != null ? DateFormat(widget.displayFormat, widget.locale ?? 'es_DO') : null;
+    _dateFormat = DateFormat(widget.displayFormat, widget.locale ?? 'es_DO');
   }
 
   @override
-  Widget display([String text]) => super.display(value != null && _dateFormat != null ? _dateFormat.format(value) : (widget?.displayText?.call(value) ?? value?.toString()));
+  Widget display([String? text]) {
+    if (value == null) {
+      return super.display('-');
+    }
+
+    final formatted = widget.displayText?.call(value) ??
+        _dateFormat.format(value!);
+
+    return super.display(formatted);
+  }
 
   @override
-  dynamic data() => widget.dataValue?.call(value) ?? value;
+  dynamic data() {
+    return widget.dataValue?.call(value) ?? value;
+  }
 
   @override
-  Future<DateTime> lookup() async => await widget.scope.dialogs.dateTime(value: value, pickTime: widget.pickTime).show();
+  Future<DateTime?> lookup() async {
+    return await widget.scope.dialogs
+        .dateTime(value: value, pickTime: widget.pickTime)
+        .show();
+  }
 }

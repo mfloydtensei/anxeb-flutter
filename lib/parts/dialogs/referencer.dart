@@ -13,7 +13,7 @@ class ReferencerDialog<V> extends ScopeDialog<List<V>> {
   final ReferenceItemWidget<V> itemWidget;
   final ReferenceHeaderWidget<V>? headerWidget;
   final ReferenceCreateWidget<V>? footerWidget;
-  final ReferenceEmptyWidget<V>? emptyWidget;
+  final Widget Function(ReferencerPage<V>?)? emptyWidget; // ✅ corregido
   final ReferenceFilterHandler<V>? filter;
   final double? buttonsWidth;
   final double? width;
@@ -94,19 +94,17 @@ class ReferencerDialog<V> extends ScopeDialog<List<V>> {
         child: Column(
           mainAxisSize: MainAxisSize.max,
           children: <Widget>[
-            // 🔹 Bloque de lista principal
             Expanded(
               child: ReferencerBlock<V>(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 scope: scope,
                 referencer: referencer,
                 itemWidget: itemWidget,
-                headerWidget: headerWidget!,
-                footerWidget: footerWidget!,
-                emptyWidget: emptyWidget!,
+                headerWidget: headerWidget,
+                footerWidget: footerWidget,
+                emptyWidget: emptyWidget, // ✅ ya coincide con el tipo
               ),
             ),
-            // 🔹 Botones inferiores
             Padding(
               padding: const EdgeInsets.only(top: 10, left: 4, right: 4),
               child: Row(

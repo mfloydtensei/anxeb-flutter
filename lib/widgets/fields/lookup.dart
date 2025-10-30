@@ -3,40 +3,38 @@ import 'package:anxeb_flutter/middleware/scope.dart';
 import 'package:flutter/material.dart';
 
 class LookupInputField<V> extends FieldWidget<V> {
-  final Future<V> Function() onLookup;
-  final String Function(V value) displayText;
-  final dynamic Function(V value) dataValue;
+  final Future<V?> Function()? onLookup;
+  final String Function(V value)? displayText;
+  final dynamic Function(V value)? dataValue;
 
-  LookupInputField({
-    @required Scope scope,
-    Key key,
-    @required String name,
-    String group,
-    String label,
-    IconData icon,
-    EdgeInsets margin,
-    EdgeInsets padding,
-    bool readonly,
-    bool visible,
-    ValueChanged<V> onSubmitted,
-    ValueChanged<V> onApplied,
-    ValueChanged<V> onChanged,
-    GestureTapCallback onTab,
-    GestureTapCallback onBlur,
-    GestureTapCallback onFocus,
-    FormFieldValidator<V> validator,
-    V Function(dynamic value) parser,
-    FieldFocusType focusType,
-    Future<V> Function() fetcher,
-    Function(V value) applier,
-    FieldWidgetTheme theme,
+   LookupInputField({
+    required Scope scope,
+    required String name,
+    super.key,
+    String? group,
+    String? label,
+    IconData? icon,
+    EdgeInsets? margin,
+    EdgeInsets? padding,
+    bool readonly = false,
+    bool visible = true,
+    ValueChanged<V?>? onSubmitted,
+    ValueChanged<V?>? onApplied,
+    ValueChanged<V?>? onChanged,
+    GestureTapCallback? onTab,
+    GestureTapCallback? onBlur,
+    GestureTapCallback? onFocus,
+    FormFieldValidator<V?>? validator,
+    V? Function(dynamic value)? parser,
+    FieldFocusType? focusType,
+    Future<V?> Function()? fetcher,
+    Function(V?)? applier,
+    FieldWidgetTheme? theme,
     this.onLookup,
     this.displayText,
     this.dataValue,
-  })  : assert(name != null),
-        super(
+  }) : super(
           scope: scope,
-          key: key,
           name: name,
           group: group,
           label: label,
@@ -60,17 +58,23 @@ class LookupInputField<V> extends FieldWidget<V> {
         );
 
   @override
-  _LookupInputFieldState createState() => _LookupInputFieldState<V>();
+  State<LookupInputField<V>> createState() => _LookupInputFieldState<V>();
 }
 
 class _LookupInputFieldState<V> extends Field<V, LookupInputField<V>> {
   @override
-  dynamic data() => widget.dataValue?.call(value) ?? value;
+  dynamic data() => widget.dataValue?.call(value as V) ?? value;
 
   @override
-  Future<V> lookup() => widget.onLookup?.call() ?? null;
+  Future<V?> lookup() async {
+    return await widget.onLookup?.call();
+  }
 
   @override
-  Widget display([String text]) =>
-      super.display(widget?.displayText?.call(value));
+  Widget display([String? text]) {
+    final displayText = value != null
+        ? widget.displayText?.call(value as V)
+        : '';
+    return super.display(displayText);
+  }
 }

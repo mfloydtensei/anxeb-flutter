@@ -25,7 +25,7 @@ class FilesInputField extends FieldWidget<List<FileInputValue>> {
     bool? readonly,
   })? onPreview;
 
-  FilesInputField({
+   FilesInputField({
     required Scope scope,
     Key? key,
     required String name,
@@ -34,19 +34,19 @@ class FilesInputField extends FieldWidget<List<FileInputValue>> {
     IconData? icon,
     EdgeInsets? margin,
     EdgeInsets? padding,
-    bool? readonly,
-    bool? visible,
-    ValueChanged<List<FileInputValue>>? onSubmitted,
-    ValueChanged<List<FileInputValue>>? onApplied,
+    bool readonly = false,
+    bool visible = true,
+    ValueChanged<List<FileInputValue>?>? onSubmitted,
+    ValueChanged<List<FileInputValue>?>? onApplied,
     GestureTapCallback? onTab,
     GestureTapCallback? onBlur,
     GestureTapCallback? onFocus,
-    ValueChanged<List<FileInputValue>>? onChanged,
-    FormFieldValidator<List<FileInputValue>>? validator,
-    List<FileInputValue> Function(dynamic value)? parser,
+    ValueChanged<List<FileInputValue>?>? onChanged,
+    FormFieldValidator<List<FileInputValue>?>? validator,
+    List<FileInputValue>? Function(List<FileInputValue>?)? parser,
     FieldFocusType? focusType,
-    Future<List<FileInputValue>> Function()? fetcher,
-    Function(List<FileInputValue> value)? applier,
+    Future<List<FileInputValue>?> Function()? fetcher,
+    Function(List<FileInputValue>?)? applier,
     FieldWidgetTheme? theme,
     this.allowMultiples = false,
     this.allowedExtensions,
@@ -70,7 +70,7 @@ class FilesInputField extends FieldWidget<List<FileInputValue>> {
           onFocus: onFocus,
           onChanged: onChanged,
           validator: validator,
-          parser: parser,
+          parser: parser == null ? null : (dynamic v) => parser(v as List<FileInputValue>?),
           focusType: focusType,
           fetcher: fetcher,
           applier: applier,
@@ -78,99 +78,107 @@ class FilesInputField extends FieldWidget<List<FileInputValue>> {
         );
 
   @override
-  _FilesInputFieldState createState() => _FilesInputFieldState();
+  Field<List<FileInputValue>, FilesInputField> createState() => _FilesInputFieldState();
 }
 
-class _FilesInputFieldState
-    extends Field<List<FileInputValue>, FilesInputField> {
+class _FilesInputFieldState extends Field<List<FileInputValue>, FilesInputField> {
   final GlobalIcons icons = GlobalIcons();
   final List<FileInputValue> _files = <FileInputValue>[];
 
   @override
-  Future<List<FileInputValue>> lookup() async {
-    if (Device.isWeb) {
+  Future<List<FileInputValue>?> lookup() async {
+    // Web
+    if (Device.isWeb == true) {
       final dataFiles = await Device.browse<List<PlatformFile>>(
-        scope: widget.scope,
+        scope: widget.scope as ScreenScope,
         type: FileType.custom,
         allowMultiple: widget.allowMultiples,
-        allowedExtensions:
-            widget.allowedExtensions ?? const ['jpeg', 'jpg', 'png', 'pdf'],
+        allowedExtensions: widget.allowedExtensions ?? const ['jpeg', 'jpg', 'png', 'pdf'],
         showBusyOnPicking: false,
         withData: true,
         callback: (files) async => files,
       );
 
-      if (dataFiles.isNotEmpty) {
-        return dataFiles
-            .map(
-              (e) => FileInputValue(
-                data: e.bytes,
-                title: p.basename(e.name),
-                extension: e.extension,
-              ),
-            )
-            .toList();
-      }
-      return <FileInputValue>[];
-    } else {
-      final bool shouldUseCamera =
-          await Utils.dialogs.shouldUseCamera(widget.scope, useDocumentLabel: true);
+      if (dataFiles == null || dataFiles.isEmpty) return <FileInputValue>[];
 
-      List<File> pathFiles = <File>[];
-
-      if (shouldUseCamera) {
-        final picture = await Device.photo(
-          scope: widget.scope,
-          title: widget.label ?? '',
-          fullImage: true,
-          initFaceCamera: false,
-          allowMainCamera: true,
-          fileName: (widget.label ?? '').toLowerCase().replaceAll(' ', '_'),
-          flash: true,
-          resolution: ResolutionPreset.high,
-        );
-        if (picture != null) {
-          pathFiles.add(picture);
-        }
-      } else {
-        final picked = await Device.browse<List<File>>(
-          scope: widget.scope,
-          type: FileType.custom,
-          allowMultiple: widget.allowMultiples,
-          showBusyOnPicking: false,
-          allowedExtensions:
-              widget.allowedExtensions ?? const ['jpeg', 'jpg', 'png', 'pdf'],
-          callback: (files) async => files.map((f) => File(f.path)).toList(),
-        );
-        if (picked.isNotEmpty) {
-          pathFiles = picked;
-        }
-      }
-
-      if (pathFiles.isNotEmpty) {
-        _files.addAll(
-          pathFiles.map(
-            (file) => FileInputValue(
-              path: file.path,
-              title: p.basename(file.path),
-              extension: p.extension(file.path).replaceFirst('.', ''),
-              url: null,
-              id: null,
+      final picked = dataFiles
+          .map(
+            (e) => FileInputValue(
+              data: e.bytes,
+              title: p.basename(e.name),
+              extension: e.extension,
             ),
-          ),
-        );
-        super.submit(_files);
-        return _files;
-      }
+          )
+          .toList();
 
-      return <FileInputValue>[];
+      // No acumulamos aquí; dejamos que el submit reemplace si aplica.
+      _files
+        ..clear()
+        ..addAll(picked);
+
+      super.submit(_files);
+      return _files;
     }
+
+    // Mobile (Cámara o File Picker)
+    final bool? shouldUseCamera =
+        await Utils.dialogs.shouldUseCamera(widget.scope, useDocumentLabel: true);
+
+    List<File> pathFiles = <File>[];
+
+    if (shouldUseCamera == true) {
+      final picture = await Device.photo(
+        scope: widget.scope as ScreenScope,
+        title: widget.label ?? '',
+        fullImage: true,
+        initFaceCamera: false,
+        allowMainCamera: true,
+        fileName: (widget.label ?? '').toLowerCase().replaceAll(' ', '_'),
+        flash: true,
+        resolution: ResolutionPreset.high,
+      );
+      if (picture != null) {
+        pathFiles.add(picture);
+      }
+    } else if (shouldUseCamera == false) {
+      final picked = await Device.browse<List<File>>(
+        scope: widget.scope as ScreenScope,
+        type: FileType.custom,
+        allowMultiple: widget.allowMultiples,
+        showBusyOnPicking: false,
+        allowedExtensions: widget.allowedExtensions ?? const ['jpeg', 'jpg', 'png', 'pdf'],
+        callback: (files) async => files.map((f) => File(f.path!)).toList(),
+      );
+      if (picked != null && picked.isNotEmpty) {
+        pathFiles = picked;
+      }
+    }
+
+    if (pathFiles.isEmpty) return <FileInputValue>[];
+
+    final mapped = pathFiles
+        .map(
+          (file) => FileInputValue(
+            path: file.path,
+            title: p.basename(file.path),
+            extension: p.extension(file.path).replaceFirst('.', ''),
+          ),
+        )
+        .toList();
+
+    _files
+      ..clear()
+      ..addAll(mapped);
+
+    super.submit(_files);
+    return _files;
   }
 
   @override
   Widget display([String? text]) {
-    final current = value;
-    if (current != null && current.isNotEmpty) {
+    final current = value ?? _files;
+
+    if (current.isNotEmpty) {
       return Column(
         children: current
             .map(
@@ -180,9 +188,6 @@ class _FilesInputFieldState
                   padding: const EdgeInsets.only(top: 2),
                   child: Row(
                     children: [
-                      const Padding(
-                        padding: EdgeInsets.only(right: 4, bottom: 2),
-                      ),
                       Padding(
                         padding: const EdgeInsets.only(right: 4, bottom: 2),
                         child: _getMimeIcon(file),
@@ -196,8 +201,7 @@ class _FilesInputFieldState
                             style: TextStyle(
                               height: 1,
                               fontSize: 16,
-                              color: widget.scope.application.settings.colors
-                                  .primary,
+                              color: widget.scope.application.settings.colors.primary,
                             ),
                           ),
                         ),
@@ -210,31 +214,36 @@ class _FilesInputFieldState
             .toList(),
       );
     }
+
+    // Fallback visual cuando no hay archivos aún
     return Container(
       padding: const EdgeInsets.only(top: 2),
       child: super.display(widget.label),
     );
   }
 
-  Future<void> _preview(FileInputValue value) async {
+  Future<void> _preview(FileInputValue file) async {
     dynamic result;
+
     if (widget.onPreview != null) {
       result = await widget.onPreview!(
         launchUrl: widget.launchUrlPrefix,
-        file: value,
+        file: file,
         readonly: widget.readonly,
       );
     } else if (widget.scope is ScreenScope) {
       result = await (widget.scope as ScreenScope).push(
         DocumentView(
-          launchUrl: widget.launchUrlPrefix,
-          file: value,
+          launchUrl: widget.launchUrlPrefix ?? '',
+          file: file,
           initialScale: PhotoViewComputedScale.contained,
-          readonly: widget.readonly,
+          readonly: widget.readonly ?? false,
         ),
       );
     }
-    present();
+
+    present(); // refresca título/preview si cambió algo
+
     if (result == false) {
       clear();
     }
@@ -247,18 +256,18 @@ class _FilesInputFieldState
   }
 
   Icon _getMimeIcon(FileInputValue value) {
-    String ext = value.extension ?? '';
+    String ext = value.extension?.toLowerCase() ?? '';
     if (ext.isEmpty) {
       final pth = value.path;
-      ext = (pth != null) ? p.extension(pth).replaceFirst('.', '') : 'txt';
+      ext = (pth != null) ? p.extension(pth).replaceFirst('.', '').toLowerCase() : 'txt';
     }
     if (ext.isEmpty) ext = 'txt';
 
     final meta = icons.getFileMeta(ext);
     return Icon(
-      meta.icon ?? Icons.insert_drive_file,
-      color: meta.color ?? const Color(0x88000000),
-      size: 12,
+      meta.icon ,
+      color: meta.color ,
+      size: 14,
     );
   }
 }

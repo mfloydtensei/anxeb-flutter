@@ -14,17 +14,25 @@ import '../../middleware/utils.dart';
 import '../../screen/scope.dart';
 
 class FileInputValue {
-  final String url;
-  final String path;
-  final String extension;
-  final Uint8List data;
-  String title;
-  String id;
+  final String? url;
+  final String? path;
+  final String? extension;
+  final Uint8List? data;
+  String? title;
+  String? id;
   bool useFullUrl;
 
-  FileInputValue({this.url, this.path, this.title, this.extension, this.data, this.id, this.useFullUrl = false});
+  FileInputValue({
+    this.url,
+    this.path,
+    this.title,
+    this.extension,
+    this.data,
+    this.id,
+    this.useFullUrl = false,
+  });
 
-  bool get isImage => ['jpg', 'png', 'jpeg'].contains(extension);
+  bool get isImage => ['jpg', 'png', 'jpeg'].contains(extension?.toLowerCase());
 
   String get previewText => title ?? basename(path ?? '');
 
@@ -34,40 +42,42 @@ class FileInputValue {
 }
 
 class FileInputField extends FieldWidget<FileInputValue> {
-  final List<String> allowedExtensions;
-  final String launchUrlPrefix;
-  final Future Function({String launchUrl, FileInputValue file, bool readonly}) onPreview;
+  final List<String>? allowedExtensions;
+  final String? launchUrlPrefix;
+  final Future Function({
+    String? launchUrl,
+    FileInputValue? file,
+    bool? readonly,
+  })? onPreview;
 
-  FileInputField({
-    @required Scope scope,
-    Key key,
-    @required String name,
-    String group,
-    String label,
-    IconData icon,
-    EdgeInsets margin,
-    EdgeInsets padding,
-    bool readonly,
-    bool visible,
-    ValueChanged<FileInputValue> onSubmitted,
-    ValueChanged<FileInputValue> onApplied,
-    GestureTapCallback onTab,
-    GestureTapCallback onBlur,
-    GestureTapCallback onFocus,
-    ValueChanged<FileInputValue> onChanged,
-    FormFieldValidator<FileInputValue> validator,
-    FileInputValue Function(FileInputValue value) parser,
-    FieldFocusType focusType,
-    Future<FileInputValue> Function() fetcher,
-    Function(FileInputValue value) applier,
-    FieldWidgetTheme theme,
+   FileInputField({
+    required Scope scope,
+    required String name,
+    super.key,
+    String? group,
+    String? label,
+    IconData? icon,
+    EdgeInsets? margin,
+    EdgeInsets? padding,
+    bool readonly = false,
+    bool visible = true,
+    ValueChanged<FileInputValue?>? onSubmitted,
+    ValueChanged<FileInputValue?>? onApplied,
+    ValueChanged<FileInputValue?>? onChanged,
+    GestureTapCallback? onTab,
+    GestureTapCallback? onBlur,
+    GestureTapCallback? onFocus,
+    FormFieldValidator<FileInputValue?>? validator,
+    FileInputValue? Function(FileInputValue?)? parser,
+    FieldFocusType? focusType,
+    Future<FileInputValue?> Function()? fetcher,
+    Function(FileInputValue?)? applier,
+    FieldWidgetTheme? theme,
     this.allowedExtensions,
     this.launchUrlPrefix,
     this.onPreview,
-  })  : assert(name != null),
-        super(
+  }) : super(
           scope: scope,
-          key: key,
           name: name,
           group: group,
           label: label,
@@ -78,12 +88,12 @@ class FileInputField extends FieldWidget<FileInputValue> {
           visible: visible,
           onSubmitted: onSubmitted,
           onApplied: onApplied,
+          onChanged: onChanged,
           onTab: onTab,
           onBlur: onBlur,
           onFocus: onFocus,
-          onChanged: onChanged,
           validator: validator,
-          parser: parser,
+          parser: parser == null ? null : (dynamic v) => parser(v as FileInputValue?),
           focusType: focusType,
           fetcher: fetcher,
           applier: applier,
@@ -91,166 +101,162 @@ class FileInputField extends FieldWidget<FileInputValue> {
         );
 
   @override
-  _FileInputFieldState createState() => _FileInputFieldState();
+  Field<FileInputValue, FileInputField> createState() => _FileInputFieldState();
 }
 
 class _FileInputFieldState extends Field<FileInputValue, FileInputField> {
-  String _previewText;
+  String? _previewText;
   final GlobalIcons icons = GlobalIcons();
 
   @override
-  Future<FileInputValue> lookup() async {
+  Future<FileInputValue?> lookup() async {
+    // 🔹 Web file selection
     if (Device.isWeb == true) {
-      PlatformFile dataFile = await Device.browse<PlatformFile>(
-        scope: widget.scope,
+      final PlatformFile? dataFile = await Device.browse<PlatformFile>(
+        scope: widget.scope as ScreenScope,
         type: FileType.custom,
         allowMultiple: false,
-        allowedExtensions: widget.allowedExtensions ?? ['jpeg', 'jpg', 'png', 'pdf'],
+        allowedExtensions:
+            widget.allowedExtensions ?? ['jpeg', 'jpg', 'png', 'pdf'],
         showBusyOnPicking: false,
         withData: true,
-        callback: (files) async {
-          return files.single;
-        },
+        callback: (files) async => files.single,
       );
 
-      if (dataFile != null) {
-        return FileInputValue(
-          data: dataFile.bytes,
-          title: basename(dataFile.name),
-          extension: dataFile.extension,
-        );
-      }
-    } else {
-      final shouldUseCamera = await Utils.dialogs.shouldUseCamera(widget.scope, useDocumentLabel: true);
-      File pathFile;
+      if (dataFile == null) return null;
 
-      if (shouldUseCamera == true) {
-        pathFile = await Device.photo(
-          scope: widget.scope,
-          title: widget.label,
-          fullImage: true,
-          initFaceCamera: false,
-          allowMainCamera: true,
-          fileName: widget.label.toLowerCase().replaceAll(' ', '_'),
-          flash: true,
-          resolution: ResolutionPreset.high,
-        );
-      } else if (shouldUseCamera == false) {
-        pathFile = await Device.browse<File>(
-          scope: widget.scope,
-          type: FileType.custom,
-          allowMultiple: false,
-          showBusyOnPicking: false,
-          allowedExtensions: widget.allowedExtensions ?? ['jpeg', 'jpg', 'png', 'pdf'],
-          callback: (files) async {
-            return File(files.single.path);
-          },
-        );
-      }
-
-      if (pathFile != null) {
-        return FileInputValue(
-          path: pathFile.path,
-          title: basename(pathFile.path),
-          extension: (extension(pathFile.path ?? '') ?? '').replaceFirst('.', ''),
-          url: null,
-          id: null,
-        );
-      }
+      return FileInputValue(
+        data: dataFile.bytes,
+        title: basename(dataFile.name),
+        extension: dataFile.extension,
+      );
     }
 
-    return null;
+    // 🔹 Mobile (Camera or File Picker)
+    final bool? shouldUseCamera =
+        await Utils.dialogs.shouldUseCamera(widget.scope, useDocumentLabel: true);
+
+    File? pathFile;
+
+    if (shouldUseCamera == true) {
+      pathFile = await Device.photo(
+        scope: widget.scope as ScreenScope,
+        title: widget.label,
+        fullImage: true,
+        initFaceCamera: false,
+        allowMainCamera: true,
+        fileName: widget.label?.toLowerCase().replaceAll(' ', '_'),
+        flash: true,
+        resolution: ResolutionPreset.high,
+      );
+    } else if (shouldUseCamera == false) {
+      pathFile = await Device.browse<File>(
+        scope: widget.scope as ScreenScope,
+        type: FileType.custom,
+        allowMultiple: false,
+        showBusyOnPicking: false,
+        allowedExtensions:
+            widget.allowedExtensions ?? ['jpeg', 'jpg', 'png', 'pdf'],
+        callback: (files) async => File(files.single.path!),
+      );
+    }
+
+    if (pathFile == null) return null;
+
+    return FileInputValue(
+      path: pathFile.path,
+      title: basename(pathFile.path),
+      extension:
+          (extension(pathFile.path).replaceFirst('.', '')).toLowerCase(),
+    );
   }
 
   @override
-  Widget display([String text]) {
-    if (_previewText != null) {
-      return GestureDetector(
-        onTap: () async {
-          _preview();
-        },
-        child: Container(
-          padding: EdgeInsets.only(top: 2),
-          child: Row(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(right: 4, bottom: 2),
-                child: _getMimeIcon(),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 1),
-                  child: Text(
-                    _previewText,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      height: 1,
-                      fontSize: 16,
-                      color: widget.scope.application.settings.colors.primary,
-                    ),
+  Widget display([String? text]) {
+    return GestureDetector(
+      onTap: _preview,
+      child: Container(
+        padding: const EdgeInsets.only(top: 2),
+        child: Row(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(right: 4, bottom: 2),
+              child: _getMimeIcon(),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 1),
+                child: Text(
+                  _previewText ?? '-',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    height: 1,
+                    fontSize: 16,
+                    color: widget.scope.application.settings.colors.primary,
                   ),
                 ),
-              )
-            ],
-          ),
+              ),
+            ),
+          ],
         ),
-      );
-    } else {
-      return Container(
-        padding: EdgeInsets.only(top: 2),
-        child: super.display(widget.label),
-      );
-    }
+      ),
+    );
   }
 
   @override
   void present() {
-    if (mounted) {
-      setState(() {
-        if (value?.title != null) {
-          _previewText = value.title;
-        } else if (value?.path != null) {
-          var file = File(value.path);
-          _previewText = basename(file.path);
-        } else {
-          _previewText = null;
-        }
-      });
-    }
+    if (!mounted) return;
+    setState(() {
+      final v = value;
+      if (v?.title != null) {
+        _previewText = v!.title;
+      } else if (v?.path != null) {
+        _previewText = basename(v!.path!);
+      } else {
+        _previewText = '-';
+      }
+    });
   }
 
-  Future _preview() async {
-    if (value != null) {
-      var result;
-      if (widget.onPreview != null) {
-        result = await widget.onPreview.call(
-          launchUrl: widget.launchUrlPrefix,
-          file: value,
-          readonly: widget.readonly,
-        );
-      } else if (widget.scope is ScreenScope) {
-        result = await (widget.scope as ScreenScope).push(DocumentView(
-          launchUrl: widget.launchUrlPrefix,
-          file: value,
+  Future<void> _preview() async {
+    if (value == null) return;
+
+    dynamic result;
+
+    if (widget.onPreview != null) {
+      result = await widget.onPreview!.call(
+        launchUrl: widget.launchUrlPrefix,
+        file: value,
+        readonly: widget.readonly ?? false,
+      );
+    } else if (widget.scope is ScreenScope) {
+      result = await (widget.scope as ScreenScope).push(
+        DocumentView(
+          launchUrl: widget.launchUrlPrefix ?? '',
+          file: value!,
           initialScale: PhotoViewComputedScale.contained,
-          readonly: widget.readonly,
-        ));
-      }
-      present();
-      if (result == false) {
-        clear();
-      }
+          readonly: widget.readonly ?? false,
+        ),
+      );
+    }
+
+    present();
+
+    if (result == false) {
+      clear();
     }
   }
 
   Icon _getMimeIcon() {
-    var ext = value?.extension ?? (value?.path != null ? extension(value.path).replaceFirst('.', '') : null) ?? 'txt';
-    var meta = icons.getFileMeta(ext);
+    final path = value?.path;
+    final ext = value?.extension ??
+        (path != null ? extension(path).replaceFirst('.', '') : 'txt');
+    final meta = icons.getFileMeta(ext);
 
     return Icon(
-      meta?.icon ?? Icons.insert_drive_file,
-      color: meta?.color ?? Color(0x88000000),
-      size: 12,
+      meta.icon,
+      color: meta.color,
+      size: 14,
     );
   }
 }

@@ -7,55 +7,53 @@ import '../../middleware/device.dart';
 enum BarcodeInputFieldType { numeric, alphanumeric }
 
 class BarcodeInputField extends FieldWidget<String> {
-  final TextEditingController controller;
-  final BarcodeInputFieldType type;
+  final TextEditingController? controller;
+  final BarcodeInputFieldType? type;
   final bool autofocus;
-  final TextInputAction action;
+  final TextInputAction? action;
   final bool canSelect;
-  final String hint;
-  final String prefix;
-  final String suffix;
+  final String? hint;
+  final String? prefix;
+  final String? suffix;
   final bool autoflash;
-  final ValueChanged<String> onScan;
+  final ValueChanged<String>? onScan;
 
-  BarcodeInputField({
-    @required Scope scope,
-    Key key,
-    @required String name,
-    String group,
-    String label,
-    IconData icon,
-    EdgeInsets margin,
-    EdgeInsets padding,
-    bool readonly,
-    bool visible,
-    ValueChanged<String> onSubmitted,
-    ValueChanged<String> onApplied,
-    ValueChanged<String> onChanged,
-    GestureTapCallback onTab,
-    GestureTapCallback onBlur,
-    GestureTapCallback onFocus,
-    FormFieldValidator<String> validator,
-    String Function(dynamic value) parser,
-    FieldFocusType focusType,
-    bool selected,
-    Future<String> Function() fetcher,
-    Function(String value) applier,
-    FieldWidgetTheme theme,
+   BarcodeInputField({
+    required Scope scope,
+    super.key,
+    required String name,
+    String? group,
+    String? label,
+    IconData? icon,
+    EdgeInsets? margin,
+    EdgeInsets? padding,
+    bool readonly = false,
+    bool visible = true,
+    ValueChanged<String?>? onSubmitted,
+    ValueChanged<String?>? onApplied,
+    ValueChanged<String?>? onChanged,
+    GestureTapCallback? onTab,
+    GestureTapCallback? onBlur,
+    GestureTapCallback? onFocus,
+    FormFieldValidator<String>? validator,
+    String Function(dynamic value)? parser,
+    FieldFocusType? focusType,
+    bool selected = false,
+    Future<String> Function()? fetcher,
+    Function(String value)? applier,
+    FieldWidgetTheme? theme,
     this.controller,
-    this.type,
-    this.autofocus,
+    this.type = BarcodeInputFieldType.alphanumeric,
+    this.autofocus = false,
     this.action,
-    this.canSelect,
+    this.canSelect = true,
     this.hint,
     this.prefix,
     this.suffix,
-    this.autoflash,
+    this.autoflash = false,
     this.onScan,
-  })  : assert(name != null),
-        super(
+  }) : super(
           scope: scope,
-          key: key,
           name: name,
           group: group,
           label: label,
@@ -80,47 +78,36 @@ class BarcodeInputField extends FieldWidget<String> {
         );
 
   @override
-  _BarcodeInputFieldState createState() => _BarcodeInputFieldState();
+  State<BarcodeInputField> createState() => _BarcodeInputFieldState();
 }
 
 class _BarcodeInputFieldState extends Field<String, BarcodeInputField> {
-  TextEditingController _controller = TextEditingController();
-  bool _editing;
-  bool _tabbed;
-
-  _BarcodeInputFieldState() {
-    _controller = TextEditingController();
-    _editing = false;
-    _tabbed = false;
-  }
+  late TextEditingController _controller;
+  bool _editing = false;
+  bool _tabbed = false;
 
   @override
   void init() {
-    if (widget.controller != null) {
-      _controller = widget.controller;
-    }
+    _controller = widget.controller ?? TextEditingController();
   }
 
   @override
-  void focus({String warning}) {
+  void focus({String? warning}) {
     select();
     super.focus(warning: warning);
   }
 
   @override
   void select() {
-    _controller.selection = TextSelection(baseOffset: 0, extentOffset: _controller.text.length);
+    if (_controller.text.isNotEmpty) {
+      _controller.selection =
+          TextSelection(baseOffset: 0, extentOffset: _controller.text.length);
+    }
   }
 
   @override
-  void setup() {}
-
-  @override
-  void prebuild() {}
-
-  @override
   void onBlur() {
-    if (_editing == true) {
+    if (_editing) {
       _editing = false;
       super.submit(_controller.text);
     }
@@ -131,11 +118,6 @@ class _BarcodeInputFieldState extends Field<String, BarcodeInputField> {
   void onFocus() {
     _editing = false;
     super.onFocus();
-  }
-
-  @override
-  dynamic data() {
-    return super.data();
   }
 
   @override
@@ -154,124 +136,161 @@ class _BarcodeInputFieldState extends Field<String, BarcodeInputField> {
 
   @override
   void present() {
-    _controller.text = value != null ? value.toString() : '';
-    _controller.text = _controller.text.toUpperCase();
+    _controller.text = (value ?? '').toUpperCase();
   }
 
-  void _scan() async {
-    await Future.delayed(Duration(milliseconds: 200));
-    var $value = await Device.scan(scope: widget.scope, autoflash: widget.autoflash);
-    if ($value != null) {
-      super.value = $value;
-      _controller.selection = TextSelection(baseOffset: _controller.text.length, extentOffset: _controller.text.length);
-      validate();
-      widget?.onScan?.call(value);
-      widget?.onSubmitted?.call(value);
-    }
+  Future<void> _scan() async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    final result = await Device.scan(
+      scope: widget.scope,
+      autoflash: widget.autoflash,
+    );
+    super.value = result;
+    _controller.selection = TextSelection.fromPosition(
+      TextPosition(offset: _controller.text.length),
+    );
+    validate();
+    widget.onScan?.call(value ?? '');
+    widget.onSubmitted?.call(value ?? '');
   }
 
   @override
   Widget field() {
-    var result = TextField(
-      autofocus: widget.autofocus ?? false,
+    return TextField(
+      autofocus: widget.autofocus,
       focusNode: focusNode,
       textInputAction: widget.action,
       textCapitalization: TextCapitalization.characters,
       controller: _controller,
-      readOnly: widget.readonly == true,
-      enableInteractiveSelection: widget.canSelect != null ? widget.canSelect : true,
+      readOnly: widget.readonly,
+      enableInteractiveSelection: widget.canSelect,
       autocorrect: false,
-      keyboardType: widget.type == BarcodeInputFieldType.alphanumeric ? TextInputType.text : TextInputType.numberWithOptions(signed: false, decimal: false),
+      keyboardType: widget.type == BarcodeInputFieldType.alphanumeric
+          ? TextInputType.text
+          : const TextInputType.numberWithOptions(signed: false, decimal: false),
       onSubmitted: (value) {
         _editing = false;
         super.submit(value);
       },
       onTap: () {
-        if (widget.readonly == true) {
-          return;
-        }
-        if (_tabbed == true) {
+        if (widget.readonly) return;
+
+        if (_tabbed) {
           _tabbed = false;
         } else {
           _editing = false;
-          if (!focusNode.hasFocus) {
-            focus();
-          }
-          if (widget.onTab != null) {
-            widget.onTab();
-          }
+          if (!focusNode.hasFocus) focus();
+          widget.onTab?.call();
         }
       },
       onChanged: (value) {
-        if (_editing == false) {
-          warning = null;
-        }
+        if (!_editing) warning = null;
         _editing = true;
-        if (widget.onChanged != null) {
-          widget.onChanged(value);
-        }
+        widget.onChanged?.call(value);
       },
       textAlign: TextAlign.left,
       decoration: InputDecoration(
         filled: true,
-        contentPadding: (widget.icon != null ? widget.scope.application.settings.fields.contentPaddingWithIcon : widget.scope.application.settings.fields.contentPaddingNoIcon) ?? EdgeInsets.only(left: widget.icon == null ? 10 : 0, top: widget.label == null ? 12 : 7, bottom: 7, right: 0),
+        contentPadding:
+            widget.scope.application.settings.fields.contentPaddingWithIcon ??
+                const EdgeInsets.symmetric(vertical: 7, horizontal: 0),
         prefixIcon: widget.icon != null
             ? Icon(
                 widget.icon,
                 color: widget.scope.application.settings.colors.primary,
               )
             : null,
-        labelText: value != null ? (widget.theme?.fixedLabel == true ? widget.label.toUpperCase() : widget.label) : null,
+        labelText: widget.theme?.fixedLabel == true
+            ? widget.label?.toUpperCase()
+            : widget.label,
         labelStyle: widget.theme?.fixedLabel == true
             ? TextStyle(
-                fontWeight: widget.theme?.labelFontWeight ?? FontWeight.w500,
-                color: warning != null ? (widget.theme?.dangerColor ?? widget.scope.application.settings.colors.danger) : (widget.theme?.labelColor ?? widget.scope.application.settings.colors.primary),
+                fontWeight:
+                    widget.theme?.labelFontWeight ?? FontWeight.w500,
+                color: widget.theme?.dangerColor ??
+                    widget.scope.application.settings.colors.danger,
                 letterSpacing: widget.theme?.labelLetterSpacing ?? 0.8,
                 fontSize: widget.theme?.labelFontSize ?? 15,
                 fontFamily: widget.theme?.labelFontFamily,
               )
-            : (widget.theme?.labelSize != null
-                ? TextStyle(
-                    fontWeight: widget.theme?.labelFontWeight,
-                    color: widget.theme?.labelColor,
-                    letterSpacing: widget.theme?.labelLetterSpacing,
-                    fontSize: widget.theme?.labelSize,
-                  )
-                : widget.theme?.labelStyle),
-        floatingLabelBehavior: widget.theme?.fixedLabel == true ? FloatingLabelBehavior.always : null,
+            : widget.theme?.labelStyle,
+        floatingLabelBehavior: widget.theme?.fixedLabel == true
+            ? FloatingLabelBehavior.always
+            : null,
         hintText: widget.hint,
         hintStyle: widget.scope.application.settings.fields.hintStyle,
         iconColor: widget.scope.application.settings.fields.iconColor,
-        suffixIconColor: widget.scope.application.settings.fields.suffixIconColor,
-        prefixStyle: widget.theme?.prefixStyle ?? TextStyle(color: widget.scope.application.settings.colors.text, fontSize: 16),
-        suffixStyle: widget.theme?.suffixStyle ?? TextStyle(color: widget.scope.application.settings.colors.text, fontSize: 16),
+        suffixIconColor:
+            widget.scope.application.settings.fields.suffixIconColor,
+        prefixStyle: widget.theme?.prefixStyle ??
+            TextStyle(
+              color: widget.scope.application.settings.colors.text,
+              fontSize: 16,
+            ),
+        suffixStyle: widget.theme?.suffixStyle ??
+            TextStyle(
+              color: widget.scope.application.settings.colors.text,
+              fontSize: 16,
+            ),
         prefixText: widget.prefix,
         suffixText: widget.suffix,
         errorText: warning,
-        border: widget.theme?.borderRadius != null ? UnderlineInputBorder(borderSide: BorderSide.none, borderRadius: widget.theme?.borderRadius) : (widget.theme?.border ?? widget.scope.application.settings.fields.border ?? UnderlineInputBorder(borderSide: BorderSide.none, borderRadius: BorderRadius.all(Radius.circular(8)))),
-        disabledBorder: widget.theme?.borderless == true ? null : (widget.theme?.disabledBorder ?? widget.scope.application.settings.fields.disabledBorder),
-        enabledBorder: widget.theme?.borderless == true ? null : (widget.theme?.enabledBorder ?? widget.scope.application.settings.fields.enabledBorder),
-        focusedBorder: widget.theme?.borderless == true ? null : (widget.theme?.focusedBorder ?? widget.scope.application.settings.fields.focusedBorder),
-        errorBorder: widget.theme?.borderless == true ? null : (widget.theme?.errorBorder ?? widget.scope.application.settings.fields.errorBorder),
-        focusedErrorBorder: widget.theme?.borderless == true ? null : (widget.theme?.focusedErrorBorder ?? widget.scope.application.settings.fields.focusedErrorBorder),
-        fillColor: focused ? (widget.theme?.focusColor ?? widget.scope.application.settings.fields.focusColor ?? widget.scope.application.settings.colors.focus) : (widget.theme?.fillColor ?? widget.scope.application.settings.fields.fillColor ?? widget.scope.application.settings.colors.input),
-        hoverColor: widget.theme?.hoverColor ?? widget.scope.application.settings.fields.hoverColor,
-        errorStyle: widget.theme?.errorStyle ?? widget.scope.application.settings.fields.errorStyle,
-        isDense: widget.theme?.isDense != null ? widget.theme?.isDense : (widget.scope.application.settings.fields.isDense != null ? widget.scope.application.settings.fields.isDense : false),
+        border: widget.theme?.borderRadius != null
+            ? UnderlineInputBorder(
+                borderSide: BorderSide.none,
+                borderRadius: widget.theme!.borderRadius!,
+              )
+            : (widget.theme?.border ??
+                widget.scope.application.settings.fields.border ??
+                const UnderlineInputBorder(
+                  borderSide: BorderSide.none,
+                  borderRadius: BorderRadius.all(Radius.circular(8)),
+                )),
+        disabledBorder: widget.theme?.borderless == true
+            ? null
+            : (widget.theme?.disabledBorder ??
+                widget.scope.application.settings.fields.disabledBorder),
+        enabledBorder: widget.theme?.borderless == true
+            ? null
+            : (widget.theme?.enabledBorder ??
+                widget.scope.application.settings.fields.enabledBorder),
+        focusedBorder: widget.theme?.borderless == true
+            ? null
+            : (widget.theme?.focusedBorder ??
+                widget.scope.application.settings.fields.focusedBorder),
+        errorBorder: widget.theme?.borderless == true
+            ? null
+            : (widget.theme?.errorBorder ??
+                widget.scope.application.settings.fields.errorBorder),
+        focusedErrorBorder: widget.theme?.borderless == true
+            ? null
+            : (widget.theme?.focusedErrorBorder ??
+                widget.scope.application.settings.fields.focusedErrorBorder),
+        fillColor: focused
+            ? (widget.theme?.focusColor ??
+                widget.scope.application.settings.fields.focusColor ??
+                widget.scope.application.settings.colors.focus)
+            : (widget.theme?.fillColor ??
+                widget.scope.application.settings.fields.fillColor ??
+                widget.scope.application.settings.colors.input),
+        hoverColor: widget.theme?.hoverColor ??
+            widget.scope.application.settings.fields.hoverColor,
+        errorStyle: widget.theme?.errorStyle ??
+            widget.scope.application.settings.fields.errorStyle,
+        isDense: widget.theme?.isDense ??
+            widget.scope.application.settings.fields.isDense,
         suffixIcon: GestureDetector(
           dragStartBehavior: DragStartBehavior.down,
           behavior: HitTestBehavior.opaque,
           onTap: () {
-            if (widget.readonly == true) {
-              return;
-            }
+            if (widget.readonly) return;
             _tabbed = true;
 
-            if (focused && warning == null && _controller.text.length > 0) {
+            if (focused && warning == null && _controller.text.isNotEmpty) {
               _editing = false;
               super.submit(_controller.text);
             } else {
-              if (_controller.text.length > 0) {
+              if (_controller.text.isNotEmpty) {
                 clear();
               } else {
                 _scan();
@@ -282,21 +301,35 @@ class _BarcodeInputFieldState extends Field<String, BarcodeInputField> {
         ),
       ),
     );
-    return result;
   }
 
   Icon _getIcon() {
-    if (widget.readonly == true) {
-      return Icon(Icons.lock_outline, color: widget.theme?.suffixIconReadonlyColor ?? widget.theme?.suffixIconColor, size: widget.theme?.suffixIconSize);
+    final theme = widget.theme;
+    final colors = widget.scope.application.settings.colors;
+
+    if (widget.readonly) {
+      return Icon(
+        Icons.lock_outline,
+        color: theme?.suffixIconReadonlyColor ?? theme?.suffixIconColor,
+        size: theme?.suffixIconSize,
+      );
     }
-    if (focused && warning == null && _controller.text.length > 0) {
-      return Icon(Icons.done, color: widget.theme?.suffixIconSuccessColor ?? widget.scope.application.settings.colors.success);
+
+    if (focused && warning == null && _controller.text.isNotEmpty) {
+      return Icon(
+        Icons.done,
+        color: theme?.suffixIconSuccessColor ?? colors.success,
+      );
+    } else if (_controller.text.isNotEmpty) {
+      return Icon(
+        Icons.clear,
+        color: theme?.suffixIconColor ?? colors.primary,
+      );
     } else {
-      if (_controller.text.length > 0) {
-        return Icon(Icons.clear, color: widget.theme?.suffixIconColor ?? widget.scope.application.settings.colors.primary);
-      } else {
-        return Icon(Icons.filter_center_focus, color: warning != null ? (widget.theme?.suffixIconDangerColor ?? widget.scope.application.settings.colors.danger) : (widget.theme?.suffixIconColor ?? widget.scope.application.settings.colors.primary));
-      }
+      return Icon(
+        Icons.filter_center_focus,
+        color: theme?.suffixIconDangerColor ?? colors.danger,
+      );
     }
   }
 }

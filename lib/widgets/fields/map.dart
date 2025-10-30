@@ -10,95 +10,97 @@ import '../../middleware/utils.dart';
 import 'text.dart';
 
 class MapFieldValue {
-  double radius;
-  double zoom;
-  Color color;
-  LatLng location;
+  double? radius;
+  double? zoom;
+  Color? color;
+  LatLng? location;
 
-  MapFieldValue({double latitude, double longitude, this.radius, this.zoom, this.color}) {
-    location = LatLng(latitude, longitude);
+  MapFieldValue({
+    double? latitude,
+    double? longitude,
+    this.radius,
+    this.zoom,
+    this.color,
+  }) {
+    if (latitude != null && longitude != null) {
+      location = LatLng(latitude, longitude);
+    }
   }
 
   void setLocation(double latitude, double longitude) {
     location = LatLng(latitude, longitude);
   }
 
-  Map toJson() {
+  Map<String, dynamic> toJson() {
     return {
-      'latitude': location.latitude,
-      'longitude': location.longitude,
+      'latitude': location?.latitude,
+      'longitude': location?.longitude,
       'radius': radius,
       'zoom': zoom,
-      'color': Utils.convert.fromColorToHex(color),
+      'color': color != null ? Utils.convert.fromColorToHex(color!) : null,
     };
   }
 }
 
 class MapFieldController {
-  Function(String lookup) _query;
-  Function() _refresh;
-  bool _initialized;
+  void Function(String lookup)? _query;
+  void Function()? _refresh;
+  bool _initialized = false;
 
-  MapFieldController();
-
-  void _init({Function(String lookup) query, Function() refresh}) {
+  void _init({
+    required void Function(String lookup) query,
+    required void Function() refresh,
+  }) {
     _query = query;
     _refresh = refresh;
     _initialized = true;
   }
 
-  void query(String lookup) {
-    _query?.call(lookup);
-  }
-
-  void refresh() {
-    _refresh?.call();
-  }
+  void query(String lookup) => _query?.call(lookup);
+  void refresh() => _refresh?.call();
 }
 
 class MapField extends FieldWidget<MapFieldValue> {
   final double height;
   final String marketImageAsset;
-  final Future<MapFieldValue> Function(String text) onLookup;
-  final String apiKey;
-  final String initialQuery;
-  final String queryLanguage;
-  final MapFieldController controller;
+  final Future<MapFieldValue?> Function(String text)? onLookup;
+  final String? apiKey;
+  final String? initialQuery;
+  final String? queryLanguage;
+  final MapFieldController? controller;
 
-  MapField({
-    @required Scope scope,
-    Key key,
-    @required String name,
-    String group,
-    String label,
-    IconData icon,
-    EdgeInsets margin,
-    EdgeInsets padding,
-    bool readonly,
-    bool visible,
-    ValueChanged<MapFieldValue> onSubmitted,
-    ValueChanged<MapFieldValue> onApplied,
-    ValueChanged<MapFieldValue> onChanged,
-    GestureTapCallback onTab,
-    GestureTapCallback onBlur,
-    GestureTapCallback onFocus,
-    FormFieldValidator<MapFieldValue> validator,
-    MapFieldValue Function(dynamic value) parser,
-    FieldFocusType focusType,
-    Future<MapFieldValue> Function() fetcher,
+   MapField({
+    required Scope scope,
+    required String name,
+    super.key,
+    String? group,
+    String? label,
+    IconData? icon,
+    EdgeInsets? margin,
+    EdgeInsets? padding,
+    bool readonly = false,
+    bool visible = true,
+    ValueChanged<MapFieldValue?>? onSubmitted,
+    ValueChanged<MapFieldValue?>? onApplied,
+    ValueChanged<MapFieldValue?>? onChanged,
+    GestureTapCallback? onTab,
+    GestureTapCallback? onBlur,
+    GestureTapCallback? onFocus,
+    FormFieldValidator<MapFieldValue?>? validator,
+    MapFieldValue? Function(dynamic value)? parser,
+    FieldFocusType? focusType,
+    Future<MapFieldValue?> Function()? fetcher,
+    Function(MapFieldValue?)? applier,
+    FieldWidgetTheme? theme,
     this.onLookup,
-    this.height,
-    this.marketImageAsset,
+    this.height = 250,
+    required this.marketImageAsset,
     this.apiKey,
     this.initialQuery,
     this.queryLanguage,
     this.controller,
-    Function(MapFieldValue value) applier,
-    FieldWidgetTheme theme,
-  })  : assert(name != null),
-        super(
+  }) : super(
           scope: scope,
-          key: key,
           name: name,
           group: group,
           label: label,
@@ -122,116 +124,121 @@ class MapField extends FieldWidget<MapFieldValue> {
         );
 
   @override
-  _MapFieldState createState() => _MapFieldState();
+  Field<MapFieldValue, MapField> createState() => _MapFieldState();
 }
 
 class _MapFieldState extends Field<MapFieldValue, MapField> {
-  GoogleMapController _controller;
-  BitmapDescriptor _poiner;
-  Set<Marker> _markers;
-  Set<Circle> _circles;
-  GoogleGeocodingApi _api;
-  MarkerId _mainMarkerId;
-  CircleId _mainCircleId;
-  MapFieldValue _default;
-  bool _fetchWhenControllerAvailable;
-  int _tick;
+  GoogleMapController? _controller;
+  BitmapDescriptor? _pointer;
+  Set<Marker> _markers = {};
+  Set<Circle> _circles = {};
+  GoogleGeocodingApi? _api;
+  late MarkerId _mainMarkerId;
+  late CircleId _mainCircleId;
+  late MapFieldValue _default;
+  bool _fetchWhenControllerAvailable = false;
+  late int _tick;
 
   @override
   void init() {
     _tick = widget.scope.tick;
-    _api = GoogleGeocodingApi(widget.apiKey, isLogged: false);
-    _markers = <Marker>{};
-    _circles = <Circle>{};
-    _mainMarkerId = MarkerId('main');
-    _mainCircleId = CircleId('main');
+    _api = GoogleGeocodingApi(widget.apiKey ?? '', isLogged: false);
+    _mainMarkerId = const MarkerId('main');
+    _mainCircleId = const CircleId('main');
+    _default = MapFieldValue(latitude: 18.5, longitude: -69.9, zoom: 7.0); // fallback en RD
 
-    if (widget.controller?._initialized != true) {
-      widget.controller._init(query: (lookup) {
-        if (lookup?.isNotEmpty == true) {
-          setState(() {
-            _api.search(lookup, language: 'es').then((searchResults) {
+    final ctrl = widget.controller;
+    if (ctrl != null && !ctrl._initialized) {
+      ctrl._init(
+        query: (lookup) {
+          if (lookup.isNotEmpty) {
+            _api?.search(lookup, language: widget.queryLanguage ?? 'es').then((searchResults) {
               if (searchResults.results.isNotEmpty) {
-                rasterize(() {
-                  busy = false;
-                  _updateLocation(LatLng(searchResults.results.first.geometry.location.lat, searchResults.results.first.geometry.location.lng));
-                });
+                final result = searchResults.results.first;
+                final loc = result.geometry?.location;
+                if (loc != null) {
+                  rasterize(() {
+                    busy = false;
+                    _updateLocation(LatLng(loc.lat, loc.lng));
+                  });
+                }
               }
             });
-          });
-        }
-      }, refresh: () {
-        fetch();
-      });
+          }
+        },
+        refresh: () {
+          fetch();
+        },
+      );
     }
   }
 
-  @override
-  Future<MapFieldValue> lookup() async {
-    final String text = await widget.scope.dialogs
-        .prompt(
-          'Búsqueda\nPersonalizada',
-          hint: '',
-          label: 'Dirección',
-          type: TextInputFieldType.text,
-          acceptLabel: 'Buscar',
-          width: Device.isWeb == true ? 500 : null,
-          icon: Icons.search,
-        )
-        .show();
+@override
+Future<MapFieldValue?> lookup() async {
+  final controller = TextEditingController(text: widget.initialQuery ?? '');
+  final text = await showDialog<String>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Búsqueda personalizada'),
+      content: TextField(
+        controller: controller,
+        decoration: const InputDecoration(
+          labelText: 'Dirección',
+        ),
+        autofocus: true,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(null),
+          child: const Text('Cancelar'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(controller.text),
+          child: const Text('Buscar'),
+        ),
+      ],
+    ),
+  );
 
-    if (text?.isNotEmpty == true) {
-      if (widget.onLookup != null) {
-        return await widget.onLookup(text);
-      } else {
-        busy = true;
-        final searchResults = await _api.search(text, language: 'es');
-        if (searchResults.results.isNotEmpty) {
-          rasterize(() {
-            busy = false;
-            _updateLocation(LatLng(searchResults.results.first.geometry.location.lat, searchResults.results.first.geometry.location.lng));
-          });
-        }
-      }
-    }
-
-    return value;
+  if (text != null && text.isNotEmpty && widget.onLookup != null) {
+    return await widget.onLookup!(text);
   }
 
-  @override
-  String label() => widget.label;
+  return value;
+}
+
 
   @override
-  Widget display([String text]) {
-    Widget mapContainer = Container(
+  Widget display([String? text]) {
+    final showLoader = value?.location == null && _default.location == null;
+
+    final mapContainer = Container(
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(widget.scope.application.settings.dialogs.dialogRadius + 2),
         border: Border.all(
-          color: widget.scope.application.settings.fields.focusColor ?? Colors.black12,
+          color: widget.scope.application.settings.fields.focusColor,
           width: 1.5,
         ),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(widget.scope.application.settings.dialogs.dialogRadius),
-        child: (_fetchWhenControllerAvailable == null) || !(value?.location != null || _default?.location != null)
-            ? Container(
-                child: Center(
-                  child: SizedBox(
-                    width: 40,
-                    height: 40,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: widget.scope.application.settings.colors.primary,
-                    ),
+        child: showLoader
+            ? Center(
+                child: SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: widget.scope.application.settings.colors.primary,
                   ),
                 ),
               )
             : GoogleMap(
                 mapType: MapType.normal,
                 initialCameraPosition: CameraPosition(
-                  zoom: value?.zoom ?? 1,
-                  target: value?.location ?? _default?.location,
+                  zoom: value?.zoom ?? _default.zoom ?? 5,
+                  target: value?.location ?? _default.location!,
                 ),
                 compassEnabled: false,
                 zoomControlsEnabled: true,
@@ -247,26 +254,26 @@ class _MapFieldState extends Field<MapFieldValue, MapField> {
                 markers: _markers,
                 rotateGesturesEnabled: false,
                 myLocationEnabled: false,
-                onCameraMove: (position) {},
                 onCameraIdle: () async {
-                  var mzoom = await _controller.getZoomLevel();
-                  if (value != null && value?.zoom != mzoom) {
-                    value.zoom = mzoom;
-                    _renderMarker();
+                  if (_controller != null) {
+                    final mzoom = await _controller!.getZoomLevel();
+                    if (value?.zoom != mzoom) {
+                      value?.zoom = mzoom;
+                      _renderMarker();
+                    }
                   }
                 },
-                onTap: (location) {
-                  _updateLocation(location);
-                },
-                onMapCreated: (GoogleMapController controller) async {
-                  if (mounted != true) {
-                    return;
-                  }
-                  final bitmap = await BitmapDescriptor.fromAssetImage(createLocalImageConfiguration(context, size: Size.square(48)), widget.marketImageAsset);
+                onTap: (location) => _updateLocation(location),
+                onMapCreated: (controller) async {
+                  if (!mounted) return;
+                  final bitmap = await BitmapDescriptor.fromAssetImage(
+                    createLocalImageConfiguration(context, size: const Size.square(48)),
+                    widget.marketImageAsset,
+                  );
                   rasterize(() {
-                    _poiner = bitmap;
+                    _pointer = bitmap;
                     _controller = controller;
-                    if (_fetchWhenControllerAvailable == true) {
+                    if (_fetchWhenControllerAvailable) {
                       _fetchWhenControllerAvailable = false;
                       fetch();
                     }
@@ -276,99 +283,75 @@ class _MapFieldState extends Field<MapFieldValue, MapField> {
       ),
     );
 
-    return Container(
-      child: Container(
-        padding: EdgeInsets.only(bottom: 10, top: 6),
-        child: widget.height == null ? AspectRatio(aspectRatio: 1, child: mapContainer) : SizedBox(height: widget.height, child: mapContainer),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10, top: 6),
+      child: SizedBox(height: widget.height, child: mapContainer),
     );
   }
 
   void _updateLocation(LatLng location) {
-    if (location == null) {
-      clear();
-    } else {
-      submit(MapFieldValue(
+    submit(
+      MapFieldValue(
         latitude: location.latitude,
         longitude: location.longitude,
         zoom: value?.zoom,
         radius: value?.radius,
         color: value?.color,
-      ));
-    }
+      ),
+    );
   }
 
-  Future _renderMarker() async {
-    LatLng location = value?.location ?? _default?.location;
+  Future<void> _renderMarker() async {
+    final location = value?.location ?? _default.location;
+    if (location == null || _pointer == null || _controller == null) return;
 
-    if (location == null) {
-      if (_default == null) {
-        final defaultLocation = await _api.search(widget.initialQuery ?? 'Oceano Atlántico', language: widget.queryLanguage ?? 'es');
-        _default = MapFieldValue(
-          latitude: defaultLocation.results.first.geometry.location.lat,
-          longitude: defaultLocation.results.first.geometry.location.lng,
-          zoom: 13,
-          radius: 300,
-          color: widget.scope.application.settings.colors.primary.withOpacity(0.3),
-        );
-        location = _default.location;
-      }
-    }
+    _markers = {
+      Marker(
+        markerId: _mainMarkerId,
+        position: location,
+        draggable: true,
+        icon: _pointer!,
+        onDragEnd: _updateLocation,
+      ),
+    };
 
-    if (_controller == null || _poiner == null) {
-      return;
-    }
-
-    if (location?.latitude == null) {
-      _circles = {};
-      _markers = {};
-    } else {
-      _markers = {
-        Marker(
-          markerId: _mainMarkerId,
-          position: location,
-          draggable: true,
-          icon: _poiner,
-          onDragEnd: (location) {
-            _updateLocation(location);
-          },
-        )
+    if (value?.radius != null && (value!.radius!) > 0) {
+      _circles = {
+        Circle(
+          circleId: _mainCircleId,
+          center: location,
+          radius: value!.radius!,
+          strokeWidth: 0,
+          fillColor: value!.color ??
+              widget.scope.application.settings.colors.navigation.withOpacity(0.3),
+        ),
       };
-
-      if (value?.radius != null && value.radius > 0) {
-        _circles = {
-          Circle(
-            circleId: _mainCircleId,
-            center: location,
-            radius: value.radius,
-            strokeWidth: 0,
-            fillColor: value?.color ?? widget.scope.application.settings.colors.navigation.withOpacity(0.3),
-          )
-        };
-      } else {
-        _circles = {
-          Circle(
-            circleId: _mainCircleId,
-            center: location,
-            radius: 0,
-            strokeWidth: 0,
-            fillColor: Colors.transparent,
-          )
-        };
-      }
+    } else {
+      _circles = {
+        Circle(
+          circleId: _mainCircleId,
+          center: location,
+          radius: 0,
+          strokeWidth: 0,
+          fillColor: Colors.transparent,
+        ),
+      };
     }
 
-    _controller.moveCamera(
-      CameraUpdate.newCameraPosition(CameraPosition(target: location, zoom: value?.zoom ?? _default?.zoom ?? 1)),
+    await _controller!.moveCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(target: location, zoom: value?.zoom ?? _default.zoom ?? 5),
+      ),
     );
 
     rasterize();
   }
 
   @override
-  Future<MapFieldValue> fetch([apply = true]) async {
-    var cvalue = await super.fetch(false);
-    var calculateZoom = cvalue?.radius == null || cvalue.radius != value?.radius;
+  Future<MapFieldValue?> fetch([bool apply = true]) async {
+    final cvalue = await super.fetch(false);
+    var calculateZoom = cvalue?.radius == null || cvalue?.radius != value?.radius;
+
     if (_tick != widget.scope.tick) {
       calculateZoom = false;
       _tick = widget.scope.tick;
@@ -376,11 +359,11 @@ class _MapFieldState extends Field<MapFieldValue, MapField> {
 
     await super.fetch();
 
-    if (calculateZoom == true && value?.radius != null && value.radius > 0) {
-      value.zoom = ((15 - log(value.radius / 500) / log(2)));
+    if (calculateZoom && value?.radius != null && value!.radius! > 0) {
+      value!.zoom = (15 - log(value!.radius! / 500) / log(2));
     }
 
-    if (_controller == null || _poiner == null) {
+    if (_pointer == null) {
       _fetchWhenControllerAvailable = true;
     } else {
       _fetchWhenControllerAvailable = false;
