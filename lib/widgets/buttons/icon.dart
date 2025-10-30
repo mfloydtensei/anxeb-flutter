@@ -129,7 +129,7 @@ class _IconButtonState extends State<IconButton> {
                 entries.add(
                   PopupMenuItem<Function>(
                     height: widget.contextMenuItemHeight,
-                    onTap: () => item.onTap(),
+                    onTap: () => item.onTap!(),
                     child: Row(
                       children: [
                         SizedBox(

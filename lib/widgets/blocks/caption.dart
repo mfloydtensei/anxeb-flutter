@@ -1,75 +1,79 @@
 import 'package:anxeb_flutter/middleware/scope.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 class CaptionBlock extends StatelessWidget {
   final Scope scope;
   final String title;
-  final String trailTitle;
-  final EdgeInsets margin;
-  final IconData icon;
-  final double iconSize;
+  final String? trailTitle;
+  final EdgeInsets? margin;
+  final IconData? icon;
+  final double? iconSize;
   final bool visible;
 
   const CaptionBlock({
-    @required this.scope,
-    @required this.title,
+    required this.scope,
+    required this.title,
     this.trailTitle,
     this.margin,
     this.icon,
     this.iconSize,
-    this.visible,
-  }) : assert(title != null);
+    this.visible = true,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (this.visible == false) {
-      return Container();
-    }
+    if (!visible) return const SizedBox.shrink();
+
+    final colors = scope.application.settings.colors;
 
     return Container(
       margin: margin,
       child: Row(
-        children: <Widget>[
+        children: [
           Expanded(
             child: Container(
-              padding: EdgeInsets.only(bottom: 5, top: 8),
+              padding: const EdgeInsets.only(bottom: 5, top: 8),
               decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(width: 1.5, color: scope.application.settings.colors.primary)),
+                border: Border(
+                  bottom: BorderSide(width: 1.5, color: colors.primary),
+                ),
               ),
               child: Row(
-                children: <Widget>[
-                  icon != null
-                      ? Container(
-                          width: 33,
-                          child: Icon(icon, size: iconSize != null ? iconSize : 25, color: scope.application.settings.colors.primary),
-                        )
-                      : Container(),
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  if (icon != null)
+                    SizedBox(
+                      width: 33,
+                      child: Icon(
+                        icon,
+                        size: iconSize ?? 25,
+                        color: colors.primary,
+                      ),
+                    ),
                   Expanded(
-                    child: new Text(
+                    child: Text(
                       title,
                       style: TextStyle(
                         fontSize: 18,
                         letterSpacing: 0,
-                        fontWeight: FontWeight.w500,
-                        color: scope.application.settings.colors.secudary,
+                        fontWeight: FontWeight.w600,
+                        color: colors.secudary,
                       ),
                     ),
                   ),
-                  trailTitle != null
-                      ? Container(
-                          margin: EdgeInsets.only(top: 10),
-                          child: Text(
-                            trailTitle,
-                            style: TextStyle(
-                              fontSize: 12,
-                              letterSpacing: 0,
-                              fontWeight: FontWeight.w500,
-                              color: scope.application.settings.colors.text.withOpacity(0.8),
-                            ),
-                          ),
-                        )
-                      : Container(),
+                  if (trailTitle != null && trailTitle!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Text(
+                        trailTitle!,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: colors.text.withOpacity(0.8),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),

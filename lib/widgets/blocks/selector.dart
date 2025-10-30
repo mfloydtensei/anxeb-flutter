@@ -4,29 +4,49 @@ import 'package:fluttericon/font_awesome5_icons.dart';
 
 class SelectorBlock extends StatelessWidget {
   final Anxeb.Scope scope;
-  final String name;
-  final double nameFontSize;
-  final String reference;
+  final String? name;
+  final double? nameFontSize;
+  final String? reference;
   final bool selected;
-  final String tail;
-  final String logoUrl;
-  final double width;
-  final double height;
-  final GestureTapCallback onTap;
+  final String? tail;
+  final String? logoUrl;
+  final double? width;
+  final double? height;
+  final VoidCallback? onTap;
   final bool flat;
-  final Icon failedIcon;
-  final EdgeInsets margin;
-  final EdgeInsets padding;
+  final Icon? failedIcon;
+  final EdgeInsets? margin;
+  final EdgeInsets? padding;
 
-  SelectorBlock({this.scope, this.name, this.nameFontSize, this.reference, this.selected, this.tail, this.logoUrl, this.width, this.height, this.onTap, this.flat, this.failedIcon, this.margin, this.padding, Key key}) : super(key: key);
+  const SelectorBlock({
+    super.key,
+    required this.scope,
+    this.name,
+    this.nameFontSize,
+    this.reference,
+    this.selected = false,
+    this.tail,
+    this.logoUrl,
+    this.width,
+    this.height,
+    this.onTap,
+    this.flat = false,
+    this.failedIcon,
+    this.margin,
+    this.padding,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final app = scope.application;
+    final colors = app.settings.colors;
+
     final captionWidget = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
+      children: [
+        // 🔹 Header con nombre y check
         Row(
-          children: <Widget>[
+          children: [
             Expanded(
               child: Container(
                 alignment: Alignment.centerLeft,
@@ -36,7 +56,7 @@ class SelectorBlock extends StatelessWidget {
                   border: Border(
                     bottom: BorderSide(
                       width: 1.0,
-                      color: scope.application.settings.colors.separator,
+                      color: colors.separator,
                     ),
                   ),
                 ),
@@ -47,36 +67,34 @@ class SelectorBlock extends StatelessWidget {
                         name ?? '',
                         overflow: TextOverflow.clip,
                         style: TextStyle(
-                          color: selected == true ? scope.application.settings.colors.success : scope.application.settings.colors.primary,
+                          color: selected ? colors.success : colors.primary,
                           height: 0.9,
                           fontSize: nameFontSize ?? 19,
-                          fontWeight: selected == true ? FontWeight.w500 : FontWeight.w300,
+                          fontWeight:
+                              selected ? FontWeight.w500 : FontWeight.w300,
                         ),
                       ),
                     ),
-                    Visibility(
-                      visible: selected == true,
-                      child: Container(
-                        child: Icon(
-                          Icons.check_circle,
-                          color: scope.application.settings.colors.success,
-                          size: 22,
-                        ),
+                    if (selected)
+                      Icon(
+                        Icons.check_circle,
+                        color: colors.success,
+                        size: 22,
                       ),
-                    ),
                   ],
                 ),
               ),
             ),
           ],
         ),
+        // 🔹 Línea inferior con referencia y tail
         Row(
           children: [
             Expanded(
               child: Text(
-                reference?.toUpperCase() ?? '',
+                (reference ?? '').toUpperCase(),
                 style: TextStyle(
-                  color: scope.application.settings.colors.primary,
+                  color: colors.primary,
                   fontSize: 12,
                   fontWeight: FontWeight.w400,
                 ),
@@ -85,57 +103,82 @@ class SelectorBlock extends StatelessWidget {
             Text(
               tail ?? '',
               style: TextStyle(
-                color: scope.application.settings.colors.primary,
+                color: colors.primary,
                 fontSize: 12,
                 fontWeight: FontWeight.w400,
               ),
-            )
+            ),
           ],
         ),
       ],
     );
 
-    var onlyImage = name == null && reference == null;
+    final onlyImage = name == null && reference == null;
+
+    // 🔹 Preparar URL de imagen segura
+    final hasUrl = logoUrl != null && logoUrl!.isNotEmpty;
+    final fullImageUrl = hasUrl
+        ? (logoUrl!.startsWith('http')
+            ? logoUrl!
+            : app.api.getUri('$logoUrl?webp=80&t=${scope.tick}'))
+        : null;
 
     return Container(
       margin: margin,
       child: Anxeb.ImageButton(
-        height: height ?? (width == null ? 50 : null),
-        width: width ?? (height == null ? 80 : null),
-        loadingColor: scope.application.settings.colors.primary.withOpacity(0.5),
+        height: height,
+        width: width,
+        loadingColor: colors.primary.withOpacity(0.5),
         loadingPadding: const EdgeInsets.all(15),
-        imageUrl: logoUrl != null ? (logoUrl.contains('http') ? logoUrl : scope.application.api.getUri('$logoUrl?webp=80&t=${scope.tick?.toString()}')) : null,
-        failedIconColor: scope.application.settings.colors.primary.withOpacity(0.2),
-        headers: {'Authorization': 'Bearer ${scope.application.api.token}'},
+        imageUrl: fullImageUrl,
+        failedIconColor: colors.primary.withOpacity(0.2),
+        headers: {'Authorization': 'Bearer ${app.api.token}'},
         outerRadius: 10,
         innerRadius: 5,
-        innerPadding: flat == true ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
-        imagePadding: const EdgeInsets.only(left: 10, right: 10, top: 5, bottom: 5),
-        outerFill: flat == true ? null : Colors.white,
-        shadow: flat == true ? null : [BoxShadow(offset: Offset(0, 2), blurRadius: 2, spreadRadius: 0, color: Color(0x1f555555))],
+        innerPadding:
+            flat ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+        imagePadding:
+            const EdgeInsets.only(left: 10, right: 10, top: 5, bottom: 5),
+        outerFill: flat ? null : Colors.white,
+        shadow: flat
+            ? null
+            : [
+                const BoxShadow(
+                  offset: Offset(0, 2),
+                  blurRadius: 2,
+                  spreadRadius: 0,
+                  color: Color(0x1f555555),
+                )
+              ],
         fit: BoxFit.contain,
         shape: BoxShape.rectangle,
         onTap: onTap,
-        horizontal: onlyImage == true ? false : true,
+        horizontal: !onlyImage,
         expanded: true,
-        margin: const EdgeInsets.only(top: 5, bottom: 5),
-        failedBody: onlyImage == true
+        margin: const EdgeInsets.symmetric(vertical: 5),
+        failedBody: onlyImage
             ? null
             : Row(
-                children: <Widget>[
+                children: [
                   Container(
                     width: width ?? 65,
-                    padding: const EdgeInsets.only(left: 10, right: 10, top: 5, bottom: 5),
-                    child: failedIcon ?? const Icon(FontAwesome5.building, size: 40),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 5),
+                    child: failedIcon ??
+                        const Icon(
+                          FontAwesome5.building,
+                          size: 40,
+                        ),
                   ),
                   Expanded(
                     child: Container(
-                      padding: const EdgeInsets.only(top: 10, bottom: 10, left: 10, right: 10),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 10, horizontal: 10),
                       decoration: BoxDecoration(
                         border: Border(
                           left: BorderSide(
                             width: 1.0,
-                            color: scope.application.settings.colors.separator,
+                            color: colors.separator,
                           ),
                         ),
                       ),
@@ -144,16 +187,14 @@ class SelectorBlock extends StatelessWidget {
                   ),
                 ],
               ),
-        body: onlyImage == true
-            ? Container()
+        body: onlyImage
+            ? const SizedBox.shrink()
             : Container(
-                padding: padding ?? const EdgeInsets.only(top: 8, bottom: 8, left: 10, right: 10),
+                padding: padding ??
+                    const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
                 decoration: BoxDecoration(
                   border: Border(
-                    left: BorderSide(
-                      width: 1.0,
-                      color: scope.application.settings.colors.separator,
-                    ),
+                    left: BorderSide(width: 1.0, color: colors.separator),
                   ),
                 ),
                 child: captionWidget,

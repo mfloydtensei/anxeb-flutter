@@ -1,24 +1,25 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class PlaceholderBlock extends StatelessWidget implements PreferredSizeWidget {
   final double Function() height;
   final Widget Function() body;
-  final bool Function() isVisible;
+  final bool Function()? isVisible;
 
-  PlaceholderBlock({
-    @required this.height,
-    @required this.body,
+  const PlaceholderBlock({
+    super.key,
+    required this.height,
+    required this.body,
     this.isVisible,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (isVisible?.call() == false) {
-      return null;
-    }
+    final visible = isVisible?.call() ?? true;
+    if (!visible) return const SizedBox.shrink();
+
     return body();
   }
 
+  @override
   Size get preferredSize => Size.fromHeight(height());
 }

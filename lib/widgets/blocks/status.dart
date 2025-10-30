@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class StatusBlock extends StatefulWidget {
-  StatusBlock({
+  const StatusBlock({
+    super.key,
     this.margin,
     this.padding,
     this.title,
@@ -10,50 +11,49 @@ class StatusBlock extends StatefulWidget {
     this.action,
     this.captionAction,
     this.cancel,
-    this.busy,
-    this.enabled,
+    this.busy = false,
+    this.enabled = true,
     this.icon,
-    this.iconScale,
-    this.circleScale,
+    this.iconScale = 1.0,
+    this.circleScale = 1.0,
     this.iconColor,
     this.titleColor,
     this.captionColor,
     this.subcaptionColor,
-    this.titleSize,
-    this.captionSize,
-    this.subcaptionSize,
-    this.iconBorderWidth,
-    this.iconBorderPadding,
+    this.titleSize = 18,
+    this.captionSize = 16,
+    this.subcaptionSize = 13,
+    this.iconBorderWidth = 0,
+    this.iconBorderPadding = 0,
     this.controller,
   });
 
-  final EdgeInsets margin;
-  final EdgeInsets padding;
-  final String title;
-  final String caption;
-  final String subcaption;
-  final Future Function() action;
-  final Future Function() cancel;
-  final Function() captionAction;
+  final EdgeInsets? margin;
+  final EdgeInsets? padding;
+  final String? title;
+  final String? caption;
+  final String? subcaption;
+  final Future<void> Function()? action;
+  final Future<void> Function()? cancel;
+  final VoidCallback? captionAction;
   final bool busy;
   final bool enabled;
-  final IconData icon;
+  final IconData? icon;
   final double iconScale;
   final double circleScale;
-  final Color iconColor;
-  final Color titleColor;
-  final Color captionColor;
-  final Color subcaptionColor;
+  final Color? iconColor;
+  final Color? titleColor;
+  final Color? captionColor;
+  final Color? subcaptionColor;
   final double titleSize;
   final double captionSize;
   final double subcaptionSize;
   final double iconBorderWidth;
   final double iconBorderPadding;
-
-  final StatusBlockController controller;
+  final StatusBlockController? controller;
 
   @override
-  _StatusBlockState createState() => _StatusBlockState();
+  State<StatusBlock> createState() => _StatusBlockState();
 }
 
 class _StatusBlockState extends State<StatusBlock> {
@@ -62,181 +62,177 @@ class _StatusBlockState extends State<StatusBlock> {
 
   @override
   Widget build(BuildContext context) {
+    final Color mainColor = widget.iconColor ?? Colors.green;
+
     return Container(
       margin: widget.margin,
       padding: widget.padding,
       child: Row(
-        children: <Widget>[
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // 🔹 Botón circular con animación
           Container(
-            padding: EdgeInsets.all(widget.iconBorderPadding ?? 0),
-            decoration: widget.iconBorderWidth != null && widget.iconBorderWidth > 0
+            padding: EdgeInsets.all(widget.iconBorderPadding),
+            decoration: widget.iconBorderWidth > 0
                 ? BoxDecoration(
-                    borderRadius: BorderRadius.all(Radius.circular(45)),
-                    border: Border.all(width: widget.iconBorderWidth, color: widget.iconColor.withOpacity(0.7)),
+                    borderRadius: BorderRadius.circular(45),
+                    border: Border.all(
+                      width: widget.iconBorderWidth,
+                      color: mainColor.withOpacity(0.7),
+                    ),
                   )
                 : null,
             child: ClipOval(
               child: Material(
-                key: GlobalKey(),
-                color: widget.iconColor ?? Colors.green,
+                color: mainColor,
                 child: InkWell(
                   splashColor: Colors.white,
-                  onTap: _enableAction == true
+                  onTap: _enableAction
                       ? () async {
-                          if (mounted) {
-                            setState(() {
-                              _busy = true;
-                              _enableAction = false;
-                            });
-                          } else {
+                          setState(() {
                             _busy = true;
                             _enableAction = false;
-                          }
+                          });
                           try {
-                            await widget.action();
+                            await widget.action?.call();
                           } finally {
                             if (mounted) {
-                              setState(() {
-                                _busy = false;
-                              });
-
-                              Future.delayed(Duration(milliseconds: 50), () {
-                                if (mounted) {
-                                  setState(() {
+                              setState(() => _busy = false);
+                              Future.delayed(
+                                const Duration(milliseconds: 50),
+                                () {
+                                  if (mounted) {
+                                    setState(() => _enableAction = true);
+                                  } else {
                                     _enableAction = true;
-                                  });
-                                } else {
-                                  _enableAction = true;
-                                }
-                              });
-                            } else {
-                              _busy = false;
-                              _enableAction = true;
+                                  }
+                                },
+                              );
                             }
                           }
                         }
-                      : () async {
-                          if (widget.cancel != null) {
-                            await widget.cancel();
-                          }
-                        },
+                      : () async => await widget.cancel?.call(),
                   child: SizedBox(
-                    width: (widget.circleScale ?? 1.0) * 42.0,
-                    height: (widget.circleScale ?? 1.0) * 42.0,
-                    child: Container(
-                        child: widget.busy == true || _busy == true
-                            ? Container(
-                                padding: EdgeInsets.all(5),
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xf0ffffff)),
-                                ),
-                              )
-                            : AnimatedOpacity(
-                                opacity: _enableAction == true ? 1 : 0,
-                                duration: Duration(milliseconds: 300),
-                                child: Icon(
-                                  widget.icon,
-                                  size: 30 * (widget.iconScale ?? 1.0),
-                                  color: Colors.white,
-                                ),
-                              )),
+                    width: widget.circleScale * 42.0,
+                    height: widget.circleScale * 42.0,
+                    child: _buildIcon(mainColor),
                   ),
                 ),
               ),
             ),
           ),
-          widget.title != null
-              ? Container(
-                  padding: EdgeInsets.only(left: 10, right: 10),
-                  child: Text(
-                    widget.title,
-                    style: TextStyle(
-                      fontSize: widget.titleSize ?? 18,
-                      fontWeight: FontWeight.w300,
-                      letterSpacing: 0.4,
-                      color: widget.titleColor ?? Colors.green,
+          // 🔹 Título
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Text(
+              widget.title ?? '',
+              style: TextStyle(
+                fontSize: widget.titleSize,
+                fontWeight: FontWeight.w300,
+                letterSpacing: 0.4,
+                color: widget.titleColor ?? mainColor,
+              ),
+            ),
+          ),
+          // 🔹 Captión y subcaptión (lado derecho)
+          Expanded(
+            child: Container(
+              alignment: Alignment.topRight,
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(6),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(6),
+                  onTap: widget.captionAction,
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    child: _StatusCaption(
+                      controller: widget.controller,
+                      caption: widget.caption,
+                      subcaption: widget.subcaption,
+                      captionColor: widget.captionColor,
+                      subcaptionColor: widget.subcaptionColor,
+                      captionSize: widget.captionSize,
+                      subcaptionSize: widget.subcaptionSize,
                     ),
                   ),
-                )
-              : Container(),
-          widget.caption != null
-              ? Expanded(
-                  child: Container(
-                    alignment: Alignment.topRight,
-                    child: Material(
-                      color: Colors.transparent,
-                      key: GlobalKey(),
-                      borderRadius: BorderRadius.all(Radius.circular(6)),
-                      child: InkWell(
-                        borderRadius: new BorderRadius.all(
-                          Radius.circular(6.0),
-                        ),
-                        onTap: () {
-                          widget.captionAction?.call();
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              _StatusCaption(
-                                controller: widget.controller,
-                                caption: widget.caption,
-                                subcaption: widget.subcaption,
-                                captionColor: widget.captionColor,
-                                subcaptionColor: widget.subcaptionColor,
-                                captionSize: widget.captionSize,
-                                subcaptionSize: widget.subcaptionSize,
-                              )
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                )
-              : Container(),
+                ),
+              ),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildIcon(Color mainColor) {
+    if (widget.busy || _busy) {
+      return Padding(
+        padding: const EdgeInsets.all(5),
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withOpacity(0.9)),
+        ),
+      );
+    }
+
+    return AnimatedOpacity(
+      opacity: _enableAction ? 1 : 0,
+      duration: const Duration(milliseconds: 300),
+      child: Icon(
+        widget.icon ?? Icons.check_circle,
+        size: 30 * widget.iconScale,
+        color: Colors.white,
       ),
     );
   }
 }
 
 class _StatusCaption extends StatefulWidget {
-  final StatusBlockController controller;
+  const _StatusCaption({
+    this.caption,
+    this.captionSize,
+    this.subcaption,
+    this.subcaptionSize,
+    this.captionColor,
+    this.subcaptionColor,
+    this.controller,
+  });
 
-  final String caption;
-  final double captionSize;
-  final String subcaption;
-  final double subcaptionSize;
-  final Color captionColor;
-  final Color subcaptionColor;
-
-  _StatusCaption({this.caption, this.captionSize, this.subcaption, this.subcaptionSize, this.captionColor, this.subcaptionColor, this.controller});
+  final StatusBlockController? controller;
+  final String? caption;
+  final double? captionSize;
+  final String? subcaption;
+  final double? subcaptionSize;
+  final Color? captionColor;
+  final Color? subcaptionColor;
 
   @override
-  _StatusCaptionState createState() => _StatusCaptionState();
+  State<_StatusCaption> createState() => _StatusCaptionState();
 }
 
 class _StatusCaptionState extends State<_StatusCaption> {
   @override
   void initState() {
-    widget.controller?._onUpdate(() {
-      setState(() {});
-    });
     super.initState();
+    widget.controller?._onUpdate(() {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final controller = widget.controller;
+    final caption = controller?.caption ?? widget.caption ?? '';
+    final subcaption = controller?.subcaption ?? widget.subcaption;
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       crossAxisAlignment: CrossAxisAlignment.end,
-      children: <Widget>[
+      children: [
         Text(
-          widget?.controller?.caption ?? widget.caption,
+          caption,
           style: TextStyle(
             fontSize: widget.captionSize ?? 18,
             fontWeight: FontWeight.w400,
@@ -244,42 +240,40 @@ class _StatusCaptionState extends State<_StatusCaption> {
             color: widget.captionColor ?? Colors.green,
           ),
         ),
-        (widget?.controller?.subcaption ?? widget.subcaption) != null
-            ? Text(
-                widget?.controller?.subcaption ?? widget.subcaption,
-                style: TextStyle(
-                  fontSize: widget.subcaptionSize ?? 13,
-                  fontWeight: FontWeight.w400,
-                  letterSpacing: 0.3,
-                  color: widget.subcaptionColor ?? Colors.green,
-                ),
-              )
-            : Container(),
+        if (subcaption != null && subcaption.isNotEmpty)
+          Text(
+            subcaption,
+            style: TextStyle(
+              fontSize: widget.subcaptionSize ?? 13,
+              fontWeight: FontWeight.w400,
+              letterSpacing: 0.3,
+              color: widget.subcaptionColor ?? Colors.green,
+            ),
+          ),
       ],
     );
   }
 }
 
 class StatusBlockController {
-  Function() _callback;
-  String _caption;
-  String _subcaption;
+  VoidCallback? _callback;
+  String? _caption;
+  String? _subcaption;
 
-  void _onUpdate(Function() callback) {
+  void _onUpdate(VoidCallback callback) {
     _callback = callback;
   }
 
-  set caption(value) {
+  set caption(String? value) {
     _caption = value;
     _callback?.call();
   }
 
-  set subcaption(value) {
+  set subcaption(String? value) {
     _subcaption = value;
     _callback?.call();
   }
 
-  String get subcaption => _subcaption;
-
-  String get caption => _caption;
+  String? get caption => _caption;
+  String? get subcaption => _subcaption;
 }

@@ -1,140 +1,129 @@
-import 'package:url_launcher/url_launcher.dart' as Launcher;
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart' as launcher;
 
 class PropertyBlock extends StatefulWidget {
-  PropertyBlock({
+  final EdgeInsets? margin;
+  final EdgeInsets? padding;
+  final EdgeInsets? iconMargin;
+  final String label;
+  final double? valueScale;
+  final double? labelScale;
+  final String? value;
+  final IconData? icon;
+  final bool visible;
+  final double? iconScale;
+  final Color? iconColor;
+  final Color? labelColor;
+  final Color? valueColor;
+  final bool showOnNull;
+  final bool isPhone;
+  final bool isEmail;
+  final double? iconSize;
+  final VoidCallback? onTap;
+  final bool cache;
+
+  const PropertyBlock({
+    super.key,
     this.margin,
     this.padding,
     this.iconMargin,
-    @required this.label,
+    required this.label,
     this.valueScale,
     this.labelScale,
     this.value,
     this.icon,
-    this.visible,
+    this.visible = true,
     this.iconScale,
     this.iconColor,
     this.labelColor,
     this.valueColor,
-    this.showOnNull,
-    this.isPhone,
-    this.isEmail,
+    this.showOnNull = false,
+    this.isPhone = false,
+    this.isEmail = false,
     this.iconSize,
     this.onTap,
     this.cache = true,
   });
 
-  final EdgeInsets margin;
-  final EdgeInsets padding;
-  final EdgeInsets iconMargin;
-  final String label;
-  final double valueScale;
-  final double labelScale;
-  final String value;
-  final IconData icon;
-  final bool visible;
-  final double iconScale;
-  final Color iconColor;
-  final Color labelColor;
-  final Color valueColor;
-  final bool showOnNull;
-  final bool isPhone;
-  final bool isEmail;
-  final double iconSize;
-  final GestureTapCallback onTap;
-  final bool cache;
-
   @override
-  _PropertyBlockState createState() => _PropertyBlockState();
+  State<PropertyBlock> createState() => _PropertyBlockState();
 }
 
 class _PropertyBlockState extends State<PropertyBlock> {
-  Widget _valueWidget;
+  Widget? _cachedValueWidget;
 
   @override
   Widget build(BuildContext context) {
-    if (widget.visible == false || ((widget.value == null || widget.value.length == 0) && widget.showOnNull != true)) {
-      return Container();
+    final value = widget.value?.trim() ?? '';
+    if (!widget.visible || (value.isEmpty && !widget.showOnNull)) {
+      return const SizedBox.shrink();
     }
 
-    if (widget.cache == true) {
-      _valueWidget = _valueWidget ?? _getValueWidget();
+    if (widget.cache) {
+      _cachedValueWidget ??= _buildValueWidget(value);
     } else {
-      _valueWidget = _getValueWidget();
+      _cachedValueWidget = _buildValueWidget(value);
     }
 
-    final content = Container(
+    return Container(
+      margin: widget.margin,
       padding: widget.padding,
       child: Row(
-        children: <Widget>[
-          widget.icon != null
-              ? Container(
-                  margin: widget.iconMargin ?? EdgeInsets.only(right: 5),
-                  child: ClipOval(
-                    child: SizedBox(
-                      width: 30 * (widget.iconScale ?? 1.0),
-                      height: 30 * (widget.iconScale ?? 1.0),
-                      child: Container(
-                        color: widget.iconColor ?? Colors.blue,
-                        child: Icon(
-                          widget.icon,
-                          size: widget.iconSize ?? (20 * (widget.iconScale ?? 1.0)),
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
+        children: [
+          Container(
+            margin: widget.iconMargin ?? const EdgeInsets.only(right: 5),
+            child: ClipOval(
+              child: SizedBox(
+                width: 30 * (widget.iconScale ?? 1.0),
+                height: 30 * (widget.iconScale ?? 1.0),
+                child: Container(
+                  color: widget.iconColor ?? Colors.blue,
+                  child: Icon(
+                    widget.icon ?? Icons.info_outline,
+                    size: widget.iconSize ?? (20 * (widget.iconScale ?? 1.0)),
+                    color: Colors.white,
                   ),
-                )
-              : Container(),
-          Expanded(
-            child: Container(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    widget.label.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 11 * (widget.labelScale ?? 1.0),
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 0,
-                      color: widget.labelColor ?? Color(0xff444444),
-                    ),
-                  ),
-                  Container(
-                    padding: EdgeInsets.only(top: 3),
-                    child: Row(
-                      children: <Widget>[
-                        Expanded(child: _valueWidget),
-                      ],
-                    ),
-                  ),
-                ],
+                ),
               ),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.label.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 11 * (widget.labelScale ?? 1.0),
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0,
+                    color: widget.labelColor ?? const Color(0xff444444),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                _cachedValueWidget ?? const SizedBox.shrink(),
+              ],
             ),
           ),
         ],
       ),
     );
-
-    return Container(
-      margin: widget.margin,
-      child: content,
-    );
   }
 
-  Widget _getValueWidget() {
-    if (widget.isPhone == true) {
-      var phones = widget.value.replaceAll(' ', '').split(',');
+  /// 🔹 Construye el widget del valor (texto o lista de teléfonos)
+  Widget _buildValueWidget(String value) {
+    if (widget.isPhone) {
+      final phones = value.replaceAll(' ', '').split(',');
       if (phones.length > 1) {
         return Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: phones.map((phone) {
             return Padding(
               padding: EdgeInsets.only(bottom: phone == phones.last ? 0 : 8),
-              child: GestureDetector(
+              child: InkWell(
                 onTap: () => _launchValueLink(phone),
-                child: _getValueTextWidget(phone),
+                borderRadius: BorderRadius.circular(8),
+                child: _buildValueText(phone),
               ),
             );
           }).toList(),
@@ -142,30 +131,25 @@ class _PropertyBlockState extends State<PropertyBlock> {
       }
     }
 
-    return Material(
-      key: GlobalKey(),
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        onTap: () {
-          _launchValueLink(widget.value);
-        },
-        highlightColor: Colors.transparent,
-        splashColor: Colors.black12,
-        borderRadius: BorderRadius.circular(20),
-        child: _getValueTextWidget(widget.value),
-      ),
+    return InkWell(
+      onTap: () => _launchValueLink(value),
+      borderRadius: BorderRadius.circular(8),
+      splashColor: Colors.black12,
+      child: _buildValueText(value),
     );
   }
 
-  Widget _getValueTextWidget(String text) {
+  /// 🔹 Texto estilizado del valor
+  Widget _buildValueText(String text) {
     return Text(
       text,
       overflow: TextOverflow.clip,
       style: TextStyle(
-        height: 0.95,
+        height: 1.1,
         fontSize: 17.5 * (widget.valueScale ?? 1),
-        decoration: widget.isEmail == true || widget.isPhone == true ? TextDecoration.underline : null,
+        decoration: (widget.isEmail || widget.isPhone)
+            ? TextDecoration.underline
+            : null,
         fontWeight: FontWeight.w300,
         letterSpacing: 0.1,
         color: widget.valueColor ?? Colors.indigo,
@@ -173,21 +157,21 @@ class _PropertyBlockState extends State<PropertyBlock> {
     );
   }
 
-  void _launchValueLink(String value) {
-    if (widget.isPhone == true) {
-      Launcher.canLaunchUrl(Uri(scheme: 'tel', path: value)).then((canLaunch) {
-        if (canLaunch == true) {
-          Launcher.launchUrl(Uri(scheme: 'tel', path: value));
-        }
-      });
-    } else if (widget.isEmail == true) {
-      Launcher.canLaunchUrl(Uri(scheme: 'mailto', path: value)).then((canLaunch) {
-        if (canLaunch == true) {
-          Launcher.launchUrl(Uri(scheme: 'mailto', path: value));
-        }
-      });
-    } else if (widget.onTap != null) {
-      widget.onTap();
+  /// 🔹 Lanza el enlace correspondiente (teléfono, email o callback)
+  Future<void> _launchValueLink(String value) async {
+    final uri = widget.isPhone
+        ? Uri(scheme: 'tel', path: value)
+        : widget.isEmail
+            ? Uri(scheme: 'mailto', path: value)
+            : null;
+
+    if (uri != null) {
+      if (await launcher.canLaunchUrl(uri)) {
+        await launcher.launchUrl(uri);
+        return;
+      }
     }
+
+    widget.onTap?.call();
   }
 }

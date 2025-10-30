@@ -9,12 +9,13 @@ import '../../screen/scope.dart';
 class PreviewerBlock extends StatefulWidget {
   final ScreenScope scope;
   final File file;
-  final PhotoViewComputedScale initialScale;
-  final String tag;
+  final PhotoViewComputedScale? initialScale;
+  final String? tag;
 
-  PreviewerBlock({
-    @required this.scope,
-    @required this.file,
+  const PreviewerBlock({
+    super.key,
+    required this.scope,
+    required this.file,
     this.initialScale,
     this.tag,
   });
@@ -24,16 +25,16 @@ class PreviewerBlock extends StatefulWidget {
 }
 
 class _PreviewerBlockState extends State<PreviewerBlock> {
-  PhotoViewControllerBase _imageController;
-  Completer<PDFViewController> _controllerAlt;
+  late final PhotoViewControllerBase _imageController;
+  final Completer<PDFViewController> _pdfController = Completer<PDFViewController>();
+
   int _pages = 1;
   int _currentPage = 1;
 
   @override
   void initState() {
-    _imageController = PhotoViewController();
-    _controllerAlt = Completer<PDFViewController>();
     super.initState();
+    _imageController = PhotoViewController();
   }
 
   @override
@@ -44,137 +45,150 @@ class _PreviewerBlockState extends State<PreviewerBlock> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isPdf) {
-      return Stack(
-        children: [
-          Container(
-            child: PDFView(
-              filePath: widget.file.path,
-              fitEachPage: true,
-              fitPolicy: FitPolicy.WIDTH,
-              enableSwipe: true,
-              swipeHorizontal: false,
-              autoSpacing: true,
-              pageFling: false,
-              preventLinkNavigation: true,
-              pageSnap: false,
-              onRender: (_pages) {
-                setState(() {
-                  _pages = _pages;
-                });
-              },
-              onError: (error) {
-                scope.alerts.error(error).show();
-              },
-              onPageError: (page, error) {
-                scope.alerts.error(error).show();
-              },
-              onViewCreated: (PDFViewController pdfViewController) {
-                _controllerAlt.complete(pdfViewController);
-              },
-              onPageChanged: (int page, int total) {
-                setState(() {
-                  _currentPage = (page + 1);
-                  _pages = total;
-                });
-              },
-            ),
-          ),
-          Container(
-            alignment: Alignment.topRight,
-            padding: EdgeInsets.all(20),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.black45,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              child: Text(
-                '$_currentPage / $_pages',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w400, fontSize: 16),
-              ),
-            ),
-          ),
-          _getTag(),
-        ],
-      );
-    } else {
-      return Stack(
-        children: [
-          PhotoView(
-            imageProvider: FileImage(widget.file),
-            gaplessPlayback: true,
-            backgroundDecoration: BoxDecoration(
-                gradient: LinearGradient(
-              begin: FractionalOffset.topCenter,
-              end: FractionalOffset.bottomCenter,
-              colors: [
-                Color(0xfff0f0f0),
-                Color(0xffc3c3c3),
-              ],
-              stops: [0.0, 1.0],
-            )),
-            controller: _imageController,
-            initialScale: widget.initialScale ?? PhotoViewComputedScale.covered,
-            errorBuilder: (context, error, stackTrace) {
-              return Center(
-                child: Icon(
-                  Icons.broken_image,
-                  size: 140,
-                  color: application.settings.colors.primary.withOpacity(0.2),
-                ),
-              );
-            },
-            loadingBuilder: (context, event) {
-              return _getLoading();
-            },
-          ),
-          _getTag(),
-        ],
-      );
-    }
+    return _isPdf ? _buildPdfPreview() : _buildImagePreview();
   }
 
-  Widget _getTag() {
-    if (widget.tag == null) {
-      return Container();
-    }
-    return Container(
-      alignment: Alignment.bottomCenter,
-      padding: EdgeInsets.all(20),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.black45,
-          borderRadius: BorderRadius.circular(scope.application.settings.dialogs.dialogRadius ?? 20),
+  /// 🔹 Vista para archivos PDF
+  Widget _buildPdfPreview() {
+    return Stack(
+      children: [
+        PDFView(
+          filePath: widget.file.path,
+          fitEachPage: true,
+          fitPolicy: FitPolicy.WIDTH,
+          enableSwipe: true,
+          swipeHorizontal: false,
+          autoSpacing: true,
+          pageFling: false,
+          preventLinkNavigation: true,
+          pageSnap: false,
+          onRender: (pages) {
+            setState(() => _pages = pages ?? 1);
+          },
+          onError: (error) {
+            widget.scope.alerts.error(error.toString()).show();
+          },
+          onPageError: (page, error) {
+            widget.scope.alerts.error(error.toString()).show();
+          },
+          onViewCreated: (PDFViewController pdfViewController) {
+            if (!_pdfController.isCompleted) {
+              _pdfController.complete(pdfViewController);
+            }
+          },
+          onPageChanged: (page, total) {
+            setState(() {
+              _currentPage = (page ?? 0) + 1;
+              _pages = total ?? _pages;
+            });
+          },
         ),
-        padding: EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-        margin: EdgeInsets.only(bottom: 10),
-        child: Text(
-          widget.tag,
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w400, fontSize: 16),
+        Positioned(
+          top: 20,
+          right: 20,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.black45,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            child: Text(
+              '$_currentPage / $_pages',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ),
+        if (widget.tag != null) _buildTag(),
+      ],
+    );
+  }
+
+  /// 🔹 Vista para imágenes
+  Widget _buildImagePreview() {
+    return Stack(
+      children: [
+        PhotoView(
+          imageProvider: FileImage(widget.file),
+          controller: _imageController,
+          gaplessPlayback: true,
+          backgroundDecoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xfff0f0f0), Color(0xffc3c3c3)],
+            ),
+          ),
+          initialScale: widget.initialScale ?? PhotoViewComputedScale.covered,
+          errorBuilder: (context, error, stackTrace) => Center(
+            child: Icon(
+              Icons.broken_image,
+              size: 120,
+              color: widget.scope.application.settings.colors.primary.withOpacity(0.25),
+            ),
+          ),
+          loadingBuilder: (context, event) => _buildLoading(),
+        ),
+        if (widget.tag != null) _buildTag(),
+      ],
+    );
+  }
+
+  /// 🔹 Etiqueta inferior
+  Widget _buildTag() {
+    final app = widget.scope.application;
+
+    return Positioned(
+      bottom: 20,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.black54,
+            borderRadius: BorderRadius.circular(app.settings.dialogs.dialogRadius),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          child: Text(
+            widget.tag!,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w400,
+              fontSize: 15,
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _getLoading() {
-    var length = scope.window.horizontal(0.16);
+  /// 🔹 Indicador de carga
+  Widget _buildLoading() {
+    final app = widget.scope.application;
+    final length = widget.scope.window.horizontal(0.16);
+
     return Center(
       child: SizedBox(
-        child: CircularProgressIndicator(
-          strokeWidth: 5,
-          valueColor: AlwaysStoppedAnimation<Color>(scope.application.settings.colors.primary),
-        ),
-        height: length,
         width: length,
+        height: length,
+        child: CircularProgressIndicator(
+          strokeWidth: 4,
+          valueColor: AlwaysStoppedAnimation<Color>(
+            app.settings.colors.primary,
+          ),
+        ),
       ),
     );
   }
 
-  Application get application => scope.application;
-
-  ScreenScope get scope => widget.scope;
-
-  bool get _isPdf => ['pdf'].contains(widget.file.path.toLowerCase().split('.').last.toLowerCase());
+  /// 🔹 Verifica si el archivo es PDF
+  bool get _isPdf {
+    final path = widget.file.path.toLowerCase();
+    final ext = path.split('.').lastOrNull ?? '';
+    return ext == 'pdf';
+  }
 }

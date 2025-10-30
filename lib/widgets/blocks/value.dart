@@ -5,47 +5,48 @@ import 'package:flutter/material.dart';
 
 class ValueBlock extends StatefulWidget {
   final Scope scope;
-  final EdgeInsets margin;
-  final EdgeInsets padding;
+  final EdgeInsets? margin;
+  final EdgeInsets? padding;
   final bool highlight;
-  final GestureTapCallback onTap;
-  final GestureTapCallback onPrefixTap;
-  final ValueChanged<dynamic> onNewValue;
-  final String title;
-  final String units;
-  final String caption;
+  final VoidCallback? onTap;
+  final VoidCallback? onPrefixTap;
+  final ValueChanged<dynamic>? onNewValue;
+  final String? title;
+  final String? units;
+  final String? caption;
   final bool visible;
-  final String prefix;
-  final double value;
+  final String? prefix;
+  final double? value;
   final bool discrete;
-  final MessageDialog dialog;
-  final Color valueColor;
-  final Color titleColor;
-  final Color borderColor;
-  final Color backgroundColor;
-  final Color separatorColor;
-  final double decimalSize;
-  final double integerSize;
-  final String symbol;
-  final double symbolOffset;
-  final List<Widget> buttons;
-  final double scale;
-  final double titleSize;
-  final Widget icon;
-  final BorderRadius borderRadius;
+  final MessageDialog? dialog;
+  final Color? valueColor;
+  final Color? titleColor;
+  final Color? borderColor;
+  final Color? backgroundColor;
+  final Color? separatorColor;
+  final double? decimalSize;
+  final double? integerSize;
+  final String? symbol;
+  final double? symbolOffset;
+  final List<Widget>? buttons;
+  final double? scale;
+  final double? titleSize;
+  final Widget? icon;
+  final BorderRadius? borderRadius;
 
-  ValueBlock({
-    @required this.scope,
+  const ValueBlock({
+    super.key,
+    required this.scope,
     this.margin,
     this.padding,
-    this.highlight,
+    this.highlight = false,
     this.title,
     this.units,
     this.caption,
-    this.visible,
+    this.visible = true,
     this.prefix,
     this.value,
-    this.discrete,
+    this.discrete = false,
     this.dialog,
     this.onNewValue,
     this.onTap,
@@ -67,161 +68,168 @@ class ValueBlock extends StatefulWidget {
   });
 
   @override
-  _ValueBlockState createState() => _ValueBlockState();
+  State<ValueBlock> createState() => _ValueBlockState();
 }
 
 class _ValueBlockState extends State<ValueBlock> {
-  @override
-  initState() {
-    super.initState();
-  }
-
   String get _value {
-    return Utils.convert.fromAnyToNumber(widget.value, decimals: widget.discrete == true ? 0 : 2);
+    return Utils.convert.fromAnyToNumber(
+      widget.value,
+      decimals: widget.discrete ? 0 : 2,
+    );
   }
 
   String get _integers {
-    var value = _value;
-    var dotIndex = value.indexOf('.');
-    if (dotIndex > -1) {
-      return value.substring(0, dotIndex);
-    }
-    return value;
+    final value = _value;
+    final dotIndex = value.indexOf('.');
+    return dotIndex > -1 ? value.substring(0, dotIndex) : value;
   }
 
   String get _decimals {
-    var value = _value;
-    var dotIndex = value.indexOf('.');
-    if (dotIndex > -1) {
-      return value.substring(dotIndex + 1);
-    }
-    return '';
+    final value = _value;
+    final dotIndex = value.indexOf('.');
+    return dotIndex > -1 ? value.substring(dotIndex + 1) : '';
   }
 
   @override
   Widget build(BuildContext context) {
-    if (this.widget.visible == false) {
-      return Container();
-    }
+    if (!widget.visible) return const SizedBox.shrink();
 
-    var titleRow = widget.title != null
-        ? Row(
-            children: <Widget>[
-              widget.prefix != null
-                  ? GestureDetector(
-                      onTap: widget.onPrefixTap,
-                      child: Container(
-                        alignment: Alignment.centerRight,
-                        padding: EdgeInsets.only(bottom: 2, right: widget.buttons != null ? 4 : 3),
-                        decoration: BoxDecoration(
-                          border: Border(bottom: BorderSide(width: 0.7, color: widget.separatorColor ?? widget.scope.application.settings.colors.separator)),
-                        ),
-                        child: Text(
-                          widget.prefix.toUpperCase(),
-                          textAlign: TextAlign.left,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: widget.titleSize ?? 14,
-                            fontWeight: FontWeight.w400,
-                            color: widget.titleColor ?? widget.scope.application.settings.colors.primary,
-                          ),
-                        ),
-                      ),
-                    )
-                  : Container(),
-              Expanded(
-                child: Container(
-                  alignment: Alignment.centerRight,
-                  padding: EdgeInsets.only(bottom: 2, right: widget.buttons != null ? 4 : 3),
-                  decoration: BoxDecoration(
-                    border: Border(bottom: BorderSide(width: 0.7, color: widget.separatorColor ?? widget.scope.application.settings.colors.separator)),
-                  ),
-                  child: Text(
-                    widget.title.toUpperCase(),
-                    textAlign: TextAlign.right,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: widget.titleSize ?? 14,
-                      fontWeight: FontWeight.w400,
-                      color: widget.titleColor ?? widget.scope.application.settings.colors.primary,
-                    ),
+    final borderRadius =
+        widget.borderRadius ?? const BorderRadius.all(Radius.circular(12));
+    final scale = widget.scale ?? 1.0;
+
+    // 🔹 Título
+    final titleRow = Row(
+      children: [
+        if (widget.prefix != null)
+          GestureDetector(
+            onTap: widget.onPrefixTap,
+            child: Container(
+              alignment: Alignment.centerRight,
+              padding: EdgeInsets.only(
+                bottom: 2,
+                right: (widget.buttons?.isNotEmpty ?? false) ? 4 : 3,
+              ),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    width: 0.7,
+                    color: widget.separatorColor ??
+                        widget.scope.application.settings.colors.separator,
                   ),
                 ),
               ),
-            ],
-          )
-        : null;
-    var valueRow = Row(
-      children: <Widget>[
-        Expanded(
-            child: widget.buttons != null
-                ? Container(
-                    child: Row(
-                      children: widget.buttons,
-                    ),
-                  )
-                : Container()),
-        widget.symbol != null
-            ? Container(
-                alignment: Alignment.topCenter,
-                height: (widget.integerSize ?? 37) * (widget.scale ?? 1),
-                padding: EdgeInsets.only(right: 3, left: widget.buttons != null ? 2 : 0, top: widget.symbolOffset ?? 2),
-                child: Text(
-                  widget.symbol,
-                  style: TextStyle(
-                    fontSize: (widget.decimalSize ?? 20) * (widget.scale ?? 1),
-                    letterSpacing: -0.9,
-                    fontWeight: FontWeight.w400,
-                    color: widget.valueColor ?? widget.scope.application.settings.colors.primary,
-                  ),
+              child: Text(
+                widget.prefix!.toUpperCase(),
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: widget.titleSize ?? 14,
+                  fontWeight: FontWeight.w400,
+                  color: widget.titleColor ??
+                      widget.scope.application.settings.colors.primary,
                 ),
-              )
-            : Container(),
-        Text(
-          _integers,
-          style: TextStyle(
-            fontSize: (widget.integerSize ?? 39) * (widget.scale ?? 1),
-            letterSpacing: -0.9,
-            fontWeight: FontWeight.w300,
-            color: widget.valueColor ?? widget.scope.application.settings.colors.primary,
+              ),
+            ),
           ),
-        ),
-        Container(
-          alignment: Alignment.topCenter,
-          height: (widget.integerSize ?? 39) * (widget.scale ?? 1),
-          padding: EdgeInsets.only(left: 2, right: widget.buttons != null ? 2 : 0),
-          child: Text(
-            _decimals,
-            style: TextStyle(
-              fontSize: (widget.decimalSize ?? 24) * (widget.scale ?? 1),
-              letterSpacing: -0.9,
-              fontWeight: FontWeight.w400,
-              color: widget.valueColor ?? widget.scope.application.settings.colors.primary,
+        Expanded(
+          child: Container(
+            alignment: Alignment.centerRight,
+            padding: EdgeInsets.only(
+              bottom: 2,
+              right: (widget.buttons?.isNotEmpty ?? false) ? 4 : 3,
+            ),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  width: 0.7,
+                  color: widget.separatorColor ??
+                      widget.scope.application.settings.colors.separator,
+                ),
+              ),
+            ),
+            child: Text(
+              (widget.title ?? '').toUpperCase(),
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: widget.titleSize ?? 14,
+                fontWeight: FontWeight.w400,
+                color: widget.titleColor ??
+                    widget.scope.application.settings.colors.primary,
+              ),
             ),
           ),
         ),
       ],
     );
-    var content = titleRow != null
-        ? Column(
-            children: <Widget>[titleRow, valueRow],
-          )
-        : valueRow;
 
-    var borderRadius = widget.borderRadius ??
-        BorderRadius.all(
-          Radius.circular(12.0),
-        );
+    // 🔹 Valor
+    final valueRow = Row(
+      children: [
+        if (widget.buttons?.isNotEmpty ?? false)
+          Expanded(
+            child: Row(children: widget.buttons!),
+          ),
+        if (widget.symbol != null)
+          Container(
+            alignment: Alignment.topCenter,
+            height: (widget.integerSize ?? 37) * scale,
+            padding: EdgeInsets.only(
+              right: 3,
+              left: (widget.buttons?.isNotEmpty ?? false) ? 2 : 0,
+              top: widget.symbolOffset ?? 2,
+            ),
+            child: Text(
+              widget.symbol!,
+              style: TextStyle(
+                fontSize: (widget.decimalSize ?? 20) * scale,
+                letterSpacing: -0.9,
+                fontWeight: FontWeight.w400,
+                color: widget.valueColor ??
+                    widget.scope.application.settings.colors.primary,
+              ),
+            ),
+          ),
+        Text(
+          _integers,
+          style: TextStyle(
+            fontSize: (widget.integerSize ?? 39) * scale,
+            letterSpacing: -0.9,
+            fontWeight: FontWeight.w300,
+            color: widget.valueColor ??
+                widget.scope.application.settings.colors.primary,
+          ),
+        ),
+        if (_decimals.isNotEmpty)
+          Container(
+            alignment: Alignment.topCenter,
+            height: (widget.integerSize ?? 39) * scale,
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Text(
+              _decimals,
+              style: TextStyle(
+                fontSize: (widget.decimalSize ?? 24) * scale,
+                letterSpacing: -0.9,
+                fontWeight: FontWeight.w400,
+                color: widget.valueColor ??
+                    widget.scope.application.settings.colors.primary,
+              ),
+            ),
+          ),
+      ],
+    );
 
-    var container = Container(
+    // 🔹 Contenedor principal
+    final container = Container(
       margin: widget.margin,
-      padding: widget.padding ?? EdgeInsets.only(top: titleRow != null ? 5 : 0, left: 5, right: 5),
+      padding: widget.padding ??
+          EdgeInsets.only(top: 5, left: 5, right: 5),
       decoration: BoxDecoration(
-        color: widget.onTap == null ? widget.backgroundColor : null,
-        gradient: widget.highlight == true
-            ? LinearGradient(
-                begin: FractionalOffset.topLeft,
-                end: FractionalOffset.bottomCenter,
+        gradient: widget.highlight
+            ? const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomCenter,
                 colors: [
                   Color(0x34ffffff),
                   Color(0x00ffffff),
@@ -229,37 +237,36 @@ class _ValueBlockState extends State<ValueBlock> {
                 stops: [0.0, 1.0],
               )
             : null,
-        border: Border.all(color: widget.borderColor ?? widget.scope.application.settings.colors.separator),
+        border: Border.all(
+          color: widget.borderColor ??
+              widget.scope.application.settings.colors.separator,
+        ),
         borderRadius: borderRadius,
       ),
-      child: widget.icon != null
-          ? Row(
-              children: <Widget>[
-                Container(
-                  padding: EdgeInsets.only(bottom: titleRow != null ? 5 : 0),
-                  child: widget.icon,
-                ),
-                Expanded(
-                  child: content,
-                )
-              ],
-            )
-          : content,
+      child: Row(
+        children: [
+          if (widget.icon != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 5),
+              child: widget.icon,
+            ),
+          Expanded(
+            child: Column(
+              children: [titleRow, const SizedBox(height: 2), valueRow],
+            ),
+          ),
+        ],
+      ),
     );
 
-    if (widget.onTap != null) {
-      return Material(
-        key: GlobalKey(),
-        color: widget.backgroundColor ?? Colors.white,
+    return Material(
+      color: widget.backgroundColor ?? Colors.white,
+      borderRadius: borderRadius,
+      child: InkWell(
         borderRadius: borderRadius,
-        child: InkWell(
-          onTap: widget.onTap,
-          borderRadius: borderRadius,
-          child: container,
-        ),
-      );
-    } else {
-      return container;
-    }
+        onTap: widget.onTap,
+        child: container,
+      ),
+    );
   }
 }
