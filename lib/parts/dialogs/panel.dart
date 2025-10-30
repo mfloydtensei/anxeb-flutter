@@ -30,10 +30,10 @@ class PanelDialog<V> extends ScopeDialog<V> {
     final double totalHeight = items
         .where(
           (item) =>
-              (item.isVisible.call() ?? true) &&
-              item.actions.any((a) => a.isVisible.call()),
+              (item.isVisible?.call() ?? true) &&
+              item.actions.any((a) => a.isVisible?.call() ?? true),
         )
-        .fold<double>(0, (prev, element) => prev + (element.height.call()));
+        .fold<double>(0, (prev, element) => prev + (element.height?.call() ?? 0));
 
     return AlertDialog(
       shape: RoundedRectangleBorder(

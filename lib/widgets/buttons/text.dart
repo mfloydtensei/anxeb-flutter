@@ -2,49 +2,50 @@ import 'package:anxeb_flutter/middleware/dialog.dart';
 import 'package:anxeb_flutter/middleware/settings.dart';
 import 'package:flutter/material.dart';
 
-enum ButtonType { primary, secundary, link, frame }
+enum ButtonType { primary, secondary, link, frame }
 
 enum ButtonSize { normal, small, medium, chip }
 
-const Color _BASE_COLOR = Color(0xff2e7db2);
-const Color _LINK_COLOR = Color(0xff0055ff);
+const Color _baseColor = Color(0xff2e7db2);
+const Color _linkColor = Color(0xff0055ff);
 
-const double _NORMAL_SIZE = 18.0;
-const double _SMALL_SIZE = 16.0;
-const double _CHIP_SIZE = 14.0;
-const double _MEDIUM_SIZE = 18.0;
+const double _normalSize = 18.0;
+const double _smallSize = 16.0;
+const double _chipSize = 14.0;
+const double _mediumSize = 18.0;
 
 class TextButton extends StatefulWidget {
-  final EdgeInsets margin;
-  final EdgeInsets padding;
-  final String caption;
-  final String subtitle;
-  final IconData icon;
+  final EdgeInsets? margin;
+  final EdgeInsets? padding;
+  final String? caption;
+  final String? subtitle;
+  final IconData? icon;
   final bool swapIcon;
-  final List<BoxShadow> shadow;
-  final Color color;
-  final Color iconColor;
-  final Color textColor;
-  final double fontSize;
-  final double radius;
-  final double iconSize;
-  final VoidCallback onPressed;
+  final List<BoxShadow>? shadow;
+  final Color? color;
+  final Color? iconColor;
+  final Color? textColor;
+  final double? fontSize;
+  final double? radius;
+  final double? iconSize;
+  final VoidCallback? onPressed;
   final ButtonType type;
   final ButtonSize size;
   final bool enabled;
-  final BorderRadius borderRadius;
+  final BorderRadius? borderRadius;
   final bool subtitleUppercase;
-  final double width;
-  final TextStyle textStyle;
+  final double? width;
+  final TextStyle? textStyle;
   final bool visible;
 
   const TextButton({
+    super.key,
     this.padding,
     this.margin,
     this.caption,
     this.subtitle,
     this.icon,
-    this.swapIcon,
+    this.swapIcon = false,
     this.shadow,
     this.color,
     this.iconColor,
@@ -53,258 +54,297 @@ class TextButton extends StatefulWidget {
     this.radius,
     this.iconSize,
     this.onPressed,
-    this.type,
-    this.size,
-    this.enabled,
+    this.type = ButtonType.primary,
+    this.size = ButtonSize.normal,
+    this.enabled = true,
     this.borderRadius,
-    this.subtitleUppercase,
+    this.subtitleUppercase = false,
     this.width,
     this.textStyle,
-    this.visible,
+    this.visible = true,
   });
 
   @override
-  _TextButtonState createState() => _TextButtonState();
+  State<TextButton> createState() => _TextButtonState();
 
-  static List<Widget> createOptions<V>(BuildContext context, List<DialogButton<V>> options, {V selectedValue, Settings settings}) {
-    var $settings = settings ?? Settings();
-    return options.where(($option) => $option.visible != false).map(($option) {
-      return Container(
-          alignment: Alignment.center,
-          child: Row(mainAxisSize: MainAxisSize.max, children: <Widget>[
-            Expanded(
-              child: TextButton(
-                caption: $option.caption,
-                radius: settings.dialogs.buttonRadius,
-                textColor: $option.textColor ?? (selectedValue == $option.value ? $settings.colors.active : null),
-                color: $option.fillColor ?? ($option.value == '*' ? $settings.colors.asterisk : ($option.value == '' ? $settings.colors.danger : (selectedValue == $option.value ? $settings.colors.secudary : $settings.colors.primary))),
-                icon: $option.icon,
-                swapIcon: $option.swapIcon,
-                margin: EdgeInsets.symmetric(vertical: 5),
-                onPressed: () {
-                  if ($option.onTap != null) {
-                    var tabResult = $option.onTap(context);
-                    if (tabResult != null) {
-                      Navigator.of(context).pop(tabResult);
-                    }
-                  } else {
-                    Navigator.of(context).pop($option.value);
-                  }
-                },
-                type: ButtonType.primary,
-                size: ButtonSize.small,
-              ),
+  // ----------------------------------------------------------------------
+  // FACTORY METHODS
+  // ----------------------------------------------------------------------
+
+  static List<Widget> createOptions<V>(
+    BuildContext context,
+    List<DialogButton<V>> options, {
+    V? selectedValue,
+    Settings? settings,
+  }) {
+    final cfg = settings ?? Settings();
+
+    return options
+        .where((o) => o.visible != false)
+        .map(($option) {
+          return Container(
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                Expanded(
+                  child: TextButton(
+                    caption: $option.caption,
+                    radius: cfg.dialogs.buttonRadius,
+                    textColor: $option.textColor ??
+                        (selectedValue == $option.value
+                            ? cfg.colors.active
+                            : null),
+                    color: $option.fillColor ??
+                        ($option.value == '*'
+                            ? cfg.colors.asterisk
+                            : ($option.value == ''
+                                ? cfg.colors.danger
+                                : (selectedValue == $option.value
+                                    ? cfg.colors.secudary
+                                    : cfg.colors.primary))),
+                    icon: $option.icon,
+                    swapIcon: $option.swapIcon ?? false,
+                    margin: const EdgeInsets.symmetric(vertical: 5),
+                    onPressed: () {
+                      final result = $option.onTap!(context);
+                      Navigator.of(context).pop(result);
+                    },
+                    type: ButtonType.primary,
+                    size: ButtonSize.small,
+                  ),
+                ),
+              ],
             ),
-          ]));
-    }).toList();
+          );
+        })
+        .toList();
   }
 
-  static List<Widget> createMultiOptions<V>(BuildContext context, List<DialogButton<V>> options, {List<V> selectedValues, Function(DialogButton<V>, bool) onChanged}) {
-    return options.where(($option) => $option.visible != false).map(($option) {
-      return CheckboxListTile(
-        controlAffinity: ListTileControlAffinity.leading,
-        contentPadding: EdgeInsets.only(left: 4, right: 0),
-        visualDensity: VisualDensity.standard,
-        dense: false,
-        title: Text($option.caption),
-        value: selectedValues?.contains($option.value) ?? false,
-        onChanged: (newValue) => onChanged($option, newValue),
-      );
-    }).toList();
+  static List<Widget> createMultiOptions<V>(
+    BuildContext context,
+    List<DialogButton<V>> options, {
+    List<V>? selectedValues,
+    required Function(DialogButton<V>, bool) onChanged,
+  }) {
+    selectedValues ??= [];
+
+    return options
+        .where((o) => o.visible != false)
+        .map(($option) {
+          final checked = selectedValues!.contains($option.value);
+          return CheckboxListTile(
+            controlAffinity: ListTileControlAffinity.leading,
+            contentPadding: const EdgeInsets.only(left: 4, right: 0),
+            visualDensity: VisualDensity.compact,
+            title: Text($option.caption),
+            value: checked,
+            onChanged: (newValue) =>
+                onChanged($option, newValue ?? false),
+          );
+        })
+        .toList();
   }
 
-  static List<Widget> createList(BuildContext context, List<DialogButton> buttons, {Settings settings, double width}) {
-    var $settings = settings ?? Settings();
-    return buttons.where(($button) => $button.visible != false).map(($button) {
-      var button = TextButton(
-        caption: $button.caption,
-        radius: settings.dialogs.buttonRadius,
-        icon: $button.icon,
-        swapIcon: $button.swapIcon,
-        color: $button.fillColor ?? $settings.colors.primary,
-        textColor: $button.textColor ?? Colors.white,
-        width: width,
-        margin: EdgeInsets.only(top: 10, left: buttons.first == $button ? 0 : 4, right: buttons.last == $button ? 0 : 4),
-        onPressed: () async {
-          if ($button.onTap != null) {
-            var tabResult = await $button.onTap(context);
-            if (tabResult != null) {
-              Navigator.of(context).pop(tabResult);
-            }
-          } else {
-            Navigator.of(context).pop($button.value);
-          }
-        },
-        type: ButtonType.primary,
-        size: ButtonSize.small,
-      );
+  static List<Widget> createList(
+    BuildContext context,
+    List<DialogButton> buttons, {
+    Settings? settings,
+    double? width,
+  }) {
+    final cfg = settings ?? Settings();
 
-      var isLast = buttons.last.value == $button.value;
+    return buttons
+        .where((b) => b.visible != false)
+        .map(($button) {
+          final btn = TextButton(
+            caption: $button.caption,
+            radius: cfg.dialogs.buttonRadius,
+            icon: $button.icon,
+            swapIcon: $button.swapIcon ?? false,
+            color: $button.fillColor ?? cfg.colors.primary,
+            textColor: $button.textColor ?? Colors.white,
+            width: width,
+            margin: EdgeInsets.only(
+              top: 10,
+              left: buttons.first == $button ? 0 : 4,
+              right: buttons.last == $button ? 0 : 4,
+            ),
+            onPressed: () async {
+              final result = await $button.onTap!(context);
+              if (result != null) Navigator.of(context).pop(result);
+            },
+            type: ButtonType.primary,
+            size: ButtonSize.small,
+          );
 
-      if (width == null) {
-        return Expanded(
-          child: Container(
-            child: button,
+          final isLast = buttons.last.value == $button.value;
+
+          return Padding(
             padding: EdgeInsets.only(right: isLast ? 0 : 10),
-          ),
-        );
-      } else {
-        return Container(
-          child: button,
-          padding: EdgeInsets.only(right: isLast ? 0 : 10),
-        );
-      }
-    }).toList();
+            child: btn,
+          );
+        })
+        .toList();
   }
 }
 
 class _TextButtonState extends State<TextButton> {
   @override
   Widget build(BuildContext context) {
-    if (widget.visible == false) {
-      return Container();
+    if (!widget.visible) return const SizedBox.shrink();
+
+    // Define paddings & font size based on button size
+    EdgeInsets padding = widget.padding ?? const EdgeInsets.all(12);
+    double fontSize = widget.fontSize ?? _normalSize;
+
+    switch (widget.size) {
+      case ButtonSize.chip:
+        padding = const EdgeInsets.symmetric(horizontal: 8, vertical: 4);
+        fontSize = widget.fontSize ?? _chipSize;
+        break;
+      case ButtonSize.small:
+        padding = const EdgeInsets.all(8);
+        fontSize = widget.fontSize ?? _smallSize;
+        break;
+      case ButtonSize.medium:
+        padding = const EdgeInsets.all(10);
+        fontSize = widget.fontSize ?? _mediumSize;
+        break;
+      case ButtonSize.normal:
+        break;
     }
 
-    var $padding = EdgeInsets.all(12);
-    var fontSize = widget.fontSize ?? _NORMAL_SIZE;
-    var $borderRadius = widget.borderRadius ?? BorderRadius.circular(widget.radius ?? 30.0);
+    final borderRadius =
+        widget.borderRadius ?? BorderRadius.circular(widget.radius ?? 30.0);
 
-    if (widget.size == ButtonSize.chip) {
-      $padding = EdgeInsets.symmetric(horizontal: 8, vertical: 4);
-      fontSize = widget.fontSize ?? _CHIP_SIZE;
+    // Define colors and text styles
+    Color fillColor = widget.color ?? _baseColor;
+    TextStyle textStyle = widget.textStyle ??
+        TextStyle(
+          fontSize: fontSize,
+          color: widget.textColor ?? Colors.white,
+          fontWeight: FontWeight.normal,
+        );
+    final subtitleStyle = TextStyle(
+      fontSize: fontSize - 5,
+      color: (widget.textColor ?? Colors.white).withOpacity(0.9),
+      fontWeight: FontWeight.w300,
+    );
+
+    ShapeBorder? shape;
+
+    switch (widget.type) {
+      case ButtonType.secondary:
+        fillColor = widget.color ?? Colors.white.withOpacity(0.5);
+        textStyle = textStyle.copyWith(color: widget.textColor ?? Colors.black);
+        break;
+      case ButtonType.link:
+        fillColor = Colors.transparent;
+        textStyle = textStyle.copyWith(color: widget.textColor ?? _linkColor);
+        padding = const EdgeInsets.all(5);
+        break;
+      case ButtonType.frame:
+        fillColor = Colors.transparent;
+        textStyle = textStyle.copyWith(color: widget.textColor ?? Colors.black);
+        shape = RoundedRectangleBorder(
+          borderRadius: borderRadius,
+          side: BorderSide(
+              color: widget.textColor ?? Colors.black, width: 1.5),
+        );
+        break;
+      case ButtonType.primary:
+        break;
     }
 
-    if (widget.size == ButtonSize.small) {
-      $padding = EdgeInsets.all(8);
-      fontSize = widget.fontSize ?? _SMALL_SIZE;
-    }
-
-    if (widget.size == ButtonSize.medium) {
-      $padding = EdgeInsets.all(10);
-      fontSize = widget.fontSize ?? _MEDIUM_SIZE;
-    }
-
-    var textStyle = TextStyle(fontSize: fontSize, color: widget.textColor ?? Colors.white, fontWeight: FontWeight.normal);
-    var subtitleStyle = TextStyle(fontSize: fontSize - 5, color: (widget.textColor ?? Colors.white).withOpacity(0.9), fontWeight: FontWeight.w300);
-    var color = widget.color ?? _BASE_COLOR;
-    var $shape;
-
-    if (widget.type == ButtonType.secundary) {
-      textStyle = TextStyle(fontSize: fontSize, color: widget.textColor ?? Colors.black, fontWeight: FontWeight.normal);
-      color = widget.color ?? Colors.white.withOpacity(0.5);
-    } else if (widget.type == ButtonType.link) {
-      textStyle = TextStyle(fontSize: fontSize, color: widget.textColor ?? _LINK_COLOR, fontWeight: FontWeight.normal);
-      color = widget.color ?? Colors.transparent;
-      $padding = EdgeInsets.all(5);
-    } else if (widget.type == ButtonType.frame) {
-      textStyle = TextStyle(fontSize: fontSize, color: widget.textColor ?? Colors.black, fontWeight: FontWeight.normal);
-      color = widget.color ?? Colors.transparent;
-      $shape = RoundedRectangleBorder(
-        borderRadius: $borderRadius,
-        side: BorderSide(color: widget.textColor ?? Colors.black, width: 1.5),
-      );
-    }
-
-    if (widget.textStyle != null) {
-      textStyle = widget.textStyle;
-    }
-
-    final $buttonContent = Padding(
-      padding: widget.padding ?? $padding ?? EdgeInsets.only(left: 8, right: 8),
+    // ---------------------------
+    // BUTTON CONTENT
+    // ---------------------------
+    final buttonContent = Padding(
+      padding: padding,
       child: Column(
-        children: <Widget>[
-          widget.icon != null
-              ? Row(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: widget.swapIcon == true
-                      ? <Widget>[
-                          Text(
-                            widget.caption,
-                            style: textStyle,
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.only(left: 6.0),
-                            child: Icon(
-                              widget.icon,
-                              color: widget.iconColor != null ? widget.iconColor : Colors.white,
-                              size: widget.iconSize != null ? widget.iconSize : 20,
-                            ),
-                          ),
-                        ]
-                      : <Widget>[
-                          Padding(
-                            padding: const EdgeInsets.only(right: 6.0),
-                            child: Icon(
-                              widget.icon,
-                              color: widget.iconColor != null ? widget.iconColor : Colors.white,
-                              size: widget.iconSize != null ? widget.iconSize : 20,
-                            ),
-                          ),
-                          Flexible(
-                              child: Text(
-                            widget.caption,
-                            style: textStyle,
-                          )),
-                        ],
-                )
-              : Text(
-                  widget.caption,
-                  textAlign: TextAlign.center,
-                  style: textStyle,
-                ),
-          widget.subtitle != null
-              ? Container(
-                  margin: EdgeInsets.only(top: 2),
-                  child: Text(
-                    widget.subtitleUppercase == false ? widget.subtitle : widget.subtitle.toUpperCase(),
-                    textAlign: TextAlign.center,
-                    style: subtitleStyle,
-                  ),
-                )
-              : Container()
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: widget.swapIcon
+                ? [
+                    Text(widget.caption ?? '', style: textStyle),
+                    if (widget.icon != null)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 6.0),
+                        child: Icon(
+                          widget.icon,
+                          color: widget.iconColor ?? Colors.white,
+                          size: widget.iconSize ?? 20,
+                        ),
+                      ),
+                  ]
+                : [
+                    if (widget.icon != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 6.0),
+                        child: Icon(
+                          widget.icon,
+                          color: widget.iconColor ?? Colors.white,
+                          size: widget.iconSize ?? 20,
+                        ),
+                      ),
+                    Flexible(
+                      child: Text(widget.caption ?? '', style: textStyle),
+                    ),
+                  ],
+          ),
+          if (widget.subtitle != null && widget.subtitle!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                widget.subtitleUppercase
+                    ? widget.subtitle!.toUpperCase()
+                    : widget.subtitle!,
+                textAlign: TextAlign.center,
+                style: subtitleStyle,
+              ),
+            ),
         ],
       ),
     );
 
-    Widget button;
-
-    if (widget.enabled == false) {
-      button = Container(
-        decoration: BoxDecoration(
-          color: color,
-          boxShadow: widget.type == ButtonType.frame ? null : widget.shadow,
-          borderRadius: $borderRadius,
-        ),
-        child: $buttonContent,
-      );
-    } else {
-      button = Material(
-        key: GlobalKey(),
-        color: color,
-        shape: $shape,
-        borderRadius: $shape == null ? $borderRadius : null,
-        child: InkWell(
-          onTap: widget.enabled != false ? widget.onPressed : () {},
-          borderRadius: $borderRadius,
-          child: $buttonContent,
-        ),
-      );
-    }
+    // ---------------------------
+    // BUTTON WRAPPER
+    // ---------------------------
+    final button = widget.enabled
+        ? Material(
+            color: fillColor,
+            shape: shape,
+            borderRadius: shape == null ? borderRadius : null,
+            child: InkWell(
+              onTap: widget.onPressed,
+              borderRadius: borderRadius,
+              child: buttonContent,
+            ),
+          )
+        : Opacity(
+            opacity: 0.3,
+            child: Container(
+              decoration: BoxDecoration(
+                color: fillColor,
+                boxShadow:
+                    widget.type == ButtonType.frame ? null : widget.shadow,
+                borderRadius: borderRadius,
+              ),
+              child: buttonContent,
+            ),
+          );
 
     return Container(
       margin: widget.margin,
       width: widget.width,
       decoration: BoxDecoration(
         boxShadow: widget.type == ButtonType.frame ? null : widget.shadow,
-        borderRadius: $borderRadius,
+        borderRadius: borderRadius,
       ),
-      child: widget.enabled == false
-          ? Opacity(
-              child: button,
-              opacity: 0.3,
-            )
-          : button,
+      child: button,
     );
   }
 }

@@ -1,5 +1,4 @@
 import 'dart:typed_data';
-import 'package:anxeb_flutter/middleware/settings.dart';
 import 'package:anxeb_flutter/anxeb.dart' as Anxeb;
 import 'package:anxeb_flutter/misc/icons.dart';
 import 'package:flutter/material.dart';
@@ -8,24 +7,24 @@ import '../../middleware/application.dart';
 
 class ThumbnailButton extends StatefulWidget {
   final Anxeb.Scope scope;
-  final GestureTapCallback onTap;
-  final GestureTapCallback onDeleteTap;
-  final Uint8List bytes;
-  final String previewUrl;
-  final String title;
-  final String subtitle;
-  final String extension;
-  final DateTime modifiedDate;
-  final BorderRadius borderRadius;
-  final double width;
-  final double height;
-  final EdgeInsets margin;
-  final EdgeInsets padding;
-  final String toolTipTag;
+  final VoidCallback? onTap;
+  final VoidCallback? onDeleteTap;
+  final Uint8List? bytes;
+  final String? previewUrl;
+  final String? title;
+  final String? subtitle;
+  final String? extension;
+  final DateTime? modifiedDate;
+  final BorderRadius? borderRadius;
+  final double? width;
+  final double? height;
+  final EdgeInsets? margin;
+  final EdgeInsets? padding;
+  final String? toolTipTag;
 
   const ThumbnailButton({
-    Key key,
-    @required this.scope,
+    super.key,
+    required this.scope,
     this.onTap,
     this.onDeleteTap,
     this.bytes,
@@ -40,60 +39,55 @@ class ThumbnailButton extends StatefulWidget {
     this.margin,
     this.padding,
     this.toolTipTag,
-  }) : super(key: key);
+  });
 
   @override
-  createState() => _ThumbnailButtonState();
+  State<ThumbnailButton> createState() => _ThumbnailButtonState();
 }
 
 class _ThumbnailButtonState extends State<ThumbnailButton> {
-  ImageProvider _netImage;
-  bool _imageLoaded;
+  ImageProvider? _netImage;
+  bool? _imageLoaded;
   final GlobalIcons _icons = GlobalIcons();
 
   @override
   void initState() {
-    _setupImage();
     super.initState();
+    _setupImage();
   }
 
   @override
   Widget build(BuildContext context) {
-    _setupImage();
-    var borderRadius = widget.borderRadius ?? const BorderRadius.all(Radius.circular(12.0));
+    final meta = _icons.getFileMeta(widget.extension ?? '');
+    final appColors = widget.scope.application.settings.colors;
+    final borderRadius =
+        widget.borderRadius ?? const BorderRadius.all(Radius.circular(12.0));
 
-    const $icon = Icons.image;
-
-    Widget defailtIcon;
-
-    if (meta?.image == false) {
-      defailtIcon = Icon(
+    // Ícono o imagen por defecto
+    Widget defaultIcon;
+    if (meta.image == false) {
+      defaultIcon = Icon(
         meta.icon,
-        color: meta.color ?? widget.scope.application.settings.colors.primary,
+        color: meta.color,
         size: 28,
       );
-    } else if (_imageLoaded == null && _netImage != null) {
-      defailtIcon = SizedBox(
+    } else if (_imageLoaded == null) {
+      defaultIcon = const SizedBox(
         width: 26,
         height: 26,
-        child: CircularProgressIndicator(
-          strokeWidth: 3,
-          valueColor: AlwaysStoppedAnimation<Color>(widget.scope.application.settings.colors.primary),
-        ),
+        child: CircularProgressIndicator(strokeWidth: 3),
       );
     } else if (_netImage == null) {
-      defailtIcon = Icon(
-        $icon,
-        color: widget.scope.application.settings.colors.primary,
-        size: 28,
-      );
+      defaultIcon = Icon(Icons.image, color: appColors.primary, size: 28);
+    } else {
+      defaultIcon = const SizedBox.shrink();
     }
 
-    var stack = Stack(
-      children: <Widget>[
+    final stack = Stack(
+      children: [
+        // Imagen de fondo
         AnimatedOpacity(
           opacity: _imageLoaded == true ? 1 : 0,
-          curve: Curves.ease,
           duration: const Duration(milliseconds: 500),
           child: Container(
             padding: const EdgeInsets.all(12),
@@ -102,124 +96,133 @@ class _ThumbnailButtonState extends State<ThumbnailButton> {
               image: _netImage != null
                   ? DecorationImage(
                       fit: BoxFit.cover,
+                      image: _netImage!,
                       alignment: Alignment.center,
-                      image: _netImage,
                     )
                   : null,
             ),
           ),
         ),
+
+        // Gradiente inferior para overlay
         Container(
-          decoration: _netImage == null
-              ? BoxDecoration(
-                  color: meta?.color?.withOpacity(0.1) ?? widget.scope.application.settings.colors.primary.withOpacity(0.1),
-                  borderRadius: borderRadius,
-                )
-              : BoxDecoration(
-                  borderRadius: borderRadius,
-                  backgroundBlendMode: BlendMode.darken,
-                  gradient: LinearGradient(
-                    begin: FractionalOffset.topCenter,
-                    end: FractionalOffset.bottomCenter,
-                    stops: const [0, 0.5, 1],
-                    colors: [
-                      const Color(0xff000000).withOpacity(0.0),
-                      const Color(0xff000000).withOpacity(0.0),
-                      const Color(0xff000000).withOpacity(0.8),
-                    ],
-                  ),
-                ),
-          child: defailtIcon != null
-              ? Column(
-                  mainAxisSize: MainAxisSize.max,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: EdgeInsets.only(left: 8, top: 10),
-                          child: defailtIcon,
-                        ),
-                      ],
-                    )
-                  ],
-                )
-              : Container(),
+          decoration: BoxDecoration(
+            borderRadius: borderRadius,
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              stops: const [0, 0.5, 1],
+              colors: [
+                Colors.black.withOpacity(0.0),
+                Colors.black.withOpacity(0.0),
+                Colors.black.withOpacity(0.8),
+              ],
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.only(left: 8, top: 10),
+            child: defaultIcon,
+          ),
         ),
+
+        // Capa táctil
         Material(
-          key: GlobalKey(),
-          color: settings.colors.navigation.withOpacity(0.1),
+          color: appColors.navigation.withOpacity(0.1),
           borderRadius: borderRadius,
           child: InkWell(
             onTap: widget.onTap,
             borderRadius: borderRadius,
           ),
         ),
-        Container(
+
+        // Contenido textual + tooltip + eliminar
+        Padding(
           padding: const EdgeInsets.only(bottom: 6, left: 10, right: 10, top: 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
+            children: [
               Expanded(
                 child: Column(
                   children: [
-                    Expanded(child: Container()),
+                    const Spacer(),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         Expanded(
                           child: JustTheTooltip(
                             content: Container(
-                              padding: const EdgeInsets.only(left: 10, right: 10, top: 6, bottom: 8),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(widget.title, style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-                                      widget.toolTipTag == null
-                                          ? Container()
-                                          : Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(Anxeb.CommunityMaterialIcons.tag, size: 9, color: Colors.white),
-                                                SizedBox(width: 4),
-                                                Text(
-                                                  widget.toolTipTag,
-                                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w400, color: Colors.white),
-                                                ),
-                                              ],
-                                            ),
-                                      widget.subtitle == null
-                                          ? Container()
-                                          : Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(Anxeb.CommunityMaterialIcons.database, size: 9, color: Colors.white),
-                                                SizedBox(width: 4),
-                                                Text(
-                                                  widget.subtitle,
-                                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w400, color: Colors.white),
-                                                ),
-                                              ],
-                                            ),
-                                      if (widget.modifiedDate != null)
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(Icons.access_time_filled_outlined, size: 9, color: Colors.white),
-                                            SizedBox(width: 4),
-                                            Text(
-                                              Anxeb.Utils.convert.fromDateToHumanString(widget.modifiedDate, complete: true),
-                                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w400, color: Colors.white),
-                                            ),
-                                          ],
-                                        ),
-                                    ],
+                                  Text(
+                                    widget.title ?? '',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
+                                  if (widget.toolTipTag != null)
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Anxeb.CommunityMaterialIcons.tag,
+                                          size: 9,
+                                          color: Colors.white,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          widget.toolTipTag!,
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w400,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  if (widget.subtitle != null)
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Anxeb.CommunityMaterialIcons.database,
+                                          size: 9,
+                                          color: Colors.white,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          widget.subtitle!,
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w400,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  if (widget.modifiedDate != null)
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.access_time_filled_outlined,
+                                          size: 9,
+                                          color: Colors.white,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          Anxeb.Utils.convert
+                                              .fromDateToHumanString(
+                                                  widget.modifiedDate!,
+                                                  complete: true),
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w400,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                 ],
                               ),
                             ),
@@ -227,11 +230,12 @@ class _ThumbnailButtonState extends State<ThumbnailButton> {
                             elevation: 4.0,
                             tailBaseWidth: 12,
                             tailLength: 8,
-                            backgroundColor: widget.scope.application.settings.colors.primary,
+                            backgroundColor: appColors.primary,
                             borderRadius: BorderRadius.circular(6),
                             offset: 12,
                             hoverShowDuration: Duration.zero,
-                            fadeOutDuration: Duration(milliseconds: 500),
+                            fadeOutDuration:
+                                const Duration(milliseconds: 500),
                             enableFeedback: false,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,38 +246,40 @@ class _ThumbnailButtonState extends State<ThumbnailButton> {
                                   style: TextStyle(
                                     fontSize: 9,
                                     fontWeight: FontWeight.w600,
-                                    color: meta?.image == true && _imageLoaded == true ? Colors.white : widget.scope.application.settings.colors.primary,
+                                    color: meta.image == true &&
+                                            _imageLoaded == true
+                                        ? Colors.white
+                                        : appColors.primary,
                                   ),
                                 ),
-                                widget.subtitle == null
-                                    ? Container()
-                                    : Text(
-                                        widget.subtitle,
-                                        style: TextStyle(
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.w400,
-                                          height: 1.15,
-                                          color: meta?.image == true && _imageLoaded == true ? Colors.white : widget.scope.application.settings.colors.primary,
-                                        ),
-                                      ),
+                                if (widget.subtitle != null)
+                                  Text(
+                                    widget.subtitle!,
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w400,
+                                      height: 1.15,
+                                      color: meta.image == true &&
+                                              _imageLoaded == true
+                                          ? Colors.white
+                                          : appColors.primary,
+                                    ),
+                                  ),
                               ],
                             ),
                           ),
                         ),
-                        widget.onDeleteTap == null
-                            ? Container()
-                            : Anxeb.IconButton(
-                                icon: Icons.delete,
-                                iconSize: 18,
-                                innerColor: application.settings.colors.danger,
-                                fillColor: Colors.transparent,
-                                borderWidth: 0,
-                                borderPadding: 0,
-                                size: 20,
-                                action: () async {
-                                  widget.onDeleteTap();
-                                },
-                              ),
+                        if (widget.onDeleteTap != null)
+                          Anxeb.IconButton(
+                            icon: Icons.delete,
+                            iconSize: 18,
+                            innerColor: appColors.danger,
+                            fillColor: Colors.transparent,
+                            borderWidth: 0,
+                            borderPadding: 0,
+                            size: 20,
+                            action: () async => widget.onDeleteTap!(),
+                          ),
                       ],
                     ),
                   ],
@@ -294,45 +300,36 @@ class _ThumbnailButtonState extends State<ThumbnailButton> {
     );
   }
 
-  void _setupImage() async {
-    if (widget.bytes != null) {
-      _netImage = meta.image == true ? Image.memory(widget.bytes).image : null;
-      _imageLoaded = _netImage != null;
-      return;
-    }
+  void _setupImage() {
+    final meta = _icons.getFileMeta(widget.extension ?? '');
 
-    if (widget.previewUrl != null && meta?.image == true) {
-      _netImage = Anxeb.SecuredImage(
-        application.api.getUri(widget.previewUrl),
-        headers: application?.api?.token != null ? {'Authorization': 'Bearer ${application.api.token}'} : null,
-        scale: 1,
-      );
+    if (meta.image == true) {
+      if (widget.bytes != null) {
+        _netImage = Image.memory(widget.bytes!).image;
+        _imageLoaded = true;
+      } else if (widget.previewUrl != null) {
+        _netImage = Anxeb.SecuredImage(
+          application.api.getUri(widget.previewUrl!),
+          headers: application.api.token != null
+              ? <String, String>{'Authorization': 'Bearer ${application.api.token}'}
+              : <String, String>{},
+          scale: 1,
+        );
+        _imageLoaded = null;
 
-      _imageLoaded = null;
-
-      _netImage.resolve(const ImageConfiguration()).addListener(
-            ImageStreamListener((ImageInfo image, bool synchronousCall) {
-              if (mounted) {
-                setState(() {
-                  _imageLoaded = true;
-                });
-              }
-            }, onError: (exception, StackTrace stackTrace) {
-              _imageLoaded = false;
-              if (mounted) {
-                setState(() {});
-              }
-            }),
-          );
+        _netImage!.resolve(const ImageConfiguration()).addListener(
+              ImageStreamListener((_, __) {
+                if (mounted) setState(() => _imageLoaded = true);
+              }, onError: (_, __) {
+                if (mounted) setState(() => _imageLoaded = false);
+              }),
+            );
+      }
     } else {
       _netImage = null;
       _imageLoaded = null;
     }
   }
-
-  IconFileMeta get meta => _icons.getFileMeta(widget.extension);
-
-  Settings get settings => widget.scope.application.settings;
 
   Application get application => widget.scope.application;
 }

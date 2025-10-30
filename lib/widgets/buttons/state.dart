@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 
 class StateButton extends StatelessWidget {
-  final GestureTapCallback onTap;
-  final IconData icon;
-  final EdgeInsets iconPadding;
-  final EdgeInsets padding;
-  final double size;
-  final Color color;
-  final String tooltip;
+  final GestureTapCallback? onTap;
+  final IconData? icon;
+  final EdgeInsets? iconPadding;
+  final EdgeInsets? padding;
+  final double? size;
+  final Color? color;
+  final String? tooltip;
   final bool active;
   final bool visible;
 
-  StateButton({
-    Key key,
+  const StateButton({
+    super.key,
     this.onTap,
     this.icon,
     this.iconPadding,
@@ -20,65 +20,49 @@ class StateButton extends StatelessWidget {
     this.size,
     this.color,
     this.tooltip,
-    this.active,
-    this.visible,
-  }) : super(key: key);
+    this.active = false,
+    this.visible = true,
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (visible == false) {
-      return Container();
-    }
-    var button;
-    var $color = color ?? (active == false ? Colors.white54 : Colors.yellow);
-    var $size = size ?? 34;
+    if (!visible) return const SizedBox.shrink();
 
-    if (onTap != null) {
-      button = Padding(
-        padding: padding ?? EdgeInsets.only(right: 4),
-        child: ClipOval(
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              splashColor: Colors.white24,
-              onTap: onTap,
-              child: Container(
-                padding: iconPadding ?? EdgeInsets.all(4),
-                child: Icon(
-                  icon,
-                  size: $size,
-                  color: $color,
-                ),
+    final Color effectiveColor =
+        color ?? (active ? Colors.yellow : Colors.white54);
+    final double effectiveSize = size ?? 34;
+
+    final button = Padding(
+      padding: padding ?? const EdgeInsets.only(right: 4),
+      child: ClipOval(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            splashColor: Colors.white24,
+            onTap: onTap,
+            child: Padding(
+              padding: iconPadding ?? const EdgeInsets.all(4),
+              child: Icon(
+                icon ?? Icons.circle,
+                size: effectiveSize,
+                color: effectiveColor,
               ),
             ),
           ),
         ),
-      );
-    } else {
-      button = Padding(
-        padding: padding ?? EdgeInsets.only(right: 14),
-        child: ClipOval(
-          child: Container(
-            padding: iconPadding ?? EdgeInsets.all(4),
-            child: Icon(
-              icon,
-              size: $size,
-              color: $color,
-            ),
-          ),
-        ),
+      ),
+    );
+
+    if (tooltip != null && tooltip!.isNotEmpty) {
+      return Tooltip(
+        message: tooltip!,
+        preferBelow: false,
+        waitDuration: const Duration(milliseconds: 400),
+        showDuration: const Duration(seconds: 3),
+        child: button,
       );
     }
 
-    if (tooltip != null) {
-      return Tooltip(
-        message: tooltip,
-        preferBelow: false,
-        showDuration: Duration(seconds: 3),
-        child: button,
-      );
-    } else {
-      return button;
-    }
+    return button;
   }
 }

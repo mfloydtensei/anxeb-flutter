@@ -5,22 +5,23 @@ import '../blocks/menu.dart';
 
 class MenuButton extends StatelessWidget {
   final PageScope scope;
-  final String caption;
-  final IconData icon;
+  final String? caption;
+  final IconData? icon;
   final bool visible;
   final bool enabled;
-  final Color color;
-  final Color fill;
-  final GestureTapCallback onTap;
-  final EdgeInsets margin;
-  final ContextMenu contextMenu;
+  final Color? color;
+  final Color? fill;
+  final GestureTapCallback? onTap;
+  final EdgeInsets? margin;
+  final ContextMenu? contextMenu;
 
-  MenuButton({
-    @required this.scope,
+  const MenuButton({
+    super.key,
+    required this.scope,
     this.caption,
     this.icon,
-    this.visible,
-    this.enabled,
+    this.visible = true,
+    this.enabled = true,
     this.color,
     this.fill,
     this.onTap,
@@ -30,68 +31,65 @@ class MenuButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (visible == false) {
-      return Container();
-    }
+    if (!visible) return const SizedBox.shrink();
 
-    Widget button = Container(
-      padding: EdgeInsets.only(left: icon != null ? 6 : 12, right: 12, top: 6, bottom: 6),
+    final appColors = scope.application.settings.colors;
+    final radius = scope.application.settings.dialogs.buttonRadius;
+
+    Widget button = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Row(
         children: [
-          icon != null
-              ? Container(
-                  margin: EdgeInsets.only(right: 4),
-                  child: Icon(icon, color: color ?? scope.application.settings.colors.primary),
-                )
-              : Container(),
+          if (icon != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Icon(icon, color: color ?? appColors.primary),
+            ),
           Text(
-            caption,
+            caption ?? '',
             style: TextStyle(
               fontSize: 15,
               letterSpacing: 0.15,
               fontWeight: FontWeight.w300,
-              color: color ?? scope.application.settings.colors.primary,
+              color: color ?? appColors.primary,
             ),
           ),
         ],
       ),
     );
 
-    if (enabled == false) {
-      button = Opacity(
-        opacity: 0.5,
-        child: button,
-      );
-    }
+    if (!enabled) button = Opacity(opacity: 0.5, child: button);
 
-    if (contextMenu?.items?.isNotEmpty == true && enabled != false) {
+    // Context menu version
+    if (contextMenu?.items.isNotEmpty == true && enabled) {
       return Container(
         margin: margin,
         child: ClipRRect(
-          borderRadius: BorderRadius.all(Radius.circular(scope.application.settings.dialogs.buttonRadius)),
+          borderRadius: BorderRadius.circular(radius),
           child: Material(
             color: fill ?? Colors.transparent,
-            borderRadius: BorderRadius.all(Radius.circular(scope.application.settings.dialogs.buttonRadius)),
+            borderRadius: BorderRadius.circular(radius),
             child: ContextMenuBlock(
               scope: scope,
-              offset: contextMenu.offset,
+              offset: contextMenu?.offset ?? Offset.zero,
               child: button,
-              items: contextMenu.items,
+              items: contextMenu!.items,
             ),
           ),
         ),
       );
     }
 
+    // Default clickable version
     return Container(
       margin: margin,
       child: Material(
         color: fill ?? Colors.transparent,
-        borderRadius: BorderRadius.all(Radius.circular(scope.application.settings.dialogs.buttonRadius)),
+        borderRadius: BorderRadius.circular(radius),
         child: InkWell(
-          onTap: enabled == false ? null : onTap,
-          enableFeedback: enabled != false,
-          borderRadius: BorderRadius.all(Radius.circular(scope.application.settings.dialogs.buttonRadius)),
+          onTap: enabled ? onTap : null,
+          enableFeedback: enabled,
+          borderRadius: BorderRadius.circular(radius),
           child: button,
         ),
       ),
@@ -99,26 +97,31 @@ class MenuButton extends StatelessWidget {
   }
 }
 
+// -----------------------------------------------------------
+// SEARCH BUTTON WITH EXPANSION ANIMATION
+// -----------------------------------------------------------
+
 class MenuSearchButton extends StatefulWidget {
-  final double width;
-  final Color textColor;
-  final double buttonRadius;
-  final EdgeInsets margin;
-  final String hintText;
-  final Color hintTextColor;
-  final TextStyle inputTextStyle;
+  final double? width;
+  final Color? textColor;
+  final double? buttonRadius;
+  final EdgeInsets? margin;
+  final String? hintText;
+  final Color? hintTextColor;
+  final TextStyle? inputTextStyle;
   final TextInputType textInputType;
-  final List<TextInputFormatter> inputFormatters;
-  final Function onSaved;
-  final Function onChanged;
-  final Function onFieldSubmitted;
-  final Function onEditingComplete;
-  final Function onExpansionComplete;
-  final Function onCollapseComplete;
-  final Function(bool isOpen) onPressButton;
+  final List<TextInputFormatter>? inputFormatters;
+  final ValueChanged<String>? onSaved;
+  final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onFieldSubmitted;
+  final VoidCallback? onEditingComplete;
+  final VoidCallback? onExpansionComplete;
+  final VoidCallback? onCollapseComplete;
+  final ValueChanged<bool>? onPressButton;
   final int speed;
 
   const MenuSearchButton({
+    super.key,
     this.width,
     this.textColor,
     this.buttonRadius,
@@ -135,91 +138,153 @@ class MenuSearchButton extends StatefulWidget {
     this.onExpansionComplete,
     this.onCollapseComplete,
     this.onPressButton,
-    this.speed,
-    Key key,
-  }) : super(key: key);
+    this.speed = 200,
+  });
 
   @override
-  _MenuSearchButtonState createState() => _MenuSearchButtonState();
+  State<MenuSearchButton> createState() => _MenuSearchButtonState();
 }
 
-class _MenuSearchButtonState extends State<MenuSearchButton> with SingleTickerProviderStateMixin {
-  TextEditingController _textEditingController;
-  AnimationController _animationController;
-  FocusNode _focusNode;
-  bool _animating = false;
-  bool _active = false;
+class _MenuSearchButtonState extends State<MenuSearchButton>
+    with SingleTickerProviderStateMixin {
+  late final TextEditingController _controller;
+  late final AnimationController _animationController;
+  late final FocusNode _focusNode;
 
-  final DecorationTween decorationTween = DecorationTween(
-    begin: BoxDecoration(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(60),
-    ),
-    end: BoxDecoration(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(60),
-    ),
-  );
+  bool _active = false;
 
   @override
   void initState() {
     super.initState();
-    _focusNode = FocusNode();
-    _focusNode.addListener(() {
-      if (mounted == true && _active == true) {
-        if (!_focusNode.hasFocus) {
-          setState(() {
-            _toogle(state: false);
-          });
-        }
-      }
-    });
 
-    _textEditingController = TextEditingController();
+    _focusNode = FocusNode();
+    _controller = TextEditingController();
     _animationController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: speed),
+      duration: Duration(milliseconds: widget.speed),
     );
+
+    _focusNode.addListener(() {
+      if (mounted && _active && !_focusNode.hasFocus) {
+        _toggle(state: false);
+      }
+    });
   }
 
   @override
   void dispose() {
     _animationController.dispose();
-    _textEditingController.dispose();
+    _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
+  }
+
+  void _toggle({required bool state}) {
+    if (_active == state) return;
+
+    setState(() {
+      _active = state;
+    });
+
+    widget.onPressButton?.call(_active);
+
+    if (_active) {
+      FocusScope.of(context).requestFocus(_focusNode);
+      _animationController.forward().then((_) {
+        if (mounted) {
+          widget.onExpansionComplete?.call();
+        }
+      });
+    } else {
+      _unfocusKeyboard();
+      _animationController.reverse().then((_) {
+        if (mounted) {
+          widget.onCollapseComplete?.call();
+        }
+      });
+    }
+  }
+
+  void _unfocusKeyboard() {
+    final currentFocus = FocusScope.of(context);
+    if (!currentFocus.hasPrimaryFocus && currentFocus.hasFocus) {
+      currentFocus.unfocus();
+    }
+  }
+
+  Widget _textFormField() {
+    return TextFormField(
+      controller: _controller,
+      inputFormatters: widget.inputFormatters,
+      focusNode: _focusNode,
+      textInputAction: TextInputAction.search,
+      keyboardType: widget.textInputType,
+      onFieldSubmitted: (value) {
+        widget.onFieldSubmitted?.call(value);
+      },
+      onEditingComplete: () {
+        _unfocusKeyboard();
+        setState(() => _active = false);
+        widget.onEditingComplete?.call();
+      },
+      onChanged: (value) => widget.onChanged?.call(value),
+      onSaved: (value) {
+        if (value != null) widget.onSaved?.call(value);
+      },
+      style: widget.inputTextStyle ??
+          const TextStyle(
+              color: Colors.black, fontSize: 14, fontWeight: FontWeight.w300),
+      cursorColor: Colors.black,
+      decoration: InputDecoration(
+        isDense: true,
+        prefixIcon: const Icon(Icons.search, size: 20),
+        hintText: widget.hintText,
+        hintStyle: TextStyle(
+          fontSize: 15,
+          letterSpacing: 0.15,
+          fontWeight: FontWeight.w300,
+          color: widget.hintTextColor ?? Colors.grey,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20),
+          borderSide: BorderSide.none,
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final radius = widget.buttonRadius ?? 20;
+
     return Container(
       margin: widget.margin,
       child: Row(
         children: [
           AnimatedOpacity(
             opacity: _active ? 0 : 1,
-            duration: Duration(milliseconds: speed),
+            duration: Duration(milliseconds: widget.speed),
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: _active ? null : () => _toogle(state: true),
-                enableFeedback: false,
-                focusColor: Colors.transparent,
-                borderRadius: BorderRadius.all(Radius.circular(widget.buttonRadius)),
-                child: Container(
-                  padding: EdgeInsets.only(left: 6, right: 12, top: 6, bottom: 6),
+                onTap: _active ? null : () => _toggle(state: true),
+                borderRadius: BorderRadius.circular(radius),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   child: Row(
                     children: [
-                      Container(
-                        margin: EdgeInsets.only(right: _active ? 0 : 4),
-                        child: Icon(Icons.search, color: widget.textColor),
-                      ),
+                      Icon(Icons.search, color: widget.textColor ?? Colors.grey),
+                      const SizedBox(width: 4),
                       Text(
                         'Buscar',
                         style: TextStyle(
                           fontSize: 15,
-                          letterSpacing: 0.15,
                           fontWeight: FontWeight.w300,
-                          color: widget.textColor,
+                          color: widget.textColor ?? Colors.grey,
                         ),
                       ),
                     ],
@@ -228,185 +293,45 @@ class _MenuSearchButtonState extends State<MenuSearchButton> with SingleTickerPr
               ),
             ),
           ),
-          Material(
-            color: Colors.transparent,
-            child: _searchBarWidget(),
+          AnimatedContainer(
+            duration: Duration(milliseconds: widget.speed),
+            height: 36,
+            width: _active ? (widget.width ?? 300) : 0,
+            curve: Curves.easeOut,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(radius),
+            ),
+            alignment: Alignment.centerLeft,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: AnimatedOpacity(
+                    opacity: _active ? 1 : 0,
+                    duration: Duration(milliseconds: widget.speed),
+                    child: _textFormField(),
+                  ),
+                ),
+                Positioned(
+                  right: 6,
+                  child: AnimatedOpacity(
+                    opacity: _active ? 1 : 0,
+                    duration: Duration(milliseconds: widget.speed),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(radius),
+                      onTap: () => _toggle(state: false),
+                      child: const Padding(
+                        padding: EdgeInsets.all(6),
+                        child: Icon(Icons.close, size: 18, color: Colors.black),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
-
-  Widget _searchBarWidget() {
-    return Container(
-      height: _active ? 36 : 10,
-      alignment: Alignment.centerLeft,
-      child: Container(
-        decoration: BoxDecoration(
-          color: _animating ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(30),
-        ),
-        child: AnimatedContainer(
-          duration: Duration(milliseconds: speed),
-          height: 36,
-          width: (!_active) ? 0 : (widget.width ?? 300),
-          curve: Curves.easeOut,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(30),
-          ),
-          child: Stack(
-            children: [
-              AnimatedPositioned(
-                duration: Duration(milliseconds: speed),
-                right: 6,
-                curve: Curves.easeOut,
-                child: AnimatedOpacity(
-                  opacity: _active ? 1 : 0,
-                  duration: Duration(milliseconds: speed),
-                  child: InkWell(
-                    enableFeedback: false,
-                    focusColor: Colors.transparent,
-                    borderRadius: BorderRadius.all(Radius.circular(widget.buttonRadius)),
-                    onTap: () {
-                      _toogle(state: false);
-                    },
-                    child: Container(
-                      height: 34,
-                      alignment: Alignment.centerRight,
-                      width: (!_active) ? 0 : (widget.width ?? 300) - 44,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: Container(
-                        margin: EdgeInsets.only(right: 4),
-                        child: Icon(
-                          Icons.close,
-                          color: widget.textColor,
-                          size: 18,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              AnimatedPositioned(
-                duration: Duration(milliseconds: speed),
-                left: 10,
-                curve: Curves.easeOut,
-                top: 11,
-                child: AnimatedOpacity(
-                  opacity: (!_active) ? 0 : 1,
-                  duration: Duration(milliseconds: speed),
-                  child: Container(
-                    alignment: Alignment.centerLeft,
-                    width: (!_active) ? 0 : (widget.width ?? 300) - 44,
-                    child: _textFormField(),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _toogle({bool state}) {
-    if (state != null) {
-      _active = !state;
-    }
-    _animating = true;
-    widget.onPressButton?.call(!_active);
-    setState(
-      () {
-        if (!_active) {
-          _textEditingController.clear();
-          _active = true;
-          setState(() {
-            FocusScope.of(context).requestFocus(_focusNode);
-          });
-          _animationController.forward().then((value) {
-            setState(() {
-              _animating = true;
-            });
-            widget.onExpansionComplete?.call();
-          });
-        } else {
-          _active = false;
-          setState(() {
-            _unFocusKeyboard();
-          });
-          _animationController.reverse().then((value) {
-            setState(() {
-              _animating = false;
-            });
-            widget.onCollapseComplete?.call();
-          });
-        }
-      },
-    );
-  }
-
-  Widget _textFormField() {
-    return TextFormField(
-      controller: _textEditingController,
-      inputFormatters: widget.inputFormatters,
-      focusNode: _focusNode,
-      cursorWidth: 2.0,
-      textInputAction: TextInputAction.search,
-      onFieldSubmitted: (String value) {
-        setState(() {
-          _active = true;
-        });
-
-        FocusScope.of(this.context).requestFocus(_focusNode);
-        _textEditingController.selection = TextSelection(baseOffset: 0, extentOffset: _textEditingController.text.length);
-        widget.onFieldSubmitted?.call(_textEditingController.text);
-      },
-      onEditingComplete: () {
-        _unFocusKeyboard();
-        setState(() {
-          _active = false;
-        });
-        widget.onEditingComplete?.call();
-      },
-      keyboardType: widget.textInputType,
-      onChanged: (var value) {
-        widget.onChanged?.call(value);
-      },
-      onSaved: (var value) {
-        widget.onSaved?.call(value);
-      },
-      style: widget.inputTextStyle ?? const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w300),
-      cursorColor: Colors.black,
-      textAlign: TextAlign.left,
-      decoration: InputDecoration(
-        contentPadding: EdgeInsets.zero,
-        isDense: true,
-        icon: Icon(Icons.search),
-        floatingLabelBehavior: FloatingLabelBehavior.never,
-        hintText: widget.hintText,
-        hintStyle: TextStyle(
-          fontSize: 15,
-          letterSpacing: 0.15,
-          fontWeight: FontWeight.w300,
-          color: widget.hintTextColor,
-          height: 1.4,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
-          borderSide: BorderSide.none,
-        ),
-      ),
-    );
-  }
-
-  void _unFocusKeyboard() {
-    final FocusScopeNode currentFocusScope = FocusScope.of(context);
-    if (!currentFocusScope.hasPrimaryFocus && currentFocusScope.hasFocus) {
-      FocusManager.instance.primaryFocus?.unfocus();
-    }
-  }
-
-  int get speed => widget.speed ?? 200;
 }

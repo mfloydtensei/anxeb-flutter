@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 
-class LinkButton extends StatefulWidget {
-  final EdgeInsets margin;
-  final EdgeInsets padding;
-  final String text;
-  final Color color;
-  final double fontSize;
-  final FontWeight fontWeight;
-  final VoidCallback onPressed;
-  final TextAlign textAlign;
-  final TextStyle style;
+class LinkButton extends StatelessWidget {
+  final EdgeInsets? margin;
+  final EdgeInsets? padding;
+  final String? text;
+  final Color? color;
+  final double? fontSize;
+  final FontWeight? fontWeight;
+  final VoidCallback? onPressed;
+  final TextAlign? textAlign;
+  final TextStyle? style;
 
   const LinkButton({
+    super.key,
     this.margin,
     this.padding,
     this.text,
@@ -24,25 +25,30 @@ class LinkButton extends StatefulWidget {
   });
 
   @override
-  _LinkButtonState createState() => _LinkButtonState();
-}
-
-class _LinkButtonState extends State<LinkButton> {
-  @override
   Widget build(BuildContext context) {
+    final effectiveText = text ?? '';
+    final effectiveStyle = style ??
+        TextStyle(
+          color: color ?? Colors.blue,
+          fontSize: fontSize ?? 17,
+          fontWeight: fontWeight ?? FontWeight.w300,
+          decoration: TextDecoration.underline,
+        );
+
     return MouseRegion(
-      cursor: SystemMouseCursors.click,
+      cursor: onPressed != null
+          ? SystemMouseCursors.click
+          : SystemMouseCursors.basic,
       child: Container(
-        padding: widget.padding,
-        margin: widget.margin,
+        margin: margin,
+        padding: padding,
         child: GestureDetector(
-          onTap: () async {
-            widget.onPressed?.call();
-          },
+          onTap: onPressed,
+          behavior: HitTestBehavior.translucent,
           child: Text(
-            widget.text,
-            textAlign: widget.textAlign,
-            style: widget.style ?? TextStyle(color: widget.color ?? Colors.blue, fontSize: widget.fontSize ?? 17, fontWeight: widget.fontWeight ?? FontWeight.w300),
+            effectiveText,
+            textAlign: textAlign ?? TextAlign.start,
+            style: effectiveStyle,
           ),
         ),
       ),

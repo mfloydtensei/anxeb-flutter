@@ -5,10 +5,59 @@ import 'package:flutter/material.dart';
 import 'package:just_the_tooltip/just_the_tooltip.dart';
 
 class ImageButton extends StatefulWidget {
-  ImageButton({
-    this.enabled,
+  final bool enabled;
+  final Color? splashColor;
+  final Color? splashHighlight;
+  final IconData? failedIcon;
+  final double? failedIconSize;
+  final Color? failedIconColor;
+  final ImageProvider? imageAsset;
+  final String? imageUrl;
+  final Map<String, String>? headers;
+  final double? width;
+  final double? height;
+  final double? outerHeight;
+  final EdgeInsets? padding;
+  final EdgeInsets? margin;
+  final Future<void> Function()? onTap;
+  final Function(bool, [ImageInfo?])? onLoaded;
+  final double? loadingThickness;
+  final Color? loadingColor;
+  final EdgeInsets? loadingPadding;
+  final double? progressSize;
+  final double? imageScale;
+  final EdgeInsets? imagePadding;
+  final BoxShape? shape;
+  final BoxFit? fit;
+  final List<BoxShadow>? shadow;
+  final String? label;
+  final Widget? body;
+  final Widget? failedBody;
+  final bool autohide;
+  final bool horizontal;
+  final bool expanded;
+  final double? outerRadius;
+  final double? outerThickness;
+  final Color? outerFill;
+  final Color? outerBorderColor;
+  final double? innerThickness;
+  final EdgeInsets? innerPadding;
+  final double? innerRadius;
+  final Color? innerBorderColor;
+  final ColorFilter? filter;
+  final String? tooltip;
+  final Color? tooltipFillColor;
+  final Color? tooltipTextColor;
+  final Widget? tooltipContent;
+  final AxisDirection tooltipDirection;
+  final double? tooltipOffset;
+  final bool replaceFailedWidget;
+
+  const ImageButton({
+    super.key,
+    this.enabled = true,
     this.splashColor,
-    this.splashHihglight,
+    this.splashHighlight,
     this.failedIcon,
     this.failedIconSize,
     this.failedIconColor,
@@ -34,6 +83,9 @@ class ImageButton extends StatefulWidget {
     this.label,
     this.body,
     this.failedBody,
+    this.autohide = false,
+    this.horizontal = false,
+    this.expanded = false,
     this.outerRadius,
     this.outerThickness,
     this.outerFill,
@@ -42,274 +94,165 @@ class ImageButton extends StatefulWidget {
     this.innerPadding,
     this.innerRadius,
     this.innerBorderColor,
-    this.autohide,
-    this.horizontal,
-    this.expanded,
     this.filter,
     this.tooltip,
-    this.tooltipContent,
-    this.tooltipDirection,
-    this.tooltipOffset,
     this.tooltipFillColor,
     this.tooltipTextColor,
-    this.replaceFailedWidget,
-    GlobalKey key,
-  }) : super(key: key);
-
-  final bool enabled;
-  final Color splashColor;
-  final Color splashHihglight;
-  final IconData failedIcon;
-  final double failedIconSize;
-  final Color failedIconColor;
-  final ImageProvider imageAsset;
-  final String imageUrl;
-  final Map<String, String> headers;
-  final double width;
-  final double height;
-  final double outerHeight;
-  final EdgeInsets padding;
-  final EdgeInsets margin;
-  final Future Function() onTap;
-  final Function(bool, [ImageInfo]) onLoaded;
-  final double loadingThickness;
-  final Color loadingColor;
-  final EdgeInsets loadingPadding;
-  final double progressSize;
-  final double imageScale;
-  final EdgeInsets imagePadding;
-  final BoxShape shape;
-  final BoxFit fit;
-  final List<BoxShadow> shadow;
-  final String label;
-  final Widget body;
-  final Widget failedBody;
-  final bool autohide;
-  final bool horizontal;
-  final bool expanded;
-
-  final double outerRadius;
-  final double outerThickness;
-  final Color outerFill;
-  final Color outerBorderColor;
-
-  final double innerThickness;
-  final EdgeInsets innerPadding;
-  final double innerRadius;
-  final Color innerBorderColor;
-  final ColorFilter filter;
-  final String tooltip;
-  final Color tooltipFillColor;
-  final Color tooltipTextColor;
-  final Widget tooltipContent;
-  final AxisDirection tooltipDirection;
-  final double tooltipOffset;
-  final bool replaceFailedWidget;
+    this.tooltipContent,
+    this.tooltipDirection = AxisDirection.up,
+    this.tooltipOffset,
+    this.replaceFailedWidget = false,
+  });
 
   @override
-  _ImageButtonState createState() => _ImageButtonState();
+  State<ImageButton> createState() => _ImageButtonState();
 }
 
 class _ImageButtonState extends State<ImageButton> {
-  bool _imageLoaded;
-  bool _busy;
-  bool _displayImage;
-  SecuredImage _netImage;
+  bool? _imageLoaded;
+  bool _busy = false;
+  bool _displayImage = true;
+  SecuredImage? _netImage;
 
   @override
   void initState() {
-    if (widget.imageUrl != null) {
-      _setupImage(widget.imageUrl);
-    } else {
-      if (widget.imageAsset != null) {
-        _displayImage = true;
-      }
-      _imageLoaded = true;
-    }
     super.initState();
+    if (widget.imageUrl != null) {
+      _setupImage(widget.imageUrl!);
+    }
   }
 
-  void _setupImage(String image) {
+  void _setupImage(String imageUrl) {
     _imageLoaded = null;
-    _displayImage = true;
-
-    Future.delayed(Duration(milliseconds: 60), () {
-      if (_imageLoaded == null) {
-        if (mounted) {
-          setState(() {
-            _displayImage = false;
-          });
-        } else {
-          _displayImage = false;
-        }
-      }
-    });
+    _displayImage = false;
 
     _netImage = SecuredImage(
-      widget.imageUrl,
+      imageUrl,
       scale: widget.imageScale ?? 1,
-      headers: widget.headers,
+      headers: widget.headers ?? const <String, String>{},
     );
 
-    _netImage.resolve(ImageConfiguration()).addListener(
-          ImageStreamListener((ImageInfo image, bool synchronousCall) {
-            _imageLoaded = true;
-            Future.delayed(Duration(milliseconds: 50), () {
-              if (mounted) {
-                setState(() {
-                  _displayImage = true;
-                });
-              } else {
-                _displayImage = true;
-              }
-              widget.onLoaded?.call(_imageLoaded, image);
-            });
+    _netImage!.resolve(const ImageConfiguration()).addListener(
+      ImageStreamListener(
+        (ImageInfo image, bool _) {
+          _imageLoaded = true;
+          Future.delayed(const Duration(milliseconds: 50), () {
             if (mounted) {
-              setState(() {});
+              setState(() => _displayImage = true);
+            } else {
+              _displayImage = true;
             }
-          }, onError: (exception, StackTrace stackTrace) {
-            //TODO, try again
-            _imageLoaded = false;
-            Future.delayed(Duration(milliseconds: 50), () {
-              if (mounted) {
-                setState(() {
-                  _displayImage = true;
-                });
-              } else {
-                _displayImage = true;
-              }
-              widget.onLoaded?.call(_imageLoaded);
-            });
+            widget.onLoaded?.call(_imageLoaded!, image);
+          });
+        },
+        onError: (exception, StackTrace? stackTrace) {
+          _imageLoaded = false;
+          Future.delayed(const Duration(milliseconds: 50), () {
             if (mounted) {
-              setState(() {});
+              setState(() => _displayImage = true);
+            } else {
+              _displayImage = true;
             }
-          }),
-        );
+            widget.onLoaded?.call(_imageLoaded!);
+          });
+        },
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (widget.imageUrl != null && (_netImage == null || _netImage.url != widget.imageUrl)) {
-      _setupImage(widget.imageUrl);
+    if (_netImage != null && _netImage!.url != widget.imageUrl) {
+      if (widget.imageUrl != null) {
+        _setupImage(widget.imageUrl!);
+      }
     }
 
-    if (widget.autohide == true && widget.body == null && _imageLoaded != true) {
-      return Container();
+    if (widget.autohide && widget.body == null && _imageLoaded != true) {
+      return const SizedBox.shrink();
     }
 
-    var emptyWidget = widget.horizontal != true
-        ? Column(
-            children: <Widget>[
-              Container(
-                padding: widget.imagePadding,
-                child: Container(
-                  height: widget.height,
-                  width: widget.width,
-                ),
+    final emptyWidget = widget.horizontal
+        ? Row(
+            children: [
+              Padding(
+                padding: widget.imagePadding ?? EdgeInsets.zero,
+                child: SizedBox(height: widget.height, width: widget.width),
               ),
-              Opacity(
-                opacity: 0,
-                child: widget.body ?? Container(),
-              )
+              (widget.expanded
+                  ? Expanded(
+                      child: Opacity(
+                        opacity: 0,
+                        child: widget.body ?? const SizedBox(),
+                      ),
+                    )
+                  : Opacity(
+                      opacity: 0,
+                      child: widget.body ?? const SizedBox(),
+                    )),
             ],
           )
-        : Row(
-            children: <Widget>[
-              Container(
-                padding: widget.imagePadding,
-                child: Container(
-                  height: widget.height,
-                  width: widget.width,
-                ),
+        : Column(
+            children: [
+              Padding(
+                padding: widget.imagePadding ?? EdgeInsets.zero,
+                child: SizedBox(height: widget.height, width: widget.width),
               ),
-              widget.body != null
-                  ? (widget.expanded == true
-                      ? Expanded(
-                          child: Opacity(
-                          opacity: 0,
-                          child: widget.body ?? Container(),
-                        ))
-                      : Opacity(
-                          opacity: 0,
-                          child: widget.body ?? Container(),
-                        ))
-                  : Container()
+              Opacity(opacity: 0, child: widget.body ?? const SizedBox()),
             ],
           );
 
-    var touchWidget = Material(
-      key: widget.key,
+    final touchWidget = Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: widget.onTap != null
+        onTap: widget.enabled
             ? () async {
-                if (widget.enabled != false) {
-                  if (mounted) {
-                    setState(() {
-                      _busy = true;
-                    });
-                  } else {
-                    _busy = true;
-                  }
-                  await widget.onTap();
-                  if (mounted) {
-                    setState(() {
-                      _busy = false;
-                    });
-                  } else {
-                    _busy = false;
-                  }
-                }
+                setState(() => _busy = true);
+                await widget.onTap?.call();
+                if (mounted) setState(() => _busy = false);
               }
             : null,
         splashColor: widget.splashColor,
-        highlightColor: widget.splashHihglight,
-        borderRadius: widget.shape != BoxShape.rectangle ? BorderRadius.all(Radius.circular(widget.width ?? widget.height ?? 100)) : (widget.outerRadius != null ? BorderRadius.all(Radius.circular(widget.outerRadius)) : null),
+        highlightColor: widget.splashHighlight,
+        borderRadius: BorderRadius.circular(widget.outerRadius ?? 100),
         child: Container(
           padding: widget.innerPadding,
           decoration: BoxDecoration(
             shape: widget.shape ?? BoxShape.circle,
-            borderRadius: widget.outerRadius != null ? BorderRadius.all(Radius.circular(widget.outerRadius)) : null,
+            borderRadius: BorderRadius.circular(widget.outerRadius ?? 100),
           ),
           child: emptyWidget,
         ),
       ),
     );
 
-    var failedWidget = _imageLoaded == false
+    final failedWidget = _imageLoaded == false
         ? AnimatedOpacity(
-            duration: Duration(milliseconds: 200),
-            opacity: _displayImage == true ? 1 : 0,
-            child: widget.failedBody == null
-                ? Container(
-                    height: widget.height,
-                    width: widget.width,
-                    child: Icon(
-                      widget.failedIcon ?? Icons.broken_image,
-                      color: widget.failedIconColor ?? Colors.white.withAlpha(100),
-                      size: widget.failedIconSize ?? ((widget.height ?? widget.width ?? 1)),
-                    ),
-                  )
-                : widget.failedBody,
+            duration: const Duration(milliseconds: 200),
+            opacity: _displayImage ? 1 : 0,
+            child: widget.failedBody ??
+                Icon(
+                  widget.failedIcon ?? Icons.broken_image_outlined,
+                  size: widget.failedIconSize ?? 40,
+                  color: widget.failedIconColor ?? Colors.grey,
+                ),
           )
         : null;
 
-    var loadingWidget = _imageLoaded == null || _busy == true
+    final loadingWidget = _busy
         ? Center(
             child: Container(
               height: widget.height,
               width: widget.width,
-              padding: widget.loadingPadding ?? EdgeInsets.all(10),
+              padding: widget.loadingPadding ?? const EdgeInsets.all(10),
               alignment: Alignment.center,
-              child: Container(
-                height: widget.progressSize,
-                width: widget.progressSize,
-                alignment: Alignment.center,
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: CircularProgressIndicator(
-                    strokeWidth: widget.loadingThickness ?? 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(widget.loadingColor ?? Colors.white.withOpacity(0.8)),
+              child: SizedBox(
+                height: widget.progressSize ?? 24,
+                width: widget.progressSize ?? 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: widget.loadingThickness ?? 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    widget.loadingColor ?? Colors.white.withOpacity(0.8),
                   ),
                 ),
               ),
@@ -317,141 +260,141 @@ class _ImageButtonState extends State<ImageButton> {
           )
         : null;
 
-    var imageWidget = _imageLoaded == true
+    final imageWidget = _imageLoaded == true
         ? AnimatedOpacity(
-            duration: Duration(milliseconds: 200),
-            opacity: _displayImage == true ? 1 : 0,
-            child: widget.horizontal != true
-                ? Column(
-                    children: <Widget>[
-                      Container(
-                        padding: widget.imagePadding,
+            duration: const Duration(milliseconds: 200),
+            opacity: _displayImage ? 1 : 0,
+            child: widget.horizontal
+                ? Row(
+                    children: [
+                      Padding(
+                        padding: widget.imagePadding ?? EdgeInsets.zero,
                         child: Container(
                           height: widget.height,
                           width: widget.width,
-                          decoration: BoxDecoration(
-                            shape: widget.shape ?? BoxShape.circle,
-                            borderRadius: widget.innerRadius != null
-                                ? BorderRadius.all(Radius.circular(
-                                    widget.innerRadius,
-                                  ))
-                                : null,
-                            border: widget.innerThickness != null ? Border.all(width: widget.innerThickness, color: widget.innerBorderColor) : null,
-                            image: widget.imageAsset != null || _netImage != null
-                                ? DecorationImage(
-                                    colorFilter: widget.filter ?? (widget.enabled != false ? null : ColorFilter.mode(Colors.black.withOpacity(0.9), BlendMode.screen)),
-                                    fit: widget.fit ?? BoxFit.cover,
-                                    alignment: Alignment.center,
-                                    image: _netImage ?? widget.imageAsset,
-                                  )
-                                : null,
-                          ),
+                          decoration: _buildDecoration(),
                         ),
                       ),
-                      widget.body ?? Container()
+                      widget.expanded
+                          ? Expanded(child: widget.body ?? const SizedBox())
+                          : (widget.body ?? const SizedBox()),
                     ],
                   )
-                : Row(
-                    children: <Widget>[
-                      Container(
-                        padding: widget.imagePadding,
+                : Column(
+                    children: [
+                      Padding(
+                        padding: widget.imagePadding ?? EdgeInsets.zero,
                         child: Container(
                           height: widget.height,
                           width: widget.width,
-                          decoration: BoxDecoration(
-                            shape: widget.shape ?? BoxShape.circle,
-                            borderRadius: widget.innerRadius != null
-                                ? BorderRadius.all(Radius.circular(
-                                    widget.innerRadius,
-                                  ))
-                                : null,
-                            border: widget.innerThickness != null ? Border.all(width: widget.innerThickness, color: widget.innerBorderColor) : null,
-                            image: widget.imageAsset != null || _netImage != null
-                                ? DecorationImage(
-                                    colorFilter: widget.filter ?? (widget.enabled != false ? null : ColorFilter.mode(Colors.black.withOpacity(0.9), BlendMode.screen)),
-                                    fit: widget.fit ?? BoxFit.cover,
-                                    alignment: Alignment.center,
-                                    image: _netImage ?? widget.imageAsset,
-                                  )
-                                : null,
-                          ),
+                          decoration: _buildDecoration(),
                         ),
                       ),
-                      widget.body != null ? (widget.expanded == true ? Expanded(child: widget.body) : widget.body) : Container()
+                      widget.body ?? const SizedBox(),
                     ],
                   ),
           )
         : null;
 
-    var button = Container(
+    final button = Container(
       padding: widget.padding,
       margin: widget.margin,
       height: widget.outerHeight,
-      child: failedWidget != null && widget.replaceFailedWidget == true ? failedWidget : Stack(
-        alignment: Alignment.center,
-        children: <Widget>[
-          Column(
-            children: <Widget>[
-              AnimatedContainer(
-                duration: Duration(milliseconds: 250),
-                decoration: BoxDecoration(
-                  boxShadow: widget.shadow,
-                  shape: widget.shape ?? BoxShape.circle,
-                  borderRadius: widget.outerRadius != null
-                      ? BorderRadius.all(Radius.circular(
-                          widget.outerRadius,
-                        ))
-                      : null,
-                  border: widget.outerThickness != null ? Border.all(width: widget.outerThickness, color: widget.outerBorderColor) : null,
-                  color: widget.outerFill,
-                ),
-                child: Container(
-                  padding: widget.innerPadding,
-                  child: imageWidget ?? emptyWidget,
-                ),
-              ),
-              widget.label == null
-                  ? Container()
-                  : Container(
-                      padding: EdgeInsets.only(top: 6),
-                      child: ParagraphBlock(
-                        text: widget.label,
-                        bold: widget.enabled == true,
+      child: failedWidget != null && widget.replaceFailedWidget
+          ? failedWidget
+          : Stack(
+              alignment: Alignment.center,
+              children: [
+                Column(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      decoration: BoxDecoration(
+                        boxShadow: widget.shadow,
+                        shape: widget.shape ?? BoxShape.circle,
+                        borderRadius:
+                            BorderRadius.circular(widget.outerRadius ?? 100),
+                        border: Border.all(
+                          width: widget.outerThickness ?? 0,
+                          color: widget.outerBorderColor ?? Colors.transparent,
+                        ),
+                        color: widget.outerFill ?? Colors.transparent,
+                      ),
+                      child: Container(
+                        padding: widget.innerPadding,
+                        child: imageWidget ?? emptyWidget,
                       ),
                     ),
-            ],
-          ),
-          failedWidget ?? Container(),
-          touchWidget,
-          loadingWidget ?? Container(),
-        ],
-      ),
+                    if (widget.label != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: ParagraphBlock(
+                          text: widget.label!,
+                          bold: widget.enabled,
+                        ),
+                      ),
+                  ],
+                ),
+                failedWidget ?? const SizedBox(),
+                touchWidget,
+                loadingWidget ?? const SizedBox(),
+              ],
+            ),
     );
 
     if (widget.tooltip != null || widget.tooltipContent != null) {
       return JustTheTooltip(
-        content: Container(
-          padding: EdgeInsets.all(6),
+        content: Padding(
+          padding: const EdgeInsets.all(6),
           child: widget.tooltipContent ??
               Text(
-                widget.tooltip,
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: widget.tooltipTextColor),
+                widget.tooltip!,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                  color: widget.tooltipTextColor ?? Colors.white,
+                ),
               ),
         ),
-        preferredDirection: widget.tooltipDirection ?? AxisDirection.up,
+        preferredDirection: widget.tooltipDirection,
         elevation: 4.0,
         tailBaseWidth: 12,
         tailLength: 8,
-        backgroundColor: widget.tooltipFillColor,
+        backgroundColor: widget.tooltipFillColor ?? Colors.black87,
         borderRadius: BorderRadius.circular(6),
         offset: widget.tooltipOffset ?? 12.0,
         hoverShowDuration: Duration.zero,
-        fadeOutDuration: Duration(milliseconds: 500),
+        fadeOutDuration: const Duration(milliseconds: 500),
         enableFeedback: false,
         child: button,
       );
     }
 
     return button;
+  }
+
+  BoxDecoration _buildDecoration() {
+    return BoxDecoration(
+      shape: widget.shape ?? BoxShape.circle,
+      borderRadius: BorderRadius.circular(widget.innerRadius ?? 100),
+      border: Border.all(
+        width: widget.innerThickness ?? 0,
+        color: widget.innerBorderColor ?? Colors.transparent,
+      ),
+      image: (widget.imageAsset != null || _netImage != null)
+          ? DecorationImage(
+              colorFilter: widget.filter ??
+                  (widget.enabled
+                      ? null
+                      : ColorFilter.mode(
+                          Colors.black.withOpacity(0.9),
+                          BlendMode.screen,
+                        )),
+              fit: widget.fit ?? BoxFit.cover,
+              alignment: Alignment.center,
+              image: _netImage ?? widget.imageAsset!,
+            )
+          : null,
+    );
   }
 }

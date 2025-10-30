@@ -6,70 +6,80 @@ import '../../middleware/application.dart';
 class SwitchButton extends StatelessWidget {
   final Anxeb.Scope scope;
   final Widget text;
-  final EdgeInsets margin;
-  final Function(bool value) onToggle;
+  final EdgeInsets? margin;
+  final ValueChanged<bool> onToggle;
   final bool value;
-  final IconData icon;
-  final List<BoxShadow> shadows;
-  final TextStyle style;
+  final IconData? icon;
+  final List<BoxShadow>? shadows;
+  final TextStyle? style;
   final bool readonly;
-  final EdgeInsets padding;
-  final double height;
-  final Color color;
-  final BorderRadius borderRadius;
+  final EdgeInsets? padding;
+  final double? height;
+  final Color? color;
+  final BorderRadius? borderRadius;
 
   const SwitchButton({
-    Key key,
-    @required this.scope,
-    @required this.onToggle,
-    @required this.text,
-    this.value,
+    super.key,
+    required this.scope,
+    required this.onToggle,
+    required this.text,
+    this.value = false,
     this.margin,
     this.icon,
     this.shadows,
     this.style,
-    this.readonly,
+    this.readonly = false,
     this.padding,
     this.height,
     this.color,
     this.borderRadius,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
+    final appColors = scope.application.settings.colors;
+    final BorderRadius effectiveRadius =
+        borderRadius ?? const BorderRadius.all(Radius.circular(8));
+
     return Container(
       margin: margin,
       decoration: BoxDecoration(
-        borderRadius: borderRadius ?? const BorderRadius.all(Radius.circular(8)),
+        borderRadius: effectiveRadius,
         boxShadow: shadows,
       ),
       child: Material(
         color: color ?? Colors.white,
-        borderRadius: borderRadius ?? const BorderRadius.all(Radius.circular(8)),
+        borderRadius: effectiveRadius,
         child: InkWell(
-          onTap: readonly == true ? null : () async {},
-          borderRadius: borderRadius ?? const BorderRadius.all(Radius.circular(8)),
+          onTap: readonly ? null : () => onToggle(!value),
+          borderRadius: effectiveRadius,
           child: Container(
-            padding: padding ?? const EdgeInsets.only(left: 12, right: 12),
+            padding: padding ?? const EdgeInsets.symmetric(horizontal: 12),
             height: height ?? 48,
             child: Row(
               children: [
                 if (icon != null)
                   Icon(
                     icon,
-                    color: application.settings.colors.primary,
+                    color: appColors.primary,
                     size: 22,
                   ),
-                const SizedBox(width: 8),
-                Expanded(child: text),
+                if (icon != null) const SizedBox(width: 8),
+                Expanded(
+                  child: DefaultTextStyle(
+                    style: style ??
+                        TextStyle(
+                          color: Colors.black87,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w400,
+                        ),
+                    child: text,
+                  ),
+                ),
                 CupertinoSwitch(
-                  value: value == true || value == null,
-                  onChanged: (value) {
-                    if (readonly != true) {
-                      onToggle(value);
-                    }
-                  },
-                  activeColor: application.settings.colors.primary,
+                  value: value,
+                  onChanged: readonly ? null : onToggle,
+                  activeColor: appColors.primary,
                 ),
               ],
             ),
