@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../screen/scope.dart';
-
+import 'package:anxeb_flutter/misc/view_action_locator.dart';
 class FloatAction extends StatefulWidget {
   final ScreenScope scope;
   final VoidCallback? onPressed;
@@ -69,7 +69,11 @@ class _FloatActionState extends State<FloatAction> {
     }
 
     final double padding = (widget.alternates.length * separation) + (offset - 5);
-    widget.scope.view.locator.setAltOffset(padding);
+    final locator = widget.scope.view.locator;
+if (locator is ScreenActionLocator) {
+  locator.setAltOffset(padding);
+}
+
 
     // Acción principal
     actions.insert(
