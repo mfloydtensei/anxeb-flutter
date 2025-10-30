@@ -4,28 +4,30 @@ import 'board.dart';
 
 class MenuPanel extends BoardPanel {
   final List<PanelMenuItem> items;
-  final double textScale;
-  final double iconScale;
-  final bool horizontal;
-  final bool autoHide;
-  final double itemHeight;
-  final double buttonRadius;
-  final Color fillColor;
+  final double? textScale;
+  final double? iconScale;
+  final bool? horizontal;
+  final bool? autoHide;
+  final double? itemHeight;
+  final double? buttonRadius;
+  final Color? fillColor;
+  @override
+  final bool rebuild;
 
   MenuPanel({
-    @required Scope scope,
-    @required this.items,
-    double height,
-    bool rebuild,
-    bool Function() isDisabled,
+    required Scope scope,
+    required this.items,
+    double? height,
+    this.rebuild = false,
+    bool Function()? isDisabled,
     this.itemHeight,
     this.textScale,
     this.iconScale,
     this.horizontal,
     this.autoHide,
     this.buttonRadius,
-    bool gapless,
-    Color barColor,
+    bool gapless = false,
+    Color? barColor,
     this.fillColor,
   }) : super(
           scope: scope,
@@ -33,164 +35,176 @@ class MenuPanel extends BoardPanel {
           isDisabled: isDisabled,
           gapless: gapless,
           barColor: barColor,
-        ) {
-    super.rebuild = rebuild;
-  }
+        );
 
   @override
   double get dynamicHeight {
-    if (itemHeight != null) {
-      var count = items.where(($item) => $item.isVisible?.call() != false && ($item.actions.any(($action) => $action.isVisible?.call() != false))).length;
-      return (itemHeight * count) + 80;
-    } else {
-      return null;
-    }
+    final visibleCount = items
+        .where((item) =>
+            item.isVisible?.call() != false &&
+            item.actions.any((a) => a.isVisible?.call() != false))
+        .length;
+
+    final baseHeight = itemHeight ?? 60;
+    return (baseHeight * visibleCount) + 80;
   }
 
-  static Widget getButtons({List<PanelMenuItem> items, bool horizontal, double iconScale, double textScale, Future Function() collapse, double buttonRadius, BuildContext context}) {
+  static Widget getButtons({
+    required List<PanelMenuItem> items,
+    bool? horizontal,
+    double? iconScale,
+    double? textScale,
+    Future<void> Function()? collapse,
+    double? buttonRadius,
+    required BuildContext context,
+  }) {
     return Column(
       mainAxisSize: MainAxisSize.max,
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisAlignment: MainAxisAlignment.center,
       children: items
-          .where(($item) => $item.isVisible?.call() != false)
-          .map(($item) {
-            var $actions = $item.actions.where(($action) => $action.isVisible?.call() != false).map(($action) {
-              var button;
-
-              var buttonContent = Container(
-                width: $item.width?.call() ?? null,
-                padding: $item.padding?.call() ?? null,
+          .where((item) => item.isVisible?.call() != false)
+          .map((item) {
+            final actions = item.actions
+                .where((a) => a.isVisible?.call() != false)
+                .map((a) {
+              final buttonContent = Container(
+                width: item.width?.call(),
+                padding: item.padding?.call(),
                 alignment: Alignment.center,
                 child: horizontal == true
                     ? Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: <Widget>[
-                          Container(
-                            alignment: Alignment.center,
-                            child: Icon(
-                              $action.icon(),
-                              color: $action.iconColor?.call() ?? Colors.white,
-                              size: 48.0 * ($action.iconScale ?? 1) * (iconScale ?? 1),
+                        children: [
+                          Icon(
+                            a.icon(),
+                            color: a.iconColor?.call() ?? Colors.white,
+                            size: 48.0 *
+                                (a.iconScale ?? 1) *
+                                (iconScale ?? 1),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            a.label?.call().toUpperCase() ?? '',
+                            textAlign: TextAlign.left,
+                            textScaleFactor:
+                                (a.textScale ?? 1.05) * (textScale ?? 1),
+                            style: TextStyle(
+                              color: a.textColor?.call() ?? Colors.white,
+                              letterSpacing: -0.1,
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
-                          $action.label != null
-                              ? Container(
-                                  alignment: Alignment.center,
-                                  padding: EdgeInsets.all(5),
-                                  child: Text(
-                                    $action.label().toUpperCase(),
-                                    textAlign: TextAlign.left,
-                                    textScaleFactor: ($action.textScale ?? 1.05) * (textScale ?? 1),
-                                    style: TextStyle(
-                                      color: $action.textColor?.call() ?? Colors.white,
-                                      letterSpacing: -0.1,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ),
-                                )
-                              : Container(),
                         ],
                       )
                     : Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: <Widget>[
-                          Container(
-                            alignment: Alignment.center,
-                            child: Icon(
-                              $action.icon(),
-                              color: $action.iconColor?.call() ?? Colors.white,
-                              size: 48.0 * ($action.iconScale ?? 1) * (iconScale ?? 1),
+                        children: [
+                          Icon(
+                            a.icon(),
+                            color: a.iconColor?.call() ?? Colors.white,
+                            size: 48.0 *
+                                (a.iconScale ?? 1) *
+                                (iconScale ?? 1),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            a.label?.call().toUpperCase() ?? '',
+                            textAlign: TextAlign.center,
+                            textScaleFactor:
+                                (a.textScale ?? 1.05) * (textScale ?? 1),
+                            style: TextStyle(
+                              color: a.textColor?.call() ?? Colors.white,
+                              letterSpacing: 0.3,
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
-                          $action.label != null
-                              ? Container(
-                                  alignment: Alignment.center,
-                                  padding: const EdgeInsets.all(5),
-                                  child: Text(
-                                    $action.label().toUpperCase(),
-                                    textAlign: TextAlign.center,
-                                    textScaleFactor: ($action.textScale ?? 1.05) * (textScale ?? 1),
-                                    style: TextStyle(
-                                      color: $action.textColor?.call() ?? Colors.white,
-                                      letterSpacing: 0.3,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ),
-                                )
-                              : Container(),
                         ],
                       ),
               );
 
-              if ($action.isDisabled?.call() == true) {
-                button = Container(
-                  margin: const EdgeInsets.all(8),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: $action.fillColor?.call() ?? Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.all(Radius.circular(buttonRadius ?? 10)),
-                    ),
-                    child: Opacity(
-                      opacity: 0.5,
-                      child: buttonContent,
-                    ),
-                  ),
-                );
-              } else {
-                button = Container(
-                  margin: const EdgeInsets.all(8),
-                  child: Material(
-                    key: GlobalKey(),
-                    color: $action.fillColor?.call() ?? Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.all(Radius.circular(buttonRadius ?? 10)),
-                    child: InkWell(
-                      onTap: () {
-                        collapse?.call();
-                        $action.onPressed?.call();
-                      },
-                      borderRadius: BorderRadius.all(Radius.circular(buttonRadius ?? 10)),
-                      child: buttonContent,
-                    ),
-                  ),
-                );
-              }
+              final br = BorderRadius.all(Radius.circular(buttonRadius ?? 10));
+              final fill = a.fillColor?.call() ?? Colors.white.withOpacity(0.2);
 
-              return Expanded(
-                child: button,
-              );
+              final button = a.isDisabled?.call() == true
+                  ? Container(
+                      margin: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: fill,
+                        borderRadius: br,
+                      ),
+                      child: Opacity(
+                        opacity: 0.5,
+                        child: buttonContent,
+                      ),
+                    )
+                  : Container(
+                      margin: const EdgeInsets.all(8),
+                      child: Material(
+                        color: fill,
+                        borderRadius: br,
+                        child: InkWell(
+                          onTap: () async {
+                            await collapse?.call();
+                            a.onPressed?.call();
+                          },
+                          borderRadius: br,
+                          child: buttonContent,
+                        ),
+                      ),
+                    );
+
+              return Expanded(child: button);
             }).toList();
 
-            if ($actions.length == 0) {
-              return null;
-            }
+            if (actions.isEmpty) return const SizedBox.shrink();
+
             return Expanded(
-              child: Row(mainAxisSize: MainAxisSize.max, crossAxisAlignment: CrossAxisAlignment.center, mainAxisAlignment: MainAxisAlignment.center, children: $actions),
+              child: Row(
+                mainAxisSize: MainAxisSize.max,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: actions,
+              ),
             );
           })
-          .where((element) => element != null)
           .toList(),
     );
   }
 
   @override
-  Widget content([Widget child]) {
-    if (autoHide == true && !items.any(($item) => $item.actions.any(($action) => $action.isVisible?.call() != false && $action.isDisabled?.call() != true))) {
-      return null;
-    }
+  Widget content([Widget? child]) {
+    final visible = items.any((item) => item.actions.any((a) =>
+        a.isVisible?.call() != false && a.isDisabled?.call() != true));
+
+    if (autoHide == true && !visible) return const SizedBox.shrink();
 
     return super.content(
       Container(
-        margin: EdgeInsets.only(top: 5),
-        child: getButtons(items: items, horizontal: horizontal, iconScale: iconScale, collapse: super.collapse, textScale: textScale, buttonRadius: buttonRadius),
+        margin: const EdgeInsets.only(top: 5),
+        child: getButtons(
+          items: items,
+          horizontal: horizontal,
+          iconScale: iconScale,
+          collapse: super.collapse,
+          textScale: textScale,
+          buttonRadius: buttonRadius,
+          context: scope.context,
+        ),
       ),
     );
   }
 
   @protected
-  BoxShadow get shadow => BoxShadow(offset: Offset(0, 0), blurRadius: 5, spreadRadius: 3, color: Color(0x3f555555));
+  @override
+  BoxShadow get shadow => const BoxShadow(
+        offset: Offset(0, 0),
+        blurRadius: 5,
+        spreadRadius: 3,
+        color: Color(0x3f555555),
+      );
 
   @override
   Color get fill => fillColor ?? scope.application.settings.colors.navigation;
@@ -207,28 +221,34 @@ class MenuPanel extends BoardPanel {
 
 class PanelMenuItem {
   final List<PanelMenuAction> actions;
-  final Function() isVisible;
-  final double Function() height;
-  final double Function() width;
-  final EdgeInsets Function() padding;
+  final bool Function()? isVisible;
+  final double Function()? height;
+  final double Function()? width;
+  final EdgeInsets Function()? padding;
 
-  PanelMenuItem({this.actions, this.isVisible, this.height, this.width, this.padding});
+  const PanelMenuItem({
+    required this.actions,
+    this.isVisible,
+    this.height,
+    this.width,
+    this.padding,
+  });
 }
 
 class PanelMenuAction {
   final IconData Function() icon;
-  final String Function() label;
-  final bool Function() isVisible;
-  final bool Function() isDisabled;
-  final VoidCallback onPressed;
-  final double iconScale;
-  final double textScale;
-  final Color Function() iconColor;
-  final Color Function() fillColor;
-  final Color Function() textColor;
+  final String Function()? label;
+  final bool Function()? isVisible;
+  final bool Function()? isDisabled;
+  final VoidCallback? onPressed;
+  final double? iconScale;
+  final double? textScale;
+  final Color Function()? iconColor;
+  final Color Function()? fillColor;
+  final Color Function()? textColor;
 
-  PanelMenuAction({
-    @required this.icon,
+  const PanelMenuAction({
+    required this.icon,
     this.label,
     this.isVisible,
     this.isDisabled,
