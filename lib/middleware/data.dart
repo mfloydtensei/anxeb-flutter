@@ -1,9 +1,18 @@
 import 'dart:convert';
 
+/// =======================================================
+/// UNIVERSAL DATA CONTAINER
+/// =======================================================
+/// Envuelve estructuras dinámicas (Map o List) con acceso seguro
+/// y helpers para serialización, clonación y manipulación.
 class Data {
   dynamic _items;
 
-  Data([data]) {
+  /// Crea un contenedor de datos desde:
+  /// - String JSON
+  /// - otro Data
+  /// - Map o List
+  Data([dynamic data]) {
     if (data != null) {
       if (data is String) {
         _items = json.decode(data);
@@ -13,79 +22,92 @@ class Data {
         _items = data;
       }
     } else {
-      _items = {};
+      _items = <String, dynamic>{};
     }
   }
 
-  dynamic operator [](key) {
-    return _items[key];
+  /// Acceso tipo map[key]
+  dynamic operator [](dynamic key) => _items[key];
+
+  /// Asignación tipo map[key] = value
+  void operator []=(dynamic key, dynamic value) {
+    if (_items is Map) {
+      (_items as Map)[key] = value;
+    }
   }
 
-  void operator []=(key, value) {
-    _items[key] = value;
+  /// Longitud del contenido
+  int get length => _items is Map || _items is List ? _items.length : 0;
+
+  /// Incluye un map dentro del contenedor actual
+  void include(Map<String, Object?> data) {
+    if (_items is Map<String, dynamic>) {
+      _items.addAll(data);
+    }
   }
 
-  int get length {
-    return _items.length;
+  /// Mapea un campo tipo lista a una lista de T
+  List<T> map<T>(String field, T Function(dynamic e) predicate) {
+    final list = (_items is Map && _items[field] is List)
+        ? (_items[field] as List)
+        : <dynamic>[];
+    return list.map(predicate).toList();
   }
 
-  void include(Map<String, Object> data) {
-    data.forEach((key, value) {
-      _items[key] = value;
-    });
+  /// Convierte el contenido (o un campo específico) en lista de T
+  List<T> list<T>(T Function(dynamic data) predicate, {String? field}) {
+    final list = (field != null && _items is Map && _items[field] is List)
+        ? (_items[field] as List)
+        : (_items is List ? _items as List : <dynamic>[]);
+    return list.map(predicate).toList();
   }
 
-  List<T> map<T>(String field, T predicate(e)) {
-    var list = _items[field] != null ? (_items[field] as List<dynamic>) : null;
-    return list != null ? list.map(predicate).toList() : <T>[];
-  }
+  /// Clona profundamente el contenido
+  Data clone() => Data(jsonDecode(toJson()));
 
-  List<T> list<T>(T predicate(data), {String field}) {
-    var list = (field != null && _items[field] != null ? _items[field] : _items) as List<dynamic>;
-    return list != null ? list.map(predicate).toList() : <T>[];
-  }
+  /// Indica si el contenido es una lista
+  bool isList() => _items is List;
 
-  Data clone() {
-    return Data(toObjects());
-  }
+  /// Indica si el contenedor está vacío
+  bool get isEmpty =>
+      _items == null ||
+      (_items is Map && _items.isEmpty) ||
+      (_items is List && _items.isEmpty);
 
-  bool isList() {
-    return _items is List;
-  }
-
-  bool get isEmpty {
-    return _items == null || _items.isEmpty;
-  }
-
+  /// Imprime contenido formateado en consola (por partes)
   void $print() {
     final pattern = RegExp('.{1,800}');
-    pattern.allMatches(toJson(pretty: true)).forEach((match) => print(match.group(0)));
+    for (final match in pattern.allMatches(toJson(pretty: true))) {
+      print(match.group(0));
+    }
   }
 
+  /// Devuelve los datos en formato Map limpio
   dynamic toObjects() {
-    var result = {};
-    for (var $items in _items.entries) {
-      result[$items.key] = $items.value;
+    if (_items is Map) {
+      return Map<String, dynamic>.from(_items);
+    } else if (_items is List) {
+      return List.from(_items);
     }
-    return result;
+    return _items;
+  }
+
+  /// Elimina una propiedad por nombre
+  void remove(String field) {
+    if (_items is Map) {
+      (_items as Map).remove(field);
+    }
+  }
+
+  /// Convierte el contenido a JSON
+  String toJson({bool pretty = false}) {
+    if (_items == null) return '{}';
+    final encoder = pretty
+        ? const JsonEncoder.withIndent('  ')
+        : const JsonEncoder();
+    return encoder.convert(toObjects());
   }
 
   @override
-  String toString() {
-    return _items.toString();
-  }
-
-  void remove(String field) {
-    Map items = _items as Map;
-    items.remove(field);
-  }
-
-  String toJson({bool pretty}) {
-    if (pretty == true) {
-      var encoder = new JsonEncoder.withIndent('  ');
-      return encoder.convert(toObjects());
-    } else {
-      return json.encode(toObjects());
-    }
-  }
+  String toString() => _items.toString();
 }

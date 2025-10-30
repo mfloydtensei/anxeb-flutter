@@ -1,49 +1,37 @@
+import 'dart:io' as io;
+import 'package:flutter/material.dart';
 import 'package:anxeb_flutter/widgets/fields/file.dart';
 import 'package:anxeb_flutter/widgets/fields/files.dart';
 import 'package:anxeb_flutter/widgets/fields/image.dart';
-import 'package:flutter/material.dart';
+
 import 'data.dart';
 import 'field.dart';
 import 'model.dart';
 import 'scope.dart';
 import 'utils.dart';
-import 'dart:io' as io;
 
 class FieldsForm {
-  Map<String, FieldState> fields;
-  Map<String, GlobalKey<FieldState>> _keys;
+  final Map<String, FieldState> fields = {};
+  final Map<String, GlobalKey<FieldState>> _keys = {};
   dynamic _initialValues;
-  bool validated;
-  ValueChanged<bool> onValidationChanged;
+  bool validated = false;
+  ValueChanged<bool>? onValidationChanged;
 
   FieldsForm([dynamic initialValues]) {
-    fields = Map();
-    _keys = Map();
-    validated = false;
     _initialValues = initialValues ?? {};
   }
 
   GlobalKey<FieldState> key(String name) {
-    var $key = _keys[name];
-    if ($key == null) {
-      $key = GlobalKey<FieldState>();
-      _keys[name] = $key;
-    }
-    return $key;
+    return _keys.putIfAbsent(name, () => GlobalKey<FieldState>());
   }
 
   void set(String fieldName, dynamic value) {
-    if (fields[fieldName] != null) {
-      fields[fieldName].value = value;
-    }
+    fields[fieldName]?.value = value;
   }
 
-  dynamic get(String fieldName, {bool raw}) {
-    if (raw == true) {
-      return fields[fieldName]?.value;
-    } else {
-      return fields[fieldName]?.data();
-    }
+  dynamic get(String fieldName, {bool raw = false}) {
+    final field = fields[fieldName];
+    return raw ? field?.value : field?.data();
   }
 
   void update([dynamic data]) {
@@ -65,13 +53,13 @@ class FieldsForm {
     }
   }
 
-  fetch() {
+  void fetch() {
     for (var field in fields.values) {
       field.fetch();
     }
   }
 
-  apply() {
+  void apply() {
     for (var field in fields.values) {
       field.apply();
     }
@@ -80,35 +68,25 @@ class FieldsForm {
   void focusNextInvalid() {
     for (var i = 0; i <= fields.length; i++) {
       for (var field in fields.values) {
-        if (field.index == i) {
-          if (!field.valid() && field.context != null) {
-            field.focus();
-            return;
-          }
+        if (field.index == i && !field.valid()) {
+          field.focus();
+          return;
         }
       }
     }
   }
 
-  void remove(String name) {
-    fields.remove(name);
+  void remove(String name) => fields.remove(name);
+
+  void clear([String? fieldName]) {
+    final field = fields[fieldName];
+    field?.reset();
   }
 
-  void clear([String fieldName]) {
-    if (fieldName != null) {
-      var field = fields[fieldName];
-      field?.reset();
-    } else {
-      fields.entries.forEach((field) {
-        field.value.reset();
-      });
-    }
-  }
-
-  bool focusFrom(int index, {bool onlyEmpty}) {
+  bool focusFrom(int index, {bool onlyEmpty = false}) {
     for (var field in fields.values) {
       if (field.index == index + 1) {
-        if (onlyEmpty != true || field.isEmpty) {
+        if (!onlyEmpty || field.isEmpty) {
           field.focus();
           return true;
         }
@@ -118,21 +96,17 @@ class FieldsForm {
     return false;
   }
 
-  bool focus(String name, {bool force, String warning}) {
-    var field = fields[name];
-
-    if (field != null) {
-      if (force == true || field.value == null) {
-        field.focus(warning: warning);
-        return true;
-      }
+  bool focus(String name, {bool force = false, String? warning}) {
+    final field = fields[name];
+    if (field != null && (force || field.value == null)) {
+      field.focus(warning: warning);
+      return true;
     }
     return false;
   }
 
   bool select(String name) {
-    var field = fields[name];
-
+    final field = fields[name];
     if (field != null) {
       field.select();
       return true;
@@ -141,217 +115,194 @@ class FieldsForm {
   }
 
   void include(FieldState current) {
-    var $field = fields[current.widget.name];
-    if ($field != null) {
-      current.index = $field.index;
-      current.value = $field.value;
+    final existing = fields[current.widget.name];
+    if (existing != null) {
+      current.index = existing.index;
+      current.value = existing.value;
     } else {
       current.index = fields.length;
-      if (_initialValues != null) {
-        if ((_initialValues as Map).containsKey(current.widget.name)) {
-          current.value = _initialValues[current.widget.name];
-        }
+      if (_initialValues is Map &&
+          (_initialValues as Map).containsKey(current.widget.name)) {
+        current.value = _initialValues[current.widget.name];
       }
     }
     fields[current.widget.name] = current;
   }
 
-  bool validate({bool showMessage, bool autoFocus}) {
+  bool validate({bool showMessage = true, bool autoFocus = false}) {
     var result = true;
+
     for (var field in fields.values) {
-      if (field.mounted && field.context != null) {
-        if (field.validate(showMessage: showMessage) != null) {
-          if (autoFocus != false) {
-            field.focus();
-          }
-          result = false;
-          break;
-        }
+      if (field.mounted && field.validate(showMessage: showMessage) != null) {
+        if (autoFocus) field.focus();
+        result = false;
+        break;
       }
     }
+
     if (validated != result) {
       validated = result;
-      if (onValidationChanged != null) {
-        onValidationChanged(validated);
-      }
+      onValidationChanged?.call(validated);
     }
+
     return result;
   }
 
-  bool valid({bool autoFocus, bool showMessage}) {
+  bool valid({bool autoFocus = false, bool showMessage = true}) {
     return validate(autoFocus: autoFocus, showMessage: showMessage);
   }
 
-  Map<String, dynamic> data({bool images, bool files}) {
-    if (validate()) {
-      var data = Map<String, dynamic>();
+  Map<String, dynamic>? data({bool? images, bool? files}) {
+    if (!validate()) return null;
 
-      for (var field in fields.values) {
-        var isImage = field.widget is ImageInputField;
-        var isFile = field.widget is FileInputField || field.widget is FilesInputField;
+    final Map<String, dynamic> data = {};
 
-        if (field.widget.visible != false) {
-          if (((images == null) || (images == true && isImage) || (images == false && !isImage)) && ((files == null) || (files == true && isFile) || (files == false && !isFile))) {
-            if (isFile == true || isImage == true) {
-              if (field.data() == '') {
-                continue;
-              }
-            }
-            data[field.widget.name] = field.data();
-          }
+    for (var field in fields.values) {
+      final isImage = field.widget is ImageInputField;
+      final isFile =
+          field.widget is FileInputField || field.widget is FilesInputField;
+
+      if (field.widget.visible != false) {
+        final includeImage = images == null ||
+            (images == true && isImage) ||
+            (images == false && !isImage);
+        final includeFile = files == null ||
+            (files == true && isFile) ||
+            (files == false && !isFile);
+
+        if (includeImage && includeFile) {
+          final value = field.data();
+          if ((isFile || isImage) && value == '') continue;
+          data[field.widget.name] = value;
         }
       }
-      return data;
-    } else {
-      return null;
     }
+
+    return data;
   }
 
   Map<String, FileInputValue> files() {
-    var result = Map<String, FileInputValue>();
+    final result = <String, FileInputValue>{};
+    final payload = data(files: true);
 
-    var payload = data(files: true);
-    payload.forEach((key, value) {
-      final FileInputValue fileValue = value;
-      if (fileValue?.title?.isNotEmpty == true) {
-        result[key] = value;
-      }
-    });
+    if (payload != null) {
+      payload.forEach((key, value) {
+        if (value is FileInputValue && value.title.isNotEmpty) {
+          result[key] = value;
+        }
+      });
+    }
+
     return result;
   }
 
   Future<Map<String, dynamic>> multipart() async {
-    Map<String, FileInputValue> files = this.files();
+    final filesMap = files();
     final Map<String, dynamic> multiPayload = {};
 
-    final entries = files.entries;
-    for (final entry in entries) {
-      if (entry.value.path != null && await io.File(entry.value.path).exists()) {
-        multiPayload[entry.key] = await Utils.convert.fromPathToMultipartFile(entry.value.path);
+    for (final entry in filesMap.entries) {
+      final path = entry.value.path;
+      if (path != null && await io.File(path).exists()) {
+        multiPayload[entry.key] =
+            await Utils.convert.fromPathToMultipartFile(path);
       }
     }
+
     return multiPayload;
   }
 
-  Map<String, dynamic> value() {
-    if (validate()) {
-      var result = Map<String, dynamic>();
+  Map<String, dynamic>? value() {
+    if (!validate()) return null;
 
-      for (var field in fields.values) {
-        if (field.widget.visible != false) {
-          result[field.widget.name] = field.value;
-        }
+    final Map<String, dynamic> result = {};
+    for (var field in fields.values) {
+      if (field.widget.visible != false) {
+        result[field.widget.name] = field.value;
       }
-      return result;
-    } else {
-      return null;
     }
+    return result;
   }
 
   bool noneFocused() {
-    for (MapEntry<String, FieldState> item in fields.entries) {
-      if (item.value.focused == true) {
-        return false;
-      }
-    }
-    return true;
+    return fields.values.every((f) => f.focused != true);
   }
 }
 
 class ScopeForms {
-  Scope _scope;
-  Map<String, FieldsForm> _forms;
+  final Scope _scope;
+  final Map<String, FieldsForm> _forms = {};
 
-  ScopeForms(Scope scope) {
-    _scope = scope;
-    _forms = Map<String, FieldsForm>();
-  }
+  ScopeForms(this._scope);
 
-  bool validate(String name) {
-    return _retrieve(name).validate();
-  }
+  bool validate(String name) => _retrieve(name).validate();
 
-  bool valid({bool autoFocus}) {
-    for (var $form in _forms.values) {
-      if ($form.valid(autoFocus: autoFocus) == false) {
-        return false;
-      }
+  bool valid({bool autoFocus = false}) {
+    for (var form in _forms.values) {
+      if (!form.valid(autoFocus: autoFocus)) return false;
     }
     return true;
   }
 
-  void focusNextInvalid(String name) {
-    _retrieve(name).focusNextInvalid();
-  }
+  void focusNextInvalid(String name) => _retrieve(name).focusNextInvalid();
 
   bool noneFocused() {
-    for (var $form in _forms.values) {
-      for (var item in $form.fields.entries) {
-        if (item.value.focused == true) {
-          return false;
-        }
-      }
+    for (var form in _forms.values) {
+      if (!form.noneFocused()) return false;
     }
     return true;
   }
 
-  Data data({bool separateByGroup}) {
-    var result = Data();
-    if (separateByGroup == true) {
-      for (var $item in _forms.entries) {
-        var groupName = $item.key;
-        var $data = $item.value.data();
-        if ($data != null) {
-          result[groupName] = $data;
-        }
+  /// ✅ Corregido: manejo null-safe y cast correcto para Data.include()
+  Data data({bool separateByGroup = false}) {
+    final result = Data();
+
+    if (separateByGroup) {
+      for (var entry in _forms.entries) {
+        result[entry.key] = entry.value.data();
       }
     } else {
-      for (var $form in _forms.values) {
-        var $data = $form.data();
-        if ($data != null) {
-          result.include($data);
+      for (var form in _forms.values) {
+        final data = form.data();
+        if (data != null) {
+          result.include(Map<String, Object>.from(data));
         }
       }
     }
+
     return result;
   }
 
-  Data values({bool separateByGroup}) {
-    var result = Data();
-    if (separateByGroup == true) {
-      for (var $item in _forms.entries) {
-        var groupName = $item.key;
-        var $value = $item.value.value();
-        if ($value != null) {
-          result[groupName] = $value;
-        }
+  /// ✅ También corregido: conversión segura y null check
+  Data values({bool separateByGroup = false}) {
+    final result = Data();
+
+    if (separateByGroup) {
+      for (var entry in _forms.entries) {
+        result[entry.key] = entry.value.value();
       }
     } else {
-      for (var $form in _forms.values) {
-        var $value = $form.value();
-        if ($value != null) {
-          result.include($value);
+      for (var form in _forms.values) {
+        final value = form.value();
+        if (value != null) {
+          result.include(Map<String, Object>.from(value));
         }
       }
     }
+
     return result;
   }
 
-  FieldsForm _retrieve(String name) {
-    var $form = _forms[name ?? _scope.key];
-    if ($form == null) {
-      $form = FieldsForm();
-      _forms[name] = $form;
-    }
-    return $form;
+  FieldsForm _retrieve(String? name) {
+    final formKey = name ?? _scope.key;
+    return _forms.putIfAbsent(formKey, () => FieldsForm());
   }
 
   FieldsForm get current => _retrieve(_scope.key);
 
-  FieldsForm operator [](name) => _retrieve(name);
+  FieldsForm operator [](String name) => _retrieve(name);
 
-  key(String name, String field) {
-    var $form = _retrieve(name);
-    return $form.key(field);
+  GlobalKey<FieldState> key(String name, String field) {
+    final form = _retrieve(name);
+    return form.key(field);
   }
 }

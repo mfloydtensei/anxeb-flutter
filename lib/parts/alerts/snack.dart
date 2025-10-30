@@ -5,21 +5,22 @@ import 'package:flutter/material.dart' hide Dialog;
 import '../dialogs/form.dart';
 
 class SnackAlert extends ScopeAlert {
-  Flushbar _bar;
+  Flushbar<dynamic>? _bar;
+
   final String title;
-  final String message;
+  final String? message;
   final dynamic meta;
-  final TextStyle titleStyle;
-  final TextStyle messageStyle;
-  final IconData icon;
-  final Color textColor;
-  final Color iconColor;
-  final Color fillColor;
-  final int delay;
+  final TextStyle? titleStyle;
+  final TextStyle? messageStyle;
+  final IconData? icon;
+  final Color? textColor;
+  final Color? iconColor;
+  final Color? fillColor;
+  final int? delay;
 
   SnackAlert(
-    Scope scope, {
-    this.title,
+    super.scope, {
+    required this.title,
     this.message,
     this.meta,
     this.titleStyle,
@@ -29,20 +30,16 @@ class SnackAlert extends ScopeAlert {
     this.iconColor,
     this.fillColor,
     this.delay,
-  }) : super(scope);
+  });
 
   @override
-  Future dispose({bool quick}) async {
-    if (_bar != null) {
-      if (quick == true) {
-        if (_bar.isShowing()) {
-          _bar.dismiss();
-        }
+  Future<void> dispose({bool quick = false}) async {
+    if (_bar != null && _bar!.isShowing()) {
+      if (quick) {
+        _bar!.dismiss();
       } else {
-        if (_bar.isShowing()) {
-          await _bar.dismiss();
-          await Future.delayed(Duration(milliseconds: 500));
-        }
+        await _bar!.dismiss();
+        await Future.delayed(const Duration(milliseconds: 500));
       }
     }
     await super.dispose(quick: quick);
@@ -50,16 +47,34 @@ class SnackAlert extends ScopeAlert {
   }
 
   @override
-  Future build() async {
-    var $message = message != null ? Text(message, style: messageStyle ?? TextStyle(fontSize: 17, fontWeight: FontWeight.w300, color: textColor ?? Colors.white)) : null;
-    var $title = title != null ? Text(title, style: titleStyle ?? TextStyle(fontSize: $message == null ? 17 : 19, fontWeight: FontWeight.w400, color: textColor ?? Colors.white)) : null;
-    var $fill = fillColor ?? scope.application.settings.colors.navigation;
+  Future<void> build() async {
+    final Color background =
+        fillColor ?? scope.application.settings.colors.navigation;
+    final IconData displayIcon = icon ?? Icons.info;
+    final TextStyle titleTextStyle = titleStyle ??
+        TextStyle(
+          fontSize: (message?.isEmpty ?? true) ? 17 : 19,
+          fontWeight: FontWeight.w500,
+          color: textColor ?? Colors.white,
+        );
 
+    final TextStyle messageTextStyle = messageStyle ??
+        TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w300,
+          color: textColor ?? Colors.white,
+        );
+
+    final Widget titleWidget = Text(title, style: titleTextStyle);
+    final Widget? messageWidget =
+        message != null && message!.isNotEmpty ? Text(message!, style: messageTextStyle) : null;
+
+    // Si estamos dentro de un formulario, no mostramos el flushbar
     if (scope is FormScope) {
-        (scope as FormScope).warning = FormWarning(
+      (scope as FormScope).warning = FormWarning(
         message: message,
-        body: $message,
-        icon: icon,
+        body: messageWidget,
+        icon: displayIcon,
         iconColor: iconColor,
         textColor: textColor,
         fillColor: fillColor,
@@ -68,26 +83,44 @@ class SnackAlert extends ScopeAlert {
       return;
     }
 
-    _bar = Flushbar(
-      titleText: $message != null ? $title : null,
-      messageText: $message ?? $title,
+    _bar = Flushbar<dynamic>(
+      titleText: messageWidget != null ? titleWidget : null,
+      messageText: messageWidget ?? titleWidget,
       backgroundGradient: LinearGradient(
-        begin: FractionalOffset.topCenter,
-        end: FractionalOffset.bottomCenter,
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
         colors: [
-          $fill,
-          Color.alphaBlend(Colors.black.withOpacity(0.15), $fill),
+          background,
+          Color.alphaBlend(Colors.black.withOpacity(0.15), background),
         ],
-        stops: [0.0, 1.0],
+        stops: const [0.0, 1.0],
       ),
       isDismissible: true,
-      margin: scope.application.settings.alerts.margin != null ? scope.application.settings.alerts.margin() : (scope.window.overlay.extendBodyFullScreen ? EdgeInsets.only(left: 22, right: 22, bottom: 56) : EdgeInsets.all(8)),
-      borderRadius: scope.application.settings.alerts.margin?.call() == null ? null : scope.application.settings.alerts.borderRadius ?? BorderRadius.all(Radius.circular(8)),
-      boxShadows: [BoxShadow(offset: Offset(0, 2), blurRadius: 6, spreadRadius: 2, color: Color(0x55222222))],
-      flushbarPosition: scope.application.settings.alerts.showFromBottom?.call() == true ? FlushbarPosition.BOTTOM : (scope.application.settings.alerts.showFromBottom?.call() == false ? FlushbarPosition.TOP : (scope.window.overlay.extendBodyFullScreen ? FlushbarPosition.BOTTOM : FlushbarPosition.TOP)),
+      margin: scope.application.settings.alerts.margin(),
+      borderRadius: scope.application.settings.alerts.margin.call() == null
+          ? null
+          : scope.application.settings.alerts.borderRadius ??
+              const BorderRadius.all(Radius.circular(8)),
+      boxShadows: const [
+        BoxShadow(
+          offset: Offset(0, 2),
+          blurRadius: 6,
+          spreadRadius: 2,
+          color: Color(0x55222222),
+        ),
+      ],
+      flushbarPosition:
+          scope.application.settings.alerts.showFromBottom.call() == true
+              ? FlushbarPosition.BOTTOM
+              : (scope.application.settings.alerts.showFromBottom.call() ==
+                      false
+                  ? FlushbarPosition.TOP
+                  : (scope.window.overlay.extendBodyFullScreen
+                      ? FlushbarPosition.BOTTOM
+                      : FlushbarPosition.TOP)),
       icon: Icon(
-        icon,
-        size: $message == null ? 26 : 30.0,
+        displayIcon,
+        size: (message?.isEmpty ?? true) ? 26 : 30.0,
         color: iconColor ?? Colors.white,
       ),
       shouldIconPulse: false,
@@ -95,8 +128,8 @@ class SnackAlert extends ScopeAlert {
       duration: Duration(milliseconds: delay ?? 3000),
     );
 
-    await _bar.show(scope.context);
+    await _bar!.show(scope.context);
     _bar = null;
-    await Future.delayed(Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 500));
   }
 }

@@ -1,44 +1,67 @@
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'data.dart';
 
+/// =======================================================
+/// DISK STORAGE HANDLER
+/// =======================================================
 class Disk {
-  SharedPreferences _shared;
-  
-  Future store(String key, value) async {
+  SharedPreferences? _shared;
+
+  /// Inicializa SharedPreferences si aún no se ha hecho
+  Future<void> _check() async {
+    _shared ??= await SharedPreferences.getInstance();
+  }
+
+  /// Guarda un valor en disco
+  Future<void> store(String key, dynamic value) async {
     await _check();
+
     if (value is double) {
-      await _shared?.setDouble(key, value);
+      await _shared!.setDouble(key, value);
+    } else if (value is int) {
+      await _shared!.setInt(key, value);
     } else if (value is String) {
-      await _shared?.setString(key, value);
+      await _shared!.setString(key, value);
     } else if (value is bool) {
-      await _shared?.setBool(key, value);
+      await _shared!.setBool(key, value);
     } else if (value is Data) {
-      await _shared?.setString(key, value.toJson());
+      await _shared!.setString(key, value.toJson());
+    } else if (value == null) {
+      await _shared!.remove(key);
     } else {
-      await _shared?.setString(key, value.toString());
+      await _shared!.setString(key, value.toString());
     }
   }
 
-  Future<T> retrieve<T>(String key) async {
+  /// Obtiene un valor desde disco
+  Future<T?> retrieve<T>(String key) async {
     await _check();
-    var $value = _shared?.get(key);
+    final value = _shared!.get(key);
 
-    if (T is Data) {
-      return Data($value as String) as T;
-    } else {
-      return $value as T;
+    if (value == null) return null;
+
+    if (T == Data && value is String) {
+      return Data(value) as T;
     }
+
+    return value as T?;
   }
 
-  Future remove(String key) async {
+  /// Elimina una clave del almacenamiento
+  Future<void> remove(String key) async {
     await _check();
-    await _shared?.remove(key);
+    await _shared!.remove(key);
   }
 
-  Future _check() async {
-    if (_shared == null) {
-      _shared = await SharedPreferences.getInstance();
-    }
+  /// Limpia todo el almacenamiento local
+  Future<void> clear() async {
+    await _check();
+    await _shared!.clear();
+  }
+
+  /// Verifica si una clave existe
+  Future<bool> exists(String key) async {
+    await _check();
+    return _shared!.containsKey(key);
   }
 }

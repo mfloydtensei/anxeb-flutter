@@ -5,18 +5,26 @@ import 'application.dart';
 import 'model.dart';
 import 'utils.dart';
 
-class AuthProvider {
+/// =======================================================
+/// BASE AUTH PROVIDER
+/// =======================================================
+abstract class AuthProvider {
   final Application application;
 
-  AuthProvider(this.application);
+  const AuthProvider(this.application);
 
-  Future logout() async => {};
+  /// Realiza logout — puede ser sobreescrito por subclases (Google, Facebook, Apple)
+  Future<void> logout() async {}
 
-  Future<AuthResultModel> login() async => null;
+  /// Inicia sesión y devuelve un modelo con los datos del usuario autenticado
+  Future<AuthResultModel?> login() async => null;
 }
 
+/// =======================================================
+/// AUTH RESULT MODEL
+/// =======================================================
 class AuthResultModel extends Model<AuthResultModel> {
-  AuthResultModel([data]) : super(data);
+  AuthResultModel([dynamic data]) : super(data);
 
   @override
   void init() {
@@ -30,23 +38,27 @@ class AuthResultModel extends Model<AuthResultModel> {
     field(() => meta, (v) => meta = v, 'meta');
   }
 
-  String id;
-  String firstNames;
-  String lastNames;
-  String email;
-  String photo;
-  String token;
-  String provider;
+  String? id;
+  String? firstNames;
+  String? lastNames;
+  String? email;
+  String? photo;
+  String? token;
+  String? provider;
   dynamic meta;
 
   @override
-  String toString() => Utils.convert.fromNamesToFullName(firstNames, lastNames);
+  String toString() =>
+      Utils.convert.fromNamesToFullName(firstNames ?? '', lastNames ?? '');
 }
 
+/// =======================================================
+/// AUTH PROVIDERS WRAPPER
+/// =======================================================
 class AuthProviders {
-  GoogleAuth _google;
-  FacebookAuth _facebook;
-  AppleAuth _apple;
+  late final GoogleAuth _google;
+  late final FacebookAuth _facebook;
+  late final AppleAuth _apple;
 
   AuthProviders(Application application) {
     _google = GoogleAuth(application);
@@ -55,8 +67,20 @@ class AuthProviders {
   }
 
   GoogleAuth get google => _google;
-
   FacebookAuth get facebook => _facebook;
-
   AppleAuth get apple => _apple;
+
+  /// Retorna el proveedor activo según el nombre (útil para manejo dinámico)
+  AuthProvider? byName(String? name) {
+    switch (name?.toLowerCase()) {
+      case 'google':
+        return _google;
+      case 'facebook':
+        return _facebook;
+      case 'apple':
+        return _apple;
+      default:
+        return null;
+    }
+  }
 }

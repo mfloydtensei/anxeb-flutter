@@ -51,7 +51,7 @@ dependencies:
   share: ^2.0.4
   flutter_translate: 4.0.3
   intl: 0.18.1
-  permission_handler: ^10.2.0
+  permission_handler: ^11.3.1
   app_settings: 4.1.8
   package_info_plus: ^3.0.2
   in_app_review: ^2.0.6
@@ -68,10 +68,17 @@ dependencies:
   just_the_tooltip: ^0.0.12
   pointer_interceptor: ^0.9.3+4
   flutter_colorpicker: ^1.0.3
+  device_info_plus: ^10.1.0
 
 flutter:
   uses-material-design: true
 
-# 👇 Esto lo agregas justo al final del archivo
+# 👇 Asegura compatibilidad con dependencias viejas
 dependency_overrides:
   intl: 0.18.1
+
+# 👇 Esto suaviza las reglas del analizador y permite compilar código viejo
+analyzer:
+  language:
+    strict-inference: false
+    strict-raw-types: false

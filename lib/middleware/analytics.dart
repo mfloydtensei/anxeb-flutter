@@ -5,35 +5,42 @@ import 'device.dart';
 import 'scope.dart';
 
 class Analytics {
-  Scope _scope;
-  String _token;
-  FirebaseAnalytics _analytics;
-  FirebaseMessaging _messaging;
-  FirebaseAnalyticsObserver _observer;
-  Function(String token) _onToken;
-  Function(RemoteMessage message, MessageEventType event) _onMessage;
-  Function(RemoteMessage message, MessageEventType event) _onMessageGlobal;
-  List<dynamic> notifications;
+  Scope? _scope;
+  String? _token;
+  late final FirebaseAnalytics _analytics;
+  late final FirebaseMessaging _messaging;
+  late final FirebaseAnalyticsObserver _observer;
+  Function(String token)? _onToken;
+  Function(RemoteMessage message, MessageEventType event)? _onMessage;
+  Function(RemoteMessage message, MessageEventType event)? _onMessageGlobal;
+  final List<RemoteMessage> notifications = [];
 
-  Analytics() {
-    notifications = [];
-  }
+  Analytics();
 
-  Future init({Function(RemoteMessage message, MessageEventType event) onMessage}) async {
+  /// Inicializa Firebase y los listeners de mensajería
+  Future<void> init({
+    Function(RemoteMessage message, MessageEventType event)? onMessage,
+  }) async {
     _onMessageGlobal = onMessage;
+
     try {
       await Firebase.initializeApp();
+
       _analytics = FirebaseAnalytics.instance;
       _observer = FirebaseAnalyticsObserver(analytics: _analytics);
       _messaging = FirebaseMessaging.instance;
+
       reset();
+
       _token = await _messaging.getToken();
+
       if (Device.isIOS) {
-        _messaging.requestPermission();
+        await _messaging.requestPermission();
       }
+
       _messaging.onTokenRefresh.listen((token) {
         _token = token;
-        _onToken?.call(_token);
+        _onToken?.call(_token!);
       });
 
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -44,7 +51,7 @@ class Analytics {
         _handleMessage(message, MessageEventType.resume);
       });
     } catch (err) {
-      print(err);
+      print('Analytics init error: $err');
     }
   }
 
@@ -53,14 +60,17 @@ class Analytics {
     _onMessage = null;
   }
 
-  void setup({Scope scope}) {
+  void setup({Scope? scope}) {
     _scope = scope;
     if (_scope?.key != null) {
-      firebase.logEvent(name: 'view_navigation', parameters: {'name': _scope.key});
+      firebase.logEvent(
+        name: 'view_navigation',
+        parameters: {'name': _scope!.key},
+      );
     }
   }
 
-  Future<void> log(String name, {Map<String, dynamic> params}) {
+  Future<void> log(String name, {Map<String, dynamic>? params}) {
     return firebase.logEvent(name: name, parameters: params);
   }
 
@@ -72,48 +82,37 @@ class Analytics {
     return firebase.setUserId(id: id);
   }
 
-  Future<void> login() {
-    return firebase.logEvent(name: 'login');
-  }
+  Future<void> login() => firebase.logEvent(name: 'login');
 
-  Future<void> logout() {
-    return firebase.logEvent(name: 'logout');
-  }
+  Future<void> logout() => firebase.logEvent(name: 'logout');
 
-  Future<void> signUp() {
-    return firebase.logEvent(name: 'sign_up');
-  }
+  Future<void> signUp() => firebase.logEvent(name: 'sign_up');
 
-  void configure({Function(String token) onToken, Function(RemoteMessage message, MessageEventType event) onMessage}) {
-    if (onToken != null) {
-      _onToken = onToken;
-    }
-    if (onMessage != null) {
-      _onMessage = onMessage;
-    }
+  void configure({
+    Function(String token)? onToken,
+    Function(RemoteMessage message, MessageEventType event)? onMessage,
+  }) {
+    _onToken = onToken;
+    _onMessage = onMessage;
   }
 
   void _handleMessage(RemoteMessage message, MessageEventType event) {
-    RemoteNotification notification = message?.notification;
+    final notification = message.notification;
 
-    var $title;
-    var $body;
+    final title = notification?.title;
+    final body = notification?.body;
 
-    if (notification != null) {
-      $title = notification.title;
-      $body = notification.body;
-      notifications.add(message);
-    }
+    notifications.add(message);
 
-    if (_scope != null && _scope.mounted == true && $title != null && $body != null) {
-      _scope.alerts.notification($title, message: $body).show();
+    if (_scope?.mounted == true && title != null && body != null) {
+      _scope!.alerts.notification(title, message: body).show();
     }
 
     _onMessageGlobal?.call(message, event);
     _onMessage?.call(message, event);
   }
 
-  String get token => _token;
+  String? get token => _token;
 
   FirebaseAnalytics get firebase => _analytics;
 

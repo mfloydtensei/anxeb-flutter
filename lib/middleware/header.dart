@@ -3,19 +3,19 @@ import '../screen/scope.dart';
 
 class ScreenHeader {
   final ScreenScope scope;
-  final List<Widget> childs;
-  final VoidCallback dismiss;
-  final VoidCallback back;
-  final Widget Function() title;
-  final double Function() elevation;
-  final double Function() height;
-  final Widget Function() bottom;
-  final bool Function() isVisible;
-  final Color Function() fill;
-  Widget leading;
+  final List<Widget>? childs;
+  final VoidCallback? dismiss;
+  final VoidCallback? back;
+  final Widget Function()? title;
+  final double Function()? elevation;
+  final double Function()? height;
+  final Widget Function()? bottom;
+  final bool Function()? isVisible;
+  final Color Function()? fill;
+  final Widget? leading;
 
-  ScreenHeader({
-    @required this.scope,
+  const ScreenHeader({
+    required this.scope,
     this.childs,
     this.dismiss,
     this.back,
@@ -29,20 +29,44 @@ class ScreenHeader {
   });
 
   @protected
-  List<Widget> content() => childs;
+  List<Widget>? content() => childs;
 
   @protected
-  Widget body() => null;
+  Widget? body() => null;
 
   PreferredSizeWidget build() {
+    final backgroundColor =
+        fill?.call() ??
+        scope.window.overlay.background;
+
+    final double appBarElevation = elevation?.call() ?? 0;
+    final Widget? appBarTitle = body() ?? title?.call() ?? Text(scope.view.title);
+
+    final Widget? appBarBottom = scope.view.parts.tabs.header.call(
+          bottomBody: bottom?.call() ?? const SizedBox.shrink(),
+          height: height ?? () => 0.0,
+        );
+
+    final bool showActions = isVisible?.call() ?? true;
+    final bool showLeading =
+        !(back == null && dismiss == null && leading == null);
+
     return AppBar(
-      title: body?.call() ?? this.title?.call() ?? (scope.view.title != null ? Text(scope.view.title) : null),
-      elevation: elevation?.call(),
-      automaticallyImplyLeading: (back == null && dismiss == null && leading == null) ? true : false,
-      leading: leading ?? (back != null ? BackButton(onPressed: back) : (dismiss != null ? CloseButton(onPressed: dismiss) : null)),
-      backgroundColor: scope.window?.overlay?.background ?? fill?.call() ?? scope.application.settings.colors.primary,
-      bottom: scope?.view?.parts?.tabs?.header?.call(bottomBody: bottom?.call(), height: height) ?? bottom?.call(),
-      actions: isVisible?.call() != false ? content() : [],
+      title: appBarTitle,
+      elevation: appBarElevation,
+      automaticallyImplyLeading: !showLeading ? true : false,
+      leading: leading ??
+          (back != null
+              ? BackButton(onPressed: back)
+              : (dismiss != null
+                  ? IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: dismiss,
+                    )
+                  : null)),
+      backgroundColor: backgroundColor,
+      bottom: appBarBottom is PreferredSizeWidget ? appBarBottom : null,
+      actions: showActions ? (content() ?? []) : [],
     );
   }
 

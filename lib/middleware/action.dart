@@ -6,20 +6,20 @@ import 'device.dart';
 
 class ScreenAction {
   final ScreenScope scope;
-  final IconData Function() icon;
-  final VoidCallback onPressed;
-  final Color Function() color;
-  final bool Function() isDisabled;
-  final bool Function() isVisible;
-  final FloatingActionButtonLocation locator;
-  final List<AltAction> alternates;
-  final double separation;
-  final double offset;
+  final IconData Function()? icon;
+  final VoidCallback? onPressed;
+  final Color Function()? color;
+  final bool Function()? isDisabled;
+  final bool Function()? isVisible;
+  final FloatingActionButtonLocation? locator;
+  final List<AltAction>? alternates;
+  final double? separation;
+  final double? offset;
   final bool mini;
   bool _hidden;
 
   ScreenAction({
-    @required this.scope,
+    required this.scope,
     this.icon,
     this.onPressed,
     this.color,
@@ -29,11 +29,12 @@ class ScreenAction {
     this.alternates,
     this.separation,
     this.offset,
-    this.mini,
-  });
+    this.mini = false,
+  }) : _hidden = false;
 
+  /// Constructor rápido para acción "Back"
   ScreenAction.back({
-    @required this.scope,
+    required this.scope,
     this.isDisabled,
     this.isVisible,
     this.offset,
@@ -43,33 +44,41 @@ class ScreenAction {
         alternates = null,
         separation = null,
         locator = ScreenActionLocator(alignment: Alignment.bottomLeft),
-        icon = (() => Icons.chevron_left);
+        icon = (() => Icons.chevron_left),
+        _hidden = false;
 
+  /// Mostrar acción flotante
   void show() {
     _hidden = false;
     scope.rasterize();
   }
 
+  /// Ocultar acción flotante
   void hide() {
     _hidden = true;
     scope.rasterize();
   }
 
-  Widget build() {
-    if (_hidden == true || isVisible?.call() == false) {
-      return null;
+  /// Construcción del botón flotante
+  Widget? build() {
+    // Si está oculto o marcado como no visible, no se muestra
+    if (_hidden || (isVisible != null && isVisible!.call() == false)) {
+      return const SizedBox.shrink();
     }
+
     return FloatAction(
       scope: scope,
-      onPressed: onPressed,
+      onPressed: onPressed ?? () {},
       color: color?.call() ?? scope.application.settings.colors.success,
       icon: icon?.call() ?? Icons.check,
-      disabled: isDisabled?.call(),
-      alternates: alternates,
-      separation: separation,
-      topOffset: offset,
+      disabled: isDisabled?.call() ?? false,
+      alternates: alternates ?? [],
+      separation: separation ?? 0.0,
+      topOffset: offset ?? 0.0,
       mini: mini,
-      bottomOffset: Device.isAndroid && scope.window.overlay.extendBodyFullScreen == true ? 60.0 : 0.0,
+      bottomOffset: Device.isAndroid && scope.window.overlay.extendBodyFullScreen
+          ? 60.0
+          : 0.0,
     );
   }
 

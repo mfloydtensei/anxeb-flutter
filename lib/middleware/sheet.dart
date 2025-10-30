@@ -4,26 +4,25 @@ import 'package:ionicons/ionicons.dart';
 import 'package:flutter/material.dart';
 import 'scope.dart';
 
+/// =======================================================
+/// BASE CLASS FOR SHEETS
+/// =======================================================
 class ScopeSheet {
   final Scope scope;
 
-  ScopeSheet(this.scope);
+  const ScopeSheet(this.scope);
 
   @protected
-  Widget build(BuildContext context) {
-    return Container();
-  }
+  Widget build(BuildContext context) => const SizedBox.shrink();
 
-  Future show() async {
+  Future<void> show() async {
     return showModalBottomSheet<void>(
       context: scope.context,
       elevation: elevation,
       barrierColor: barrierColor,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (BuildContext context) {
-        return build(context);
-      },
+      builder: (BuildContext context) => build(context),
     );
   }
 
@@ -34,95 +33,137 @@ class ScopeSheet {
   Color get barrierColor => Colors.black54;
 }
 
+/// =======================================================
+/// SHEET MANAGER
+/// =======================================================
 class ScopeSheets {
-  Scope _scope;
+  final Scope _scope;
 
-  ScopeSheets(Scope scope) {
-    _scope = scope;
-  }
+  const ScopeSheets(this._scope);
 
-  TipSheet success(String title, {String message, Widget body}) {
+  /// ✅ Success Sheet
+  TipSheet success(
+    String title, {
+    String? message,
+    Widget? body,
+  }) {
     return TipSheet(
       _scope,
       title: title,
       fill: _scope.application.settings.colors.success,
       foreground: Colors.white,
-      message: message,
-      body: body,
+      message: message ?? '',
+      body: body ?? const SizedBox.shrink(),
       icon: Icons.check_circle,
     );
   }
 
-  TipSheet information(String title, {String message, Widget body}) {
+  /// ✅ Information Sheet
+  TipSheet information(
+    String title, {
+    String? message,
+    Widget? body,
+  }) {
     return TipSheet(
       _scope,
       title: title,
       fill: _scope.application.settings.colors.info,
       foreground: Colors.white,
-      message: message,
-      body: body,
+      message: message ?? '',
+      body: body ?? const SizedBox.shrink(),
       icon: Icons.info,
     );
   }
 
-  TipSheet tip(String title, {String message, Widget body}) {
+  /// 💡 Tip Sheet
+  TipSheet tip(
+    String title, {
+    String? message,
+    Widget? body,
+  }) {
     return TipSheet(
       _scope,
       title: title,
       fill: _scope.application.settings.colors.tip,
-      message: message,
-      body: body,
+      message: message ?? '',
+      body: body ?? const SizedBox.shrink(),
       icon: Ionicons.bulb,
     );
   }
 
-  TipSheet warning(String title, {String message, Widget body}) {
+  /// ⚠️ Warning Sheet
+  TipSheet warning(
+    String title, {
+    String? message,
+    Widget? body,
+  }) {
     return TipSheet(
       _scope,
       title: title,
       fill: _scope.application.settings.colors.danger,
       foreground: Colors.white,
-      message: message,
-      body: body,
+      message: message ?? '',
+      body: body ?? const SizedBox.shrink(),
       icon: Icons.warning,
     );
   }
 
-  TipSheet neutral(String title, {String message, Widget body}) {
+  /// 💬 Neutral Sheet
+  TipSheet neutral(
+    String title, {
+    String? message,
+    Widget? body,
+  }) {
     return TipSheet(
       _scope,
       title: title,
       fill: Colors.white,
-      message: message,
-      body: body,
+      message: message ?? '',
+      body: body ?? const SizedBox.shrink(),
       icon: Icons.chat,
     );
   }
 
-  TipSheet flat(String title, {String message, Widget body, IconData icon}) {
+  /// 🪶 Flat Sheet
+  TipSheet flat(
+    String title, {
+    String? message,
+    Widget? body,
+    IconData? icon,
+  }) {
     return TipSheet(
       _scope,
       title: title,
       fill: _scope.application.settings.colors.navigation,
-      message: message,
-      body: body,
+      message: message ?? '',
+      body: body ?? const SizedBox.shrink(),
       flat: true,
       foreground: Colors.white,
       icon: icon ?? Icons.info_outline,
     );
   }
 
-  NotificationSheet notification({String title, String message, String imageUrl, Widget body, IconData icon, List<NotificationSheetAction> actions, VoidCallback onDelete, DateTime date}) {
+  /// 🛎 Notification Sheet
+  NotificationSheet notification({
+    String? title,
+    String? message,
+    String? imageUrl,
+    Widget? body,
+    IconData? icon,
+    List<NotificationSheetAction>? actions,
+    VoidCallback? onDelete,
+    DateTime? date,
+  }) {
     return NotificationSheet(
       _scope,
-      title: title,
-      message: message,
-      body: body,
-      actions: actions,
-      onDelete: onDelete,
-      icon: icon,
-      date: date,
-      imageUrl: imageUrl,
+      title: title ?? '',
+      message: message ?? '',
+      body: body ?? const SizedBox.shrink(),
+      actions: actions ?? const [],
+      onDelete: onDelete ?? () {},
+      icon: icon ?? Icons.notifications,
+      date: date ?? DateTime.now(),
+      imageUrl: imageUrl ?? '',
     );
   }
 }

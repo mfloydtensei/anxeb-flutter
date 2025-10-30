@@ -3,12 +3,11 @@ import 'package:anxeb_flutter/middleware/scope.dart';
 import 'package:barcode_scan2/barcode_scan2.dart';
 import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:device_info/device_info.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_translate/flutter_translate.dart';
-import 'package:file_picker/file_picker.dart' as Picker;
 import 'package:url_launcher/url_launcher.dart' as UL;
 import '../helpers/camera.dart';
 import '../screen/scope.dart';
@@ -22,107 +21,117 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 
 class Device {
   static final Device _singleton = Device._internal();
-
-  factory Device() {
-    return _singleton;
-  }
-
+  factory Device() => _singleton;
   Device._internal();
 
   static DeviceInfo info = DeviceInfo();
-
   static DeviceSettings settings = DeviceSettings();
-
   static DevicePermissions permission = DevicePermissions();
 
-  static bool isAndroid = kIsWeb != true && Platform.isAndroid == true;
+  static bool get isAndroid => !kIsWeb && Platform.isAndroid;
+  static bool get isIOS => !kIsWeb && Platform.isIOS;
+  static bool get isWeb => kIsWeb;
 
-  static bool isIOS = kIsWeb != true && Platform.isIOS == true;
-
-  static bool isWeb = kIsWeb == true;
-
-  static Future launchStore({String appStoreId, String androidAppBundleId}) async {
-    OpenStore.instance.open(
-      appStoreId: appStoreId,
-      androidAppBundleId: androidAppBundleId,
+  static Future<void> launchStore({
+    String? appStoreId,
+    String? androidAppBundleId,
+  }) async {
+    await OpenStore.instance.open(
+      appStoreId: appStoreId ?? '',
+      androidAppBundleId: androidAppBundleId ?? '',
     );
   }
 
-  static Future launchUrl({@required Scope scope, @required String url, UL.LaunchMode mode = UL.LaunchMode.platformDefault}) async {
+  static Future<void> launchUrl({
+    required Scope scope,
+    required String url,
+    UL.LaunchMode mode = UL.LaunchMode.platformDefault,
+  }) async {
     try {
-      await UL.launchUrl(Uri.parse(url), mode: mode);
-    } catch (err) {
-      scope.dialogs.exception(translate('anxeb.exceptions.navigator_init')).show(); //Error iniciando navegador web
+      final uri = Uri.parse(url);
+      if (await UL.canLaunchUrl(uri)) {
+        await UL.launchUrl(uri, mode: mode);
+      } else {
+        throw Exception('No se puede abrir el enlace');
+      }
+    } catch (_) {
+      scope.dialogs.exception(translate('anxeb.exceptions.navigator_init')).show();
     }
   }
 
-  static Future<File> photo({@required ScreenScope scope, FileSourceOption option, String title, bool initFaceCamera, bool allowMainCamera, bool fullImage, bool flash, ResolutionPreset resolution, String fileName}) async {
-    File result;
-    bool useCameraHelper;
+  static Future<File?> photo({
+    required ScreenScope scope,
+    FileSourceOption option = FileSourceOption.prompt,
+    String? title,
+    bool? initFaceCamera,
+    bool? allowMainCamera,
+    bool? fullImage,
+    bool? flash,
+    ResolutionPreset? resolution,
+    String? fileName,
+  }) async {
+    bool useCameraHelper = false;
+    File? result;
 
     if (option == FileSourceOption.prompt) {
       useCameraHelper = await Utils.dialogs.shouldUseCamera(scope);
-      if (useCameraHelper == null) {
-        return null;
-      }
     } else {
-      useCameraHelper = option == null || option == FileSourceOption.camera;
+      useCameraHelper = option == FileSourceOption.camera;
     }
 
     if (useCameraHelper) {
-      result = await scope.push(CameraHelper(
-        title: title,
-        fullImage: fullImage,
-        initFaceCamera: initFaceCamera,
-        allowMainCamera: allowMainCamera,
-        flash: flash,
-        resolution: resolution,
-        fileName: fileName,
-      ));
+      result = await scope.push<File?>(
+        CameraHelper(
+          title: title ?? '',
+          fullImage: fullImage ?? false,
+          initFaceCamera: initFaceCamera ?? false,
+          allowMainCamera: allowMainCamera ?? true,
+          flash: flash ?? false,
+          resolution: resolution ?? ResolutionPreset.medium,
+          fileName: fileName ?? '',
+        ),
+      );
     } else {
       result = await browse<File>(
         scope: scope,
-        type: Picker.FileType.image,
+        type: FileType.image,
         allowMultiple: false,
-        callback: (files) async {
-          return File(files.single.path);
-        },
+        callback: (files) async => File(files.single.path!),
       );
     }
-
     return result;
   }
 
-  static Future<String> scan({@required Scope scope, FileSourceOption option, String title, bool autoflash}) async {
-    String value;
-    bool useCameraHelper;
+  static Future<String?> scan({
+    required Scope scope,
+    FileSourceOption option = FileSourceOption.prompt,
+    String? title,
+    bool? autoflash,
+  }) async {
+    String? value;
+    bool useCameraHelper = false;
 
     if (option == FileSourceOption.prompt) {
       useCameraHelper = await Utils.dialogs.shouldUseCamera(scope);
-      if (useCameraHelper == null) {
-        return null;
-      }
     } else {
-      useCameraHelper = option == null || option == FileSourceOption.camera;
+      useCameraHelper = option == FileSourceOption.camera;
     }
 
     if (useCameraHelper) {
       try {
-        var scanResult = await BarcodeScanner.scan(
+        final scanResult = await BarcodeScanner.scan(
           options: ScanOptions(
             strings: {
               'cancel': 'X',
-              'flash_on': translate('anxeb.device.camera.flash_on_label'), //TR Encender Luz
-              'flash_off': translate('anxeb.device.camera.flash_off_label'), //TR Apagar Luz
+              'flash_on': translate('anxeb.device.camera.flash_on_label'),
+              'flash_off': translate('anxeb.device.camera.flash_off_label'),
             },
-            autoEnableFlash: autoflash != null ? autoflash : true,
-            android: AndroidOptions(
-              useAutoFocus: true,
-            ),
+            autoEnableFlash: autoflash ?? false,
+            android: const AndroidOptions(useAutoFocus: true),
           ),
         );
         value = scanResult.rawContent;
-      } catch (e) {
+      } catch (_) {
         value = null;
       }
     } else {
@@ -133,31 +142,40 @@ class Device {
         allowMultiple: false,
         callback: (files) async {
           try {
-            final barcodeValue = await Scan.parse(files.first.path);
+            final barcodeValue = await Scan.parse(files.first.path!);
             if (barcodeValue?.isNotEmpty == true) {
               return barcodeValue;
             } else {
-              scope.alerts.error(translate('anxeb.device.scan.barcode_not_found')).show(); //No se encontró ningún código de barras en la imagen
+              scope.alerts.error(translate('anxeb.device.scan.barcode_not_found')).show();
             }
-          } catch (err) {
-            scope.alerts.error(translate('anxeb.device.scan.barcode_scan_error')).show(); //Error procesando o descargando imagen
+          } catch (_) {
+            scope.alerts.error(translate('anxeb.device.scan.barcode_scan_error')).show();
           }
           return null;
         },
       );
     }
 
-    return value?.isNotEmpty == true ? value : null;
+    return (value?.isNotEmpty ?? false) ? value : null;
   }
 
-  static Future<T> browse<T>({@required Scope scope, Future<T> Function(List<PlatformFile>) callback, FileType type, List<String> allowedExtensions, bool allowMultiple, bool withData = false, bool withReadStream = false, String dialogTitle, bool showBusyOnPicking}) async {
-    FilePickerResult picker;
-    T result;
+  static Future<T?> browse<T>({
+    required Scope scope,
+    required Future<T?> Function(List<PlatformFile>) callback,
+    FileType type = FileType.any,
+    List<String>? allowedExtensions,
+    bool allowMultiple = false,
+    bool withData = false,
+    bool withReadStream = false,
+    String? dialogTitle,
+    bool showBusyOnPicking = true,
+  }) async {
+    FilePickerResult? picker;
+    T? result;
+    bool isBusy = false;
 
-    bool _isBusy = false;
     try {
       picker = await FilePicker.platform.pickFiles(
-        lockParentWindow: true,
         type: type,
         allowMultiple: allowMultiple,
         allowedExtensions: allowedExtensions,
@@ -165,31 +183,30 @@ class Device {
         withReadStream: withReadStream,
         dialogTitle: dialogTitle,
         onFileLoading: (state) async {
-          if (showBusyOnPicking != false && state == FilePickerStatus.picking) {
-            await scope?.busy?.call(
+          if (showBusyOnPicking && state == FilePickerStatus.picking) {
+            await scope.busy(
               timeout: 0,
-              text: translate('anxeb.device.browse.loading_busy_label'), //Cargando Archivo
+              text: translate('anxeb.device.browse.loading_busy_label'),
             );
-            _isBusy = true;
+            isBusy = true;
           }
         },
       );
-      if (showBusyOnPicking != false) {
-        await Future.delayed(Duration(milliseconds: 500));
+
+      if (showBusyOnPicking) {
+        await Future.delayed(const Duration(milliseconds: 300));
+      }
+
+      if (picker != null && picker.files.isNotEmpty) {
+        result = await callback(picker.files);
       }
     } on PlatformException catch (err) {
-      await Future.delayed(Duration(milliseconds: 500));
-
-      if (_isBusy) {
-        await scope?.idle?.call();
-        _isBusy = false;
-      }
+      if (isBusy) await scope.idle();
       if (err.code == 'read_external_storage_denied') {
-        var result = await scope.dialogs.exception(
-          translate('anxeb.device.browse.access_denied_title'), //Acceso al Disco Desactivado
+        final action = await scope.dialogs.exception(
+          translate('anxeb.device.browse.access_denied_title'),
           dismissible: true,
           message: translate('anxeb.device.browse.access_denied_message'),
-          //¿Quieres habilitar el acceso al disco?
           icon: Icons.sd_storage,
           buttons: [
             DialogButton(translate('anxeb.common.yes'), 'settings'),
@@ -197,187 +214,101 @@ class Device {
           ],
         ).show();
 
-        if (result == 'settings') {
-          settings.storage();
+        if (action == 'settings') {
+          await settings.storage();
         }
-      } else if (err.code == 'already_active') {
-        //THIS IS A LIBRARY ISSUE
-        await scope?.alerts?.error
-            ?.call(err)
-            ?.show
-            ?.call();
       } else {
-        print('Not registered file browser code: ${err.code}');
-        await scope?.alerts?.error
-            ?.call(err)
-            ?.show
-            ?.call();
+        await scope.alerts.error(err).show();
       }
     } catch (err) {
-      await Future.delayed(Duration(milliseconds: 500));
-
-      if (_isBusy) {
-        await scope?.idle?.call();
-        _isBusy = false;
-      }
-      await scope?.alerts?.error
-          ?.call(err)
-          ?.show
-          ?.call();
+      if (isBusy) await scope.idle();
+      await scope.alerts.error(err).show();
+    } finally {
+      if (isBusy) await scope.idle();
     }
 
-    if (picker?.files?.isNotEmpty == true) {
-      result = callback != null ? (await callback(picker.files)) : picker.files;
-    }
-
-    if (_isBusy) {
-      await scope?.idle?.call();
-    }
     return result;
   }
 }
 
 class DevicePermissions {
   Permission get calendar => Permission.calendar;
-
   Permission get camera => Permission.camera;
-
   Permission get contacts => Permission.contacts;
-
   Permission get location => Permission.location;
-
   Permission get locationAlways => Permission.locationAlways;
-
   Permission get locationWhenInUse => Permission.locationWhenInUse;
-
   Permission get mediaLibrary => Permission.mediaLibrary;
-
   Permission get microphone => Permission.microphone;
-
   Permission get phone => Permission.phone;
-
   Permission get photos => Permission.photos;
-
-  Permission get photosAddOnly => Permission.photosAddOnly;
-
   Permission get reminders => Permission.reminders;
-
   Permission get sensors => Permission.sensors;
-
   Permission get sms => Permission.sms;
-
   Permission get speech => Permission.speech;
-
   Permission get storage => Permission.storage;
-
-  Permission get ignoreBatteryOptimizations => Permission.ignoreBatteryOptimizations;
-
   Permission get notification => Permission.notification;
-
   Permission get accessMediaLocation => Permission.accessMediaLocation;
-
   Permission get activityRecognition => Permission.activityRecognition;
-
-  Permission get unknown => Permission.unknown;
-
-  Permission get bluetooth => Permission.bluetooth;
-
-  Permission get manageExternalStorage => Permission.manageExternalStorage;
-
-  Permission get systemAlertWindow => Permission.systemAlertWindow;
-
-  Permission get requestInstallPackages => Permission.requestInstallPackages;
-
-  Permission get appTrackingTransparency => Permission.appTrackingTransparency;
-
-  Permission get criticalAlerts => Permission.criticalAlerts;
-
-  Permission get accessNotificationPolicy => Permission.accessNotificationPolicy;
-
-  Permission get bluetoothScan => Permission.bluetoothScan;
-
-  Permission get bluetoothAdvertise => Permission.bluetoothAdvertise;
-
   Permission get bluetoothConnect => Permission.bluetoothConnect;
+  Permission get bluetooth => Permission.bluetooth;
+  Permission get bluetoothScan => Permission.bluetoothScan;
+  Permission get bluetoothAdvertise => Permission.bluetoothAdvertise;
 }
 
 class DeviceSettings {
-  Future wifi() => AppSettings.openWIFISettings();
-
-  Future wireless() => AppSettings.openWirelessSettings();
-
-  Future location() => AppSettings.openLocationSettings();
-
-  Future security() => AppSettings.openSecuritySettings();
-
-  Future lock() => AppSettings.openLockAndPasswordSettings();
-
-  Future bluetooth() => AppSettings.openBluetoothSettings();
-
-  Future roaming() => AppSettings.openDataRoamingSettings();
-
-  Future date() => AppSettings.openDateSettings();
-
-  Future display() => AppSettings.openDisplaySettings();
-
-  Future notification() => AppSettings.openNotificationSettings();
-
-  Future sound() => AppSettings.openSoundSettings();
-
-  Future storage() => AppSettings.openInternalStorageSettings();
-
-  Future battery() => AppSettings.openBatteryOptimizationSettings();
-
-  Future app() => AppSettings.openAppSettings();
-
-  Future nfc() => AppSettings.openNFCSettings();
-
-  Future device() => AppSettings.openDeviceSettings();
-
-  Future vpn() => AppSettings.openVPNSettings();
-
-  Future accessibility() => AppSettings.openAccessibilitySettings();
-
-  Future development() => AppSettings.openDevelopmentSettings();
-
-  Future hotspot() => AppSettings.openHotspotSettings();
+  Future<void> wifi() => AppSettings.openWIFISettings();
+  Future<void> wireless() => AppSettings.openWirelessSettings();
+  Future<void> location() => AppSettings.openLocationSettings();
+  Future<void> security() => AppSettings.openSecuritySettings();
+  Future<void> lock() => AppSettings.openLockAndPasswordSettings();
+  Future<void> bluetooth() => AppSettings.openBluetoothSettings();
+  Future<void> roaming() => AppSettings.openDataRoamingSettings();
+  Future<void> date() => AppSettings.openDateSettings();
+  Future<void> display() => AppSettings.openDisplaySettings();
+  Future<void> notification() => AppSettings.openNotificationSettings();
+  Future<void> sound() => AppSettings.openSoundSettings();
+  Future<void> storage() => AppSettings.openInternalStorageSettings();
+  Future<void> battery() => AppSettings.openBatteryOptimizationSettings();
+  Future<void> app() => AppSettings.openAppSettings();
+  Future<void> nfc() => AppSettings.openNFCSettings();
+  Future<void> device() => AppSettings.openDeviceSettings();
+  Future<void> vpn() => AppSettings.openVPNSettings();
+  Future<void> accessibility() => AppSettings.openAccessibilitySettings();
+  Future<void> development() => AppSettings.openDevelopmentSettings();
+  Future<void> hotspot() => AppSettings.openHotspotSettings();
 }
 
 class DeviceInfo {
-  IosDeviceInfo _ios;
-  AndroidDeviceInfo _android;
-  PackageInfo _package;
+  IosDeviceInfo? _ios;
+  AndroidDeviceInfo? _android;
+  PackageInfo? _package;
 
   DeviceInfo() {
     init();
   }
 
   Future<DeviceInfo> init() async {
-    if (isWeb == false) {
-      final info = DeviceInfoPlugin();
-      if (isAndroid) {
-        _android = await info.androidInfo;
-      } else if (isIOS) {
-        _ios = await info.iosInfo;
+    if (!kIsWeb) {
+      final plugin = DeviceInfoPlugin();
+      if (Device.isAndroid) {
+        _android = await plugin.androidInfo;
+      } else if (Device.isIOS) {
+        _ios = await plugin.iosInfo;
       }
     }
     _package = await PackageInfo.fromPlatform();
     return this;
   }
 
-  bool get isAndroid => kIsWeb != true && Platform.isAndroid;
+  PackageInfo? get package => _package;
+  bool get isAndroid => Device.isAndroid;
+  bool get isIOS => Device.isIOS;
+  bool get isWeb => Device.isWeb;
 
-  bool get isIOS => kIsWeb != true && Platform.isIOS;
-
-  bool get isWeb => kIsWeb == true;
-
-  PackageInfo get package => _package;
-
-  String get id => _ios.identifierForVendor ?? _android?.androidId;
-
-  String get model => _ios?.utsname?.machine ?? _android?.model;
-
-  String get version => _ios?.systemVersion ?? _android?.version?.baseOS;
+  String? get id => _ios?.identifierForVendor ?? _android?.id;
+  String? get model => _ios?.utsname.machine ?? _android?.model;
+  String? get version => _ios?.systemVersion ?? _android?.version.release;
 }
 
 enum FileSourceOption { browse, camera, prompt }

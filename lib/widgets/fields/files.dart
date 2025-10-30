@@ -1,53 +1,58 @@
 import 'dart:io';
+import 'package:camera/camera.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
+import 'package:photo_view/photo_view.dart';
+
+import '../../middleware/device.dart';
 import '../../middleware/utils.dart';
 import '../../screen/scope.dart';
 import 'file.dart';
+
 import 'package:anxeb_flutter/helpers/document.dart';
 import 'package:anxeb_flutter/middleware/field.dart';
 import 'package:anxeb_flutter/middleware/scope.dart';
 import 'package:anxeb_flutter/misc/icons.dart';
-import 'package:camera/camera.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:flutter/material.dart';
-import 'package:path/path.dart';
-import 'package:photo_view/photo_view.dart';
-import '../../middleware/device.dart';
 
 class FilesInputField extends FieldWidget<List<FileInputValue>> {
   final bool allowMultiples;
-  final List<String> allowedExtensions;
-  final String launchUrlPrefix;
-  final Future Function({String launchUrl, FileInputValue file, bool readonly}) onPreview;
+  final List<String>? allowedExtensions;
+  final String? launchUrlPrefix;
+  final Future<dynamic> Function({
+    String? launchUrl,
+    FileInputValue? file,
+    bool? readonly,
+  })? onPreview;
 
   FilesInputField({
-    @required Scope scope,
-    Key key,
-    @required String name,
-    String group,
-    String label,
-    IconData icon,
-    EdgeInsets margin,
-    EdgeInsets padding,
-    bool readonly,
-    bool visible,
-    ValueChanged<List<FileInputValue>> onSubmitted,
-    ValueChanged<List<FileInputValue>> onApplied,
-    GestureTapCallback onTab,
-    GestureTapCallback onBlur,
-    GestureTapCallback onFocus,
-    ValueChanged<List<FileInputValue>> onChanged,
-    FormFieldValidator<List<FileInputValue>> validator,
-    List<FileInputValue> Function(dynamic value) parser,
-    FieldFocusType focusType,
-    Future<List<FileInputValue>> Function() fetcher,
-    Function(List<FileInputValue> value) applier,
-    FieldWidgetTheme theme,
+    required Scope scope,
+    Key? key,
+    required String name,
+    String? group,
+    String? label,
+    IconData? icon,
+    EdgeInsets? margin,
+    EdgeInsets? padding,
+    bool? readonly,
+    bool? visible,
+    ValueChanged<List<FileInputValue>>? onSubmitted,
+    ValueChanged<List<FileInputValue>>? onApplied,
+    GestureTapCallback? onTab,
+    GestureTapCallback? onBlur,
+    GestureTapCallback? onFocus,
+    ValueChanged<List<FileInputValue>>? onChanged,
+    FormFieldValidator<List<FileInputValue>>? validator,
+    List<FileInputValue> Function(dynamic value)? parser,
+    FieldFocusType? focusType,
+    Future<List<FileInputValue>> Function()? fetcher,
+    Function(List<FileInputValue> value)? applier,
+    FieldWidgetTheme? theme,
     this.allowMultiples = false,
     this.allowedExtensions,
     this.launchUrlPrefix,
     this.onPreview,
-  })  : assert(name != null),
-        super(
+  }) : super(
           scope: scope,
           key: key,
           name: name,
@@ -76,92 +81,108 @@ class FilesInputField extends FieldWidget<List<FileInputValue>> {
   _FilesInputFieldState createState() => _FilesInputFieldState();
 }
 
-class _FilesInputFieldState extends Field<List<FileInputValue>, FilesInputField> {
+class _FilesInputFieldState
+    extends Field<List<FileInputValue>, FilesInputField> {
   final GlobalIcons icons = GlobalIcons();
-  List<FileInputValue> files = [];
+  final List<FileInputValue> _files = <FileInputValue>[];
 
   @override
   Future<List<FileInputValue>> lookup() async {
-    if (Device.isWeb == true) {
-      List<PlatformFile> dataFiles = await Device.browse<List<PlatformFile>>(
+    if (Device.isWeb) {
+      final dataFiles = await Device.browse<List<PlatformFile>>(
         scope: widget.scope,
         type: FileType.custom,
         allowMultiple: widget.allowMultiples,
-        allowedExtensions: widget.allowedExtensions ?? ['jpeg', 'jpg', 'png', 'pdf'],
+        allowedExtensions:
+            widget.allowedExtensions ?? const ['jpeg', 'jpg', 'png', 'pdf'],
         showBusyOnPicking: false,
         withData: true,
-        callback: (files) async {
-          return files;
-        },
+        callback: (files) async => files,
       );
 
-      if (dataFiles?.isNotEmpty == true) {
-        return dataFiles.map((e) => FileInputValue(data: e.bytes, title: basename(e.name), extension: e.extension)).toList();
+      if (dataFiles.isNotEmpty) {
+        return dataFiles
+            .map(
+              (e) => FileInputValue(
+                data: e.bytes,
+                title: p.basename(e.name),
+                extension: e.extension,
+              ),
+            )
+            .toList();
       }
+      return <FileInputValue>[];
     } else {
-      final shouldUseCamera = await Utils.dialogs.shouldUseCamera(widget.scope, useDocumentLabel: true);
-      List<File> pathFiles;
+      final bool shouldUseCamera =
+          await Utils.dialogs.shouldUseCamera(widget.scope, useDocumentLabel: true);
 
-      if (shouldUseCamera == true) {
+      List<File> pathFiles = <File>[];
+
+      if (shouldUseCamera) {
         final picture = await Device.photo(
           scope: widget.scope,
-          title: widget.label,
+          title: widget.label ?? '',
           fullImage: true,
           initFaceCamera: false,
           allowMainCamera: true,
-          fileName: widget.label.toLowerCase().replaceAll(' ', '_'),
+          fileName: (widget.label ?? '').toLowerCase().replaceAll(' ', '_'),
           flash: true,
           resolution: ResolutionPreset.high,
         );
-
         if (picture != null) {
-          pathFiles = [];
           pathFiles.add(picture);
         }
-      } else if (shouldUseCamera == false) {
-        pathFiles = await Device.browse<List<File>>(
+      } else {
+        final picked = await Device.browse<List<File>>(
           scope: widget.scope,
           type: FileType.custom,
           allowMultiple: widget.allowMultiples,
           showBusyOnPicking: false,
-          allowedExtensions: widget.allowedExtensions ?? ['jpeg', 'jpg', 'png', 'pdf'],
-          callback: (files) async {
-            return files.map((file) => File(file.path)).toList();
-          },
+          allowedExtensions:
+              widget.allowedExtensions ?? const ['jpeg', 'jpg', 'png', 'pdf'],
+          callback: (files) async => files.map((f) => File(f.path)).toList(),
         );
+        if (picked.isNotEmpty) {
+          pathFiles = picked;
+        }
       }
 
-      if (pathFiles?.isNotEmpty == true) {
-        files.addAll(pathFiles
-            .map((file) => FileInputValue(
-                  path: file.path,
-                  title: basename(file.path),
-                  extension: (extension(file.path ?? '') ?? '').replaceFirst('.', ''),
-                  url: null,
-                  id: null,
-                ))
-            .toList());
-        super.submit(files);
+      if (pathFiles.isNotEmpty) {
+        _files.addAll(
+          pathFiles.map(
+            (file) => FileInputValue(
+              path: file.path,
+              title: p.basename(file.path),
+              extension: p.extension(file.path).replaceFirst('.', ''),
+              url: null,
+              id: null,
+            ),
+          ),
+        );
+        super.submit(_files);
+        return _files;
       }
+
+      return <FileInputValue>[];
     }
-
-    return null;
   }
 
   @override
-  Widget display([String text]) {
-    if (value?.isNotEmpty == true) {
+  Widget display([String? text]) {
+    final current = value;
+    if (current != null && current.isNotEmpty) {
       return Column(
-        children: value
+        children: current
             .map(
               (file) => GestureDetector(
-                onTap: () async {
-                  _preview(file);
-                },
+                onTap: () async => _preview(file),
                 child: Container(
-                  padding: EdgeInsets.only(top: 2),
+                  padding: const EdgeInsets.only(top: 2),
                   child: Row(
                     children: [
+                      const Padding(
+                        padding: EdgeInsets.only(right: 4, bottom: 2),
+                      ),
                       Padding(
                         padding: const EdgeInsets.only(right: 4, bottom: 2),
                         child: _getMimeIcon(file),
@@ -175,11 +196,12 @@ class _FilesInputFieldState extends Field<List<FileInputValue>, FilesInputField>
                             style: TextStyle(
                               height: 1,
                               fontSize: 16,
-                              color: widget.scope.application.settings.colors.primary,
+                              color: widget.scope.application.settings.colors
+                                  .primary,
                             ),
                           ),
                         ),
-                      )
+                      ),
                     ],
                   ),
                 ),
@@ -187,51 +209,55 @@ class _FilesInputFieldState extends Field<List<FileInputValue>, FilesInputField>
             )
             .toList(),
       );
-    } else {
-      return Container(
-        padding: EdgeInsets.only(top: 2),
-        child: super.display(widget.label),
-      );
     }
+    return Container(
+      padding: const EdgeInsets.only(top: 2),
+      child: super.display(widget.label),
+    );
   }
 
-  Future _preview(FileInputValue value) async {
-    if (value != null) {
-      var result;
-      if (widget.onPreview != null) {
-        result = await widget.onPreview.call(
-          launchUrl: widget.launchUrlPrefix,
-          file: value,
-          readonly: widget.readonly,
-        );
-      } else if (widget.scope is ScreenScope) {
-        result = await (widget.scope as ScreenScope).push(DocumentView(
+  Future<void> _preview(FileInputValue value) async {
+    dynamic result;
+    if (widget.onPreview != null) {
+      result = await widget.onPreview!(
+        launchUrl: widget.launchUrlPrefix,
+        file: value,
+        readonly: widget.readonly,
+      );
+    } else if (widget.scope is ScreenScope) {
+      result = await (widget.scope as ScreenScope).push(
+        DocumentView(
           launchUrl: widget.launchUrlPrefix,
           file: value,
           initialScale: PhotoViewComputedScale.contained,
           readonly: widget.readonly,
-        ));
-      }
-      present();
-      if (result == false) {
-        clear();
-      }
+        ),
+      );
+    }
+    present();
+    if (result == false) {
+      clear();
     }
   }
 
   @override
   void clear() {
-    files.clear();
+    _files.clear();
     super.clear();
   }
 
   Icon _getMimeIcon(FileInputValue value) {
-    var ext = value?.extension ?? (value?.path != null ? extension(value.path).replaceFirst('.', '') : null) ?? 'txt';
-    var meta = icons.getFileMeta(ext);
+    String ext = value.extension ?? '';
+    if (ext.isEmpty) {
+      final pth = value.path;
+      ext = (pth != null) ? p.extension(pth).replaceFirst('.', '') : 'txt';
+    }
+    if (ext.isEmpty) ext = 'txt';
 
+    final meta = icons.getFileMeta(ext);
     return Icon(
-      meta?.icon ?? Icons.insert_drive_file,
-      color: meta?.color ?? Color(0x88000000),
+      meta.icon ?? Icons.insert_drive_file,
+      color: meta.color ?? const Color(0x88000000),
       size: 12,
     );
   }

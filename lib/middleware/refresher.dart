@@ -4,61 +4,76 @@ import 'scope.dart';
 
 class ScreenRefresher {
   final Scope scope;
-  final Future Function() action;
-  final Future Function() onCompleted;
-  final Future Function(dynamic err) onError;
-  final bool Function() isDisabled;
-  RefreshController _refreshController;
+  final Future<void> Function()? action;
+  final Future<void> Function()? onCompleted;
+  final Future<void> Function(dynamic err)? onError;
+  final bool Function()? isDisabled;
+
+  final RefreshController _refreshController =
+      RefreshController(initialRefresh: false);
 
   ScreenRefresher({
-    @required this.scope,
+    required this.scope,
     this.action,
     this.onCompleted,
     this.onError,
     this.isDisabled,
-  }) {
-    _refreshController = RefreshController(initialRefresh: false);
-  }
+  });
 
   Widget wrap(Widget body) {
+    final bool disabled = isDisabled?.call() ?? false;
+
     return SmartRefresher(
       controller: _refreshController,
-      enablePullDown: isDisabled?.call() != true,
+      enablePullDown: !disabled,
       enablePullUp: false,
-      footer: null,
       header: WaterDropHeader(
-        completeDuration: Duration(milliseconds: 0),
+        completeDuration: const Duration(milliseconds: 0),
         waterDropColor: scope.application.settings.colors.primary,
-        complete: Container(),
-        failed: Container(),
-        refresh: Container(),
+        complete: const SizedBox.shrink(),
+        failed: const SizedBox.shrink(),
+        refresh: const SizedBox.shrink(),
       ),
       onRefresh: () async {
-        _refreshController.refreshCompleted();
         try {
-          await action();
-          onCompleted?.call();
+          if (action != null) await action!();
+          _refreshController.refreshCompleted();
+
+          if (onCompleted != null) {
+            await onCompleted!();
+          }
         } catch (err) {
-          onError?.call(err);
+          _refreshController.refreshFailed();
+          if (onError != null) {
+            await onError!(err);
+          } else {
+            debugPrint('ScreenRefresher error: $err');
+          }
         }
       },
       child: body,
     );
   }
 
-  void scrollToEnd() {
-    // ignore: deprecated_member_use
-    if (_refreshController.position != null) {
-      // ignore: deprecated_member_use
-      _refreshController.position.animateTo(_refreshController.position.maxScrollExtent, duration: Duration(milliseconds: 500), curve: Curves.decelerate);
+  /// 🧭 Scroll helpers: manual scroll management for custom widgets.
+  /// These methods now depend on user-provided scroll controllers.
+  void scrollToEnd(ScrollController controller) {
+    if (controller.hasClients) {
+      controller.animateTo(
+        controller.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.decelerate,
+      );
     }
   }
 
-  void scrollToStart() {
-    // ignore: deprecated_member_use
-    if (_refreshController.position != null) {
-      // ignore: deprecated_member_use
-      _refreshController.position.animateTo(0, duration: Duration(milliseconds: 500), curve: Curves.decelerate);
+  void scrollToStart(ScrollController controller) {
+    if (controller.hasClients) {
+      controller.animateTo(
+        0,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.decelerate,
+      );
     }
   }
 
