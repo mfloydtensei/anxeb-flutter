@@ -10,7 +10,8 @@ class ScreenTabs {
   final void Function(TabItem item)? onTap;
 
   late TabController _controller;
-   BuildContext? _context;
+ // ignore: unused_field
+  BuildContext? _context;
   int _currentIndex = 0;
 
   ScreenTabs({
