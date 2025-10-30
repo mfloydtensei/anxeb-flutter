@@ -7,31 +7,32 @@ class FormDialog<V, A extends Application> extends ScopeDialog<V> {
   final V model;
   final String title;
   final double width;
-  final double height;
-  final String subtitle;
-  final IconData icon;
-  final EdgeInsets headerPadding;
-  final EdgeInsets contentPadding;
-  final EdgeInsets footerPadding;
-  final EdgeInsets insetPadding;
-  final BorderRadius borderRadius;
-  final MainAxisAlignment buttonAlignment;
-  final bool dismissable;
+  final double? height;
+  final String? subtitle;
+  final IconData? icon;
+  final EdgeInsets? headerPadding;
+  final EdgeInsets? contentPadding;
+  final EdgeInsets? footerPadding;
+  final EdgeInsets? insetPadding;
+  final BorderRadius? borderRadius;
+  final MainAxisAlignment? buttonAlignment;
+  /// Si es true, el diálogo envuelve con RawKeyboardListener y gestiona ESC y focus.
+  final bool? dismissable;
 
-  Radius _cornerRadius;
-  FormScope<A> _scope;
-  Color _headerFillColor;
-  Color _footerFillColor;
-  EdgeInsets _headerPadding;
-  FocusNode _focusNode = FocusNode();
-  GlobalKey _tabsKey = GlobalKey();
-  int _index;
+  late final Radius _cornerRadius;
+  FormScope<A>? _scope;
+  Color? _headerFillColor;
+  Color? _footerFillColor;
+  EdgeInsets? _headerPadding;
+  final FocusNode _focusNode = FocusNode();
+  final GlobalKey _tabsKey = GlobalKey();
+  int _index = 0;
 
   FormDialog(
     Scope scope, {
-    @required this.model,
-    @required this.title,
-    @required this.width,
+    required this.model,
+    required this.title,
+    required this.width,
     this.height,
     this.subtitle,
     this.icon,
@@ -42,61 +43,77 @@ class FormDialog<V, A extends Application> extends ScopeDialog<V> {
     this.borderRadius,
     this.buttonAlignment,
     this.dismissable,
-    bool dismissible,
-    Key key,
+    bool? dismissible,
+    Key? key,
   }) : super(scope) {
-    super.dismissible = dismissible != null ? dismissible : (this.buttons == null);
-    _cornerRadius = Radius.circular(scope.application.settings.dialogs.dialogRadius ?? 20.0);
+    // Conserva el comportamiento original del framework
+    if (dismissible != null) {
+      super.dismissible = dismissible;
+    }
+    _cornerRadius = Radius.circular(scope.application.settings.dialogs.dialogRadius);
   }
 
   @protected
   void init(FormScope<A> scope) {}
 
   @protected
-  Widget body(FormScope<A> scope) => null;
+  Widget? body(FormScope<A> scope) => null;
 
   @protected
-  List<TabItem> tabs(FormScope<A> scope) => [];
+  List<TabItem> tabs(FormScope<A> scope) => const [];
 
   @protected
-  List<FormButton> buttons(FormScope<A> scope) => [];
+  List<FormButton> buttons(FormScope<A> scope) => const [];
 
   @override
   Widget build(BuildContext context) {
-    final GlobalKey dialogKey = GlobalKey();
+    final dialogKey = GlobalKey();
 
     return StatefulBuilder(
       key: dialogKey,
       builder: (context, setState) {
         final mustInit = _scope == null;
-        _scope = _scope ?? FormScope<A>(context, parent: scope, setState: setState, key: dialogKey);
+        _scope = _scope ?? FormScope<A>(
+          context,
+          parent: scope,
+          setState: setState,
+          key: dialogKey,
+        );
         if (mustInit) {
-          init(_scope);
+          init(_scope!);
         }
 
-        final $content = _getTabsWidget() ?? _getBodyWidget() ?? Container();
-        final $header = _getDialogHeader();
+        final content = _getTabsWidget() ?? _getBodyWidget() ?? const SizedBox();
+        final header = _getDialogHeader();
 
-        final $dialog = AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: borderRadius ?? BorderRadius.all(Radius.circular(scope.application.settings.dialogs.dialogRadius ?? 20.0))),
+        final dialog = AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: borderRadius ??
+                BorderRadius.all(Radius.circular(scope.application.settings.dialogs.dialogRadius)),
+          ),
           contentPadding: EdgeInsets.zero,
-          buttonPadding: EdgeInsets.zero,
+          // buttonPadding fue removido de AlertDialog en versiones recientes
           actionsPadding: EdgeInsets.zero,
           titlePadding: EdgeInsets.zero,
-          insetPadding: insetPadding ?? EdgeInsets.symmetric(horizontal: 40.0, vertical: 24.0),
-          contentTextStyle: TextStyle(fontSize: title != null ? 16.4 : 20, color: scope.application.settings.colors.text, fontWeight: FontWeight.w400),
-          title: $header,
-          content: $content,
+          insetPadding: insetPadding ?? const EdgeInsets.symmetric(horizontal: 40.0, vertical: 24.0),
+          contentTextStyle: TextStyle(
+            fontSize: 16.4,
+            color: scope.application.settings.colors.text,
+            fontWeight: FontWeight.w400,
+          ),
+          title: header,
+          content: content,
         );
 
         if (dismissable != true) {
-          return $dialog;
+          return dialog;
         }
 
         return RawKeyboardListener(
           focusNode: _focusNode,
-          onKey: (value) {
-            if (value.isKeyPressed(LogicalKeyboardKey.escape)) {
+          onKey: (event) {
+            // Manejo moderno de ESC (solo en KeyDown para evitar repeticiones)
+            if (event is RawKeyDownEvent && event.logicalKey == LogicalKeyboardKey.escape) {
               Navigator.of(_context).pop(null);
             }
           },
@@ -104,35 +121,32 @@ class FormDialog<V, A extends Application> extends ScopeDialog<V> {
             onTap: () {
               FocusScope.of(context).requestFocus(_focusNode);
             },
-            child: $dialog,
+            child: dialog,
           ),
         );
       },
     );
   }
 
-  Widget _getTabsWidget() {
-    final $tabs = tabs?.call(_scope);
-    if ($tabs == null || $tabs.isEmpty == true) {
-      return null;
-    }
+  Widget? _getTabsWidget() {
+    final t = tabs.call(_scope!);
+    if (t.isEmpty) return null;
 
-    _headerFillColor = scope.application.settings.dialogs.headerColor ?? Color(0xfff0f0f0);
+    _headerFillColor = scope.application.settings.dialogs.headerColor;
     _footerFillColor = scope.application.settings.dialogs.footerColor;
-    _headerPadding = EdgeInsets.only(left: 18, top: 18, right: 18, bottom: 6);
+    _headerPadding = const EdgeInsets.only(left: 18, top: 18, right: 18, bottom: 6);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.start,
       children: <Widget>[
         Container(
           width: width,
           height: height ?? 400,
-          margin: EdgeInsets.only(bottom: 1),
+          margin: const EdgeInsets.only(bottom: 1),
           color: Colors.white,
           child: DefaultTabController(
             key: _tabsKey,
-            length: $tabs.length,
+            length: t.length,
             child: Column(
               children: [
                 Material(
@@ -143,41 +157,50 @@ class FormDialog<V, A extends Application> extends ScopeDialog<V> {
                     padding: EdgeInsets.zero,
                     labelPadding: EdgeInsets.zero,
                     onTap: (index) {
-                      _scope.rasterize(() {
+                      _scope!.rasterize(() {
                         _index = index;
                       });
                     },
-                    tabs: $tabs
-                        .map(($tab) => Tab(
-                              child: Container(
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      child: $tab.icon == null ? null : Icon($tab.icon(), color: scope.application.settings.colors.primary, size: 18),
-                                      padding: $tab.icon == null ? null : EdgeInsets.only(right: 4, top: 2),
-                                    ),
-                                    Text(
-                                      $tab.caption(),
-                                      style: TextStyle(color: scope.application.settings.colors.primary, fontWeight: FontWeight.w400, fontSize: 14, height: 1.1),
-                                    ),
-                                  ],
+                    tabs: t
+                        .map(
+                          ($tab) => Tab(
+                            height: 28,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 4, top: 2),
+                                  child: Icon(
+                                    $tab.icon?.call(),
+                                    color: scope.application.settings.colors.primary,
+                                    size: 18,
+                                  ),
                                 ),
-                              ),
-                              height: 28,
-                            ))
+                                Text(
+                                  $tab.caption?.call() ?? '',
+                                  style: TextStyle(
+                                    color: scope.application.settings.colors.primary,
+                                    fontWeight: FontWeight.w400,
+                                    fontSize: 14,
+                                    height: 1.1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
                         .toList(),
                   ),
                 ),
                 Expanded(
-                  child: Container(
-                    padding: contentPadding ?? EdgeInsets.only(left: 18, right: 18, top: 18),
+                  child: Padding(
+                    padding: contentPadding ?? const EdgeInsets.only(left: 18, right: 18, top: 18),
                     child: TabBarView(
-                      children: $tabs.map((e) => e.body()).toList(),
-                    ),
+                        children: t.map((e) => e.body?.call() ?? const SizedBox()).toList(),
+                      ),
                   ),
-                )
+                ),
               ],
             ),
           ),
@@ -187,25 +210,23 @@ class FormDialog<V, A extends Application> extends ScopeDialog<V> {
     );
   }
 
-  Widget _getBodyWidget() {
-    final $body = body?.call(_scope);
-    if ($body == null) {
-      return null;
-    }
+  Widget? _getBodyWidget() {
+    final b = body.call(_scope!);
+    if (b == null) return null;
+
     _headerFillColor = null;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.start,
       children: <Widget>[
         Container(
           width: width,
           height: height,
-          margin: EdgeInsets.only(bottom: 1),
+          margin: const EdgeInsets.only(bottom: 1),
           color: Colors.white,
-          child: Container(
-            padding: contentPadding ?? EdgeInsets.only(left: 18, right: 18),
-            child: $body,
+          child: Padding(
+            padding: contentPadding ?? const EdgeInsets.symmetric(horizontal: 18),
+            child: b,
           ),
         ),
         _getDialogFooter(),
@@ -214,58 +235,74 @@ class FormDialog<V, A extends Application> extends ScopeDialog<V> {
   }
 
   Widget _getDialogFooter() {
-    final formButtons = buttons(_scope);
+    final formButtons = buttons(_scope!);
+    final effectiveFooter = footerPadding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 16);
+
+    final warn = _scope!.warning;
 
     return Container(
       width: width,
       decoration: BoxDecoration(
         color: _footerFillColor,
-        borderRadius: BorderRadius.only(bottomLeft: _cornerRadius, bottomRight: _cornerRadius),
+        borderRadius: BorderRadius.only(
+          bottomLeft: _cornerRadius,
+          bottomRight: _cornerRadius,
+        ),
       ),
-      padding: EdgeInsets.only(left: footerPadding?.left ?? 16, right: footerPadding?.right ?? 16),
-      child: Container(
-        padding: EdgeInsets.only(top: footerPadding?.top ?? 16, bottom: footerPadding?.bottom ?? 16),
+      padding: EdgeInsets.symmetric(horizontal: effectiveFooter.left), // simétrico manteniendo compatibilidad
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: effectiveFooter.top),
         child: Column(
           children: [
             AnimatedSize(
-              duration: Duration(milliseconds: 200),
+              duration: const Duration(milliseconds: 200),
               curve: Curves.fastOutSlowIn,
-              child: _scope.warning == null
-                  ? Container()
+              child: warn == null
+                  ? const SizedBox.shrink()
                   : Container(
-                      padding: const EdgeInsets.only(left: 4, right: 4, top: 4, bottom: 6),
-                      margin: EdgeInsets.only(bottom: 18),
+                      padding: const EdgeInsets.fromLTRB(4, 4, 4, 6),
+                      margin: const EdgeInsets.only(bottom: 18),
                       decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.all(Radius.circular(scope.application.settings.dialogs.buttonRadius)),
+                        color: warn.fillColor ?? Colors.red,
+                        borderRadius: BorderRadius.all(
+                          Radius.circular(scope.application.settings.dialogs.buttonRadius),
+                        ),
                       ),
                       child: Row(
                         children: [
-                          Container(
-                            child: Icon(_scope.warning?.icon ?? AnxebIcons.Typicons.warning, color: Colors.white, size: 16),
-                            padding: EdgeInsets.only(left: 13, right: 13),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 13),
+                            child: Icon(
+                              warn.icon ?? AnxebIcons.Typicons.warning,
+                              color: warn.iconColor ?? Colors.white,
+                              size: 16,
+                            ),
                           ),
                           Expanded(
-                            child: _scope.warning?.body ??
+                            child: warn.body ??
                                 Text(
-                                  _scope.warning?.message ?? '',
+                                  warn.message ?? '',
                                   softWrap: true,
-                                  style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+                                  style: TextStyle(
+                                    color: warn.textColor ?? Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                           ),
-                          Container(
+                          Padding(
+                            padding: const EdgeInsets.only(left: 10, right: 8),
                             child: IconButton(
-                              padding: EdgeInsets.only(left: 12),
+                              padding: const EdgeInsets.only(left: 12),
                               iconSize: 18,
                               fillColor: Colors.transparent,
                               innerColor: Colors.white,
                               size: 24,
                               icon: Icons.close,
                               action: () async {
-                                _scope.warning = null;
+                                _scope!.warning = null;
                               },
                             ),
-                            padding: EdgeInsets.only(left: 10, right: 8),
                           ),
                         ],
                       ),
@@ -273,26 +310,28 @@ class FormDialog<V, A extends Application> extends ScopeDialog<V> {
             ),
             Row(
               mainAxisAlignment: buttonAlignment ?? MainAxisAlignment.end,
-              children: formButtons.where(($button) => $button.visible != false).map(($button) {
-                var button = TextButton(
+              children: formButtons
+                  .where(($button) => $button.visible != false)
+                  .map(($button) {
+                final btn = TextButton(
                   caption: $button.caption,
-                  padding: $button.icon != null ? (scope.application.settings.dialogs.buttonPaddingWithIcon ?? EdgeInsets.only(left: 14, right: 18, top: 6, bottom: 6)) : (scope.application.settings.dialogs.buttonPaddingWithoutIcon ?? EdgeInsets.only(left: 14, right: 14, top: 6, bottom: 6)),
+                  padding: scope.application.settings.dialogs.buttonPaddingWithIcon,
                   radius: scope.application.settings.dialogs.buttonRadius,
-                  icon: $button.icon,
-                  enabled: $button.enabled,
-                  swapIcon: $button.swapIcon,
+                  icon: $button.icon ?? Icons.help_outline,
+                  enabled: $button.enabled ?? true,
+                  swapIcon: $button.swapIcon ?? false,
                   color: $button.fillColor ?? scope.application.settings.colors.primary,
                   textColor: $button.textColor ?? Colors.white,
-                  margin: EdgeInsets.only(left: formButtons.first == $button ? 0 : 4, right: formButtons.last == $button ? 0 : 4),
+                  margin: EdgeInsets.only(
+                    left: formButtons.first == $button ? 0 : 4,
+                    right: formButtons.last == $button ? 0 : 4,
+                  ),
                   onPressed: () async {
-                    if (_context == null) {
-                      return null;
-                    }
-                    final result = await $button?.onTap?.call(_scope);
+                    final result = await $button.onTap?.call(_scope!);
                     if (result == false) {
                       Navigator.of(_context).pop(null);
                     } else if (result == null) {
-                      //ignore
+                      // ignore
                     } else {
                       Navigator.of(_context).pop(result is V ? result : model);
                     }
@@ -302,47 +341,45 @@ class FormDialog<V, A extends Application> extends ScopeDialog<V> {
                   textStyle: scope.application.settings.dialogs.buttonTextStyle,
                 );
 
-                var isLast = formButtons.last == $button;
+                final isLast = formButtons.last == $button;
 
                 return Row(
                   children: [
-                    $button.leftDivisor == true
-                        ? Container(
-                            height: 32,
-                            padding: EdgeInsets.only(right: 10),
-                            child: DottedLine(
-                              direction: Axis.vertical,
-                              lineLength: double.infinity,
-                              lineThickness: 1,
-                              dashLength: 2,
-                              dashColor: scope.application.settings.colors.primary,
-                              dashRadius: 0.0,
-                              dashGapLength: 4.0,
-                              dashGapColor: Colors.transparent,
-                            ),
-                          )
-                        : Container(),
+                    if ($button.leftDivisor == true)
+                      Container(
+                        height: 32,
+                        padding: const EdgeInsets.only(right: 10),
+                        child: DottedLine(
+                          direction: Axis.vertical,
+                          lineLength: double.infinity,
+                          lineThickness: 1,
+                          dashLength: 2,
+                          dashColor: scope.application.settings.colors.primary,
+                          dashRadius: 0.0,
+                          dashGapLength: 4.0,
+                          dashGapColor: Colors.transparent,
+                        ),
+                      ),
                     Container(
-                      child: button,
-                      width: button.width,
+                      width: btn.width,
                       padding: EdgeInsets.only(right: isLast ? 0 : 10),
+                      child: btn,
                     ),
-                    $button.rightDivisor == true
-                        ? Container(
-                            height: 32,
-                            padding: EdgeInsets.only(right: 10),
-                            child: DottedLine(
-                              direction: Axis.vertical,
-                              lineLength: double.infinity,
-                              lineThickness: 1,
-                              dashLength: 2,
-                              dashColor: scope.application.settings.colors.primary,
-                              dashRadius: 0.0,
-                              dashGapLength: 4.0,
-                              dashGapColor: Colors.transparent,
-                            ),
-                          )
-                        : Container(),
+                    if ($button.rightDivisor == true)
+                      Container(
+                        height: 32,
+                        padding: const EdgeInsets.only(right: 10),
+                        child: DottedLine(
+                          direction: Axis.vertical,
+                          lineLength: double.infinity,
+                          lineThickness: 1,
+                          dashLength: 2,
+                          dashColor: scope.application.settings.colors.primary,
+                          dashRadius: 0.0,
+                          dashGapLength: 4.0,
+                          dashGapColor: Colors.transparent,
+                        ),
+                      ),
                   ],
                 );
               }).toList(),
@@ -359,22 +396,20 @@ class FormDialog<V, A extends Application> extends ScopeDialog<V> {
         color: _headerFillColor,
         borderRadius: BorderRadius.only(topLeft: _cornerRadius, topRight: _cornerRadius),
       ),
-      padding: headerPadding ?? _headerPadding ?? EdgeInsets.only(left: 18, right: 18, top: 18, bottom: 18),
+      padding: headerPadding ?? _headerPadding ?? const EdgeInsets.fromLTRB(18, 18, 18, 18),
       child: Row(
         children: <Widget>[
           Container(
-            padding: subtitle == null ? null : EdgeInsets.only(right: 7),
-            margin: EdgeInsets.only(right: 12),
-            decoration: subtitle == null
-                ? null
-                : BoxDecoration(
-                    border: Border(
-                      right: BorderSide(width: 1.0, color: scope.application.settings.colors.separator),
-                    ),
-                  ),
+            padding: const EdgeInsets.only(right: 7),
+            margin: const EdgeInsets.only(right: 12),
+            decoration: BoxDecoration(
+              border: Border(
+                right: BorderSide(width: 1.0, color: scope.application.settings.colors.separator),
+              ),
+            ),
             child: Icon(
-              icon,
-              size: subtitle == null ? 34 : 46,
+              icon, // Icon admite null y renderiza vacío si no hay dato
+              size: 46,
               color: scope.application.settings.colors.primary,
             ),
           ),
@@ -384,48 +419,50 @@ class FormDialog<V, A extends Application> extends ScopeDialog<V> {
               children: [
                 Text(
                   title,
-                  style: TextStyle(fontSize: 20, color: scope.application.settings.colors.primary, fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                    fontSize: 20,
+                    color: scope.application.settings.colors.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-                subtitle != null
-                    ? Container(
-                        padding: EdgeInsets.only(left: 1),
-                        child: Text(
-                          subtitle.toUpperCase(),
-                          style: TextStyle(fontSize: 12, color: scope.application.settings.colors.primary, fontWeight: FontWeight.w300),
-                        ),
-                      )
-                    : Container(),
-              ],
-            ),
-          ),
-          close != null
-              ? Material(
-                  color: Colors.transparent,
-                  child: Container(
-                    margin: EdgeInsets.only(right: 2, bottom: 6),
-                    child: InkWell(
-                      onTap: () async {
-                        if (_context == null) {
-                          return null;
-                        }
-                        final result = await close?.call(_scope);
-                        if (result == false) {
-                          Navigator.of(_context).pop(null);
-                        } else if (result == null) {
-                          //ignore
-                        } else {
-                          Navigator.of(_context).pop(result is V ? result : model);
-                        }
-                      },
-                      borderRadius: BorderRadius.circular(100),
-                      child: Container(
-                        padding: EdgeInsets.all(6),
-                        child: Icon(Icons.close),
+                if (subtitle != null && subtitle!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 1),
+                    child: Text(
+                      subtitle!.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: scope.application.settings.colors.primary,
+                        fontWeight: FontWeight.w300,
                       ),
                     ),
                   ),
-                )
-              : Container(),
+              ],
+            ),
+          ),
+          Material(
+            color: Colors.transparent,
+            child: Container(
+              margin: const EdgeInsets.only(right: 2, bottom: 6),
+              child: InkWell(
+                onTap: () async {
+                  final result = await close?.call(_scope!);
+                  if (result == false) {
+                    Navigator.of(_context).pop(null);
+                  } else if (result == null) {
+                    // ignore
+                  } else {
+                    Navigator.of(_context).pop(result is V ? result : model);
+                  }
+                },
+                borderRadius: BorderRadius.circular(100),
+                child: const Padding(
+                  padding: EdgeInsets.all(6),
+                  child: Icon(Icons.close),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -433,46 +470,56 @@ class FormDialog<V, A extends Application> extends ScopeDialog<V> {
 
   int get index => _index;
 
-  bool get exists => model != null;
+  // model es required y no-nullable; existe siempre
+  bool get exists => true;
 
-  BuildContext get _context => _scope.context;
+  BuildContext get _context => _scope!.context;
 
-  FormScope<A> get formScope => _scope;
+  FormScope<A> get formScope => _scope!;
 
   @protected
   void pop([dynamic result]) {
-    if (_context == null) {
-      return null;
-    }
     Navigator.of(_context).pop(result ?? model);
   }
 
   @protected
-  Future Function(FormScope<A> scope) get close => null;
+  Future<dynamic> Function(FormScope<A> scope)? get close => null;
 }
 
 class FormWarning {
-  final Widget body;
-  final String message;
-  final Color fillColor;
-  final Color textColor;
-  final IconData icon;
-  final Color iconColor;
+  final Widget? body;
+  final String? message;
+  final Color? fillColor;
+  final Color? textColor;
+  final IconData? icon;
+  final Color? iconColor;
   final dynamic meta;
 
-  FormWarning({this.body, this.message, this.fillColor, this.textColor, this.icon, this.iconColor, this.meta});
+  const FormWarning({
+    this.body,
+    this.message,
+    this.fillColor,
+    this.textColor,
+    this.icon,
+    this.iconColor,
+    this.meta,
+  });
 }
 
 class FormScope<A extends Application> extends Scope implements IScope {
-  GlobalKey _key;
-  Scope parent;
-  StateSetter _setState;
-  FormWarning _warning;
+  final GlobalKey _key;
+  final Scope parent;
+  final StateSetter _setState;
+  FormWarning? _warning;
 
-  FormScope(BuildContext context, {@required this.parent, @required StateSetter setState, @required GlobalKey key}) : super(context) {
-    _setState = setState;
-    _key = key;
-  }
+  FormScope(
+    BuildContext context, {
+    required this.parent,
+    required StateSetter setState,
+    required GlobalKey key,
+  })  : _setState = setState,
+        _key = key,
+        super(context);
 
   @override
   A get application => parent.application as A;
@@ -484,31 +531,43 @@ class FormScope<A extends Application> extends Scope implements IScope {
   String get title => parent.title;
 
   @override
-  bool get mounted => _key?.currentState?.mounted;
+  bool get mounted => _key.currentState?.mounted ?? false;
 
   @override
-  void rasterize([VoidCallback fn]) {
+  void rasterize([VoidCallback? fn]) {
     _setState(fn ?? () {});
   }
 
-  FormWarning get warning => _warning;
+  FormWarning? get warning => _warning;
 
-  set warning(FormWarning value) {
+  set warning(FormWarning? value) {
     var setWarning = true;
 
     if (value?.meta != null) {
-      if (value.meta != null && value.meta['fields'] != null) {
-        for (var item in value.meta['fields']) {
-          String fieldName = item['name'];
-          var form = fieldName.contains('.') == true ? forms[fieldName.split('.').first] : forms.current;
-          var field = fieldName.contains('.') == true ? form.fields[fieldName.split('.').last] : form.fields[fieldName];
-          field.focus(warning: value.message);
-          setWarning = false;
+      final meta = value!.meta;
+      final fieldsMeta = (meta is Map && meta['fields'] is Iterable) ? meta['fields'] as Iterable : null;
+
+      if (fieldsMeta != null) {
+        for (final item in fieldsMeta) {
+          try {
+            final name = (item is Map && item['name'] is String) ? item['name'] as String : '';
+            if (name.isEmpty) continue;
+
+            final parts = name.split('.');
+            final form = parts.length > 1 ? forms[parts.first] : forms.current;
+            final field = parts.length > 1 ? form.fields[parts.last] : form.fields[name];
+            if (field != null) {
+              field.focus(warning: value.message);
+              setWarning = false;
+            }
+          } catch (_) {
+            // Si algo falla al enfocar, mantenemos el warning visible.
+          }
         }
       }
     }
 
-    if (setWarning == true) {
+    if (setWarning) {
       rasterize(() {
         _warning = value;
       });
@@ -519,13 +578,13 @@ class FormScope<A extends Application> extends Scope implements IScope {
 }
 
 class FormSpacer extends StatelessWidget {
-  final bool column;
+  final bool? column;
 
-  FormSpacer({this.column});
+  const FormSpacer({super.key, this.column});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       height: column == true ? 18 : 0,
       width: column != true ? 10 : 0,
     );
@@ -534,81 +593,69 @@ class FormSpacer extends StatelessWidget {
 
 class FormRowContainer extends StatelessWidget {
   final Scope scope;
-  final String title;
-  final bool visible;
-  final IconData icon;
-  final List<Widget> fields;
+  final String? title;
+  final bool? visible;
+  final IconData? icon;
+  final List<Widget>? fields; // (Se mantiene por compatibilidad aunque no se usa aquí)
   final Widget child;
-  final bool latest;
-  final double height;
+  final bool? latest;
+  final double? height;
 
-  FormRowContainer({
-    @required this.scope,
+  const FormRowContainer({
+    super.key,
+    required this.scope,
     this.title,
     this.visible,
     this.icon,
     this.fields,
-    this.child,
+    required this.child,
     this.latest,
     this.height,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (visible == false) {
-      return Container();
-    }
+    if (visible == false) return const SizedBox();
+
     return Column(
       children: [
-        title != null
-            ? Container(
-                padding: EdgeInsets.only(top: 0, bottom: 3),
-                margin: EdgeInsets.only(bottom: 8, top: 12),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.max,
-                      children: [
-                        icon != null ? Icon(icon, size: 12, color: scope.application.settings.colors.primary) : Container(),
-                        Expanded(
-                          child: Text(
-                            title.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Container(
-                      padding: EdgeInsets.only(top: 6),
-                      child: DottedLine(
-                        direction: Axis.horizontal,
-                        lineLength: double.infinity,
-                        lineThickness: 1,
-                        dashLength: 2,
-                        dashColor: scope.application.settings.colors.primary,
-                        dashRadius: 0.0,
-                        dashGapLength: 4.0,
-                        dashGapColor: Colors.transparent,
+        Container(
+          padding: const EdgeInsets.only(top: 0, bottom: 3),
+          margin: const EdgeInsets.only(bottom: 8, top: 12),
+          child: Column(
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  if (icon != null) Icon(icon, size: 12, color: scope.application.settings.colors.primary),
+                  Expanded(
+                    child: Text(
+                      (title ?? '').toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ],
+                  ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: DottedLine(
+                  direction: Axis.horizontal,
+                  lineLength: double.infinity,
+                  lineThickness: 1,
+                  dashLength: 2,
+                  dashColor: scope.application.settings.colors.primary,
+                  dashRadius: 0.0,
+                  dashGapLength: 4.0,
+                  dashGapColor: Colors.transparent,
                 ),
-              )
-            : Container(),
-        child != null
-            ? child
-            : Container(
-                constraints: BoxConstraints(
-                  minHeight: height ?? (latest == true ? 0 : 64),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: fields ?? [],
-                ),
-              )
+              ),
+            ],
+          ),
+        ),
+        child,
       ],
     );
   }

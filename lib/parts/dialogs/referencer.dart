@@ -8,23 +8,23 @@ import 'package:flutter_translate/flutter_translate.dart';
 
 class ReferencerDialog<V> extends ScopeDialog<List<V>> {
   final String title;
-  final IconData icon;
+  final IconData? icon;
   final Referencer<V> referencer;
   final ReferenceItemWidget<V> itemWidget;
-  final ReferenceHeaderWidget<V> headerWidget;
-  final ReferenceCreateWidget<V> footerWidget;
-  final ReferenceEmptyWidget<V> emptyWidget;
-  final ReferenceFilterHandler<V> filter;
-  final double buttonsWidth;
-  final double width;
-  final double height;
+  final ReferenceHeaderWidget<V>? headerWidget;
+  final ReferenceCreateWidget<V>? footerWidget;
+  final ReferenceEmptyWidget<V>? emptyWidget;
+  final ReferenceFilterHandler<V>? filter;
+  final double? buttonsWidth;
+  final double? width;
+  final double? height;
 
   ReferencerDialog(
     Scope scope, {
-    this.title,
+    required this.title,
+    required this.referencer,
     this.icon,
-    this.referencer,
-    this.itemWidget,
+    required this.itemWidget,
     this.headerWidget,
     this.footerWidget,
     this.emptyWidget,
@@ -32,16 +32,15 @@ class ReferencerDialog<V> extends ScopeDialog<List<V>> {
     this.buttonsWidth,
     this.width,
     this.height,
-  })  : assert(title != null),
-        super(scope) {
+  }) : super(scope) {
     super.dismissible = true;
   }
 
   @override
-  Future setup() async {
-    await super.scope.busy();
+  Future<void> setup() async {
+    await scope.busy();
     await referencer.init();
-    await super.scope.idle();
+    await scope.idle();
   }
 
   @override
@@ -51,74 +50,91 @@ class ReferencerDialog<V> extends ScopeDialog<List<V>> {
     });
 
     return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(scope.application.settings.dialogs.dialogRadius ?? 20.0))),
-      contentPadding: EdgeInsets.only(bottom: 20, left: 20, right: 20, top: 5),
-      contentTextStyle: TextStyle(fontSize: title != null ? 16.4 : 20, color: scope.application.settings.colors.text, fontWeight: FontWeight.w400),
-      title: icon != null
-          ? Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Row(
-                children: <Widget>[
-                  Container(
-                    padding: EdgeInsets.only(right: 7),
-                    child: Icon(
-                      icon,
-                      size: 29,
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      title,
-                      textAlign: TextAlign.left,
-                    ),
-                  ),
-                ],
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(
+          Radius.circular(scope.application.settings.dialogs.dialogRadius),
+        ),
+      ),
+      contentPadding: const EdgeInsets.fromLTRB(20, 5, 20, 20),
+      contentTextStyle: TextStyle(
+        fontSize: 16.4,
+        color: scope.application.settings.colors.text,
+        fontWeight: FontWeight.w400,
+      ),
+      title: Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Row(
+          children: <Widget>[
+            if (icon != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 7),
+                child: Icon(
+                  icon,
+                  size: 29,
+                  color: scope.application.settings.colors.primary,
+                ),
               ),
-            )
-          : Container(
-              padding: EdgeInsets.only(bottom: 10),
-              child: new Text(
-                title ?? scope.title,
-                textAlign: TextAlign.center,
+            Expanded(
+              child: Text(
+                title,
+                textAlign: TextAlign.left,
+                style: TextStyle(
+                  fontSize: 18,
+                  color: scope.application.settings.colors.primary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-      content: Container(
+          ],
+        ),
+      ),
+      content: SizedBox(
         height: height ?? scope.window.vertical(0.6),
         width: width ?? scope.window.available.width,
         child: Column(
           mainAxisSize: MainAxisSize.max,
           children: <Widget>[
+            // 🔹 Bloque de lista principal
             Expanded(
               child: ReferencerBlock<V>(
-                padding: EdgeInsets.only(left: 4, right: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
                 scope: scope,
                 referencer: referencer,
                 itemWidget: itemWidget,
-                headerWidget: headerWidget,
-                footerWidget: footerWidget,
-                emptyWidget: emptyWidget,
+                headerWidget: headerWidget!,
+                footerWidget: footerWidget!,
+                emptyWidget: emptyWidget!,
               ),
             ),
-            Container(
-              padding: EdgeInsets.only(top: 10, left: 4, right: 4),
+            // 🔹 Botones inferiores
+            Padding(
+              padding: const EdgeInsets.only(top: 10, left: 4, right: 4),
               child: Row(
                 mainAxisSize: MainAxisSize.max,
-                mainAxisAlignment: buttonsWidth == null ? null : MainAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: TextButton.createList(
                   context,
                   [
-                    DialogButton(translate('anxeb.parts.dialogs.referencer.start_button'), null, onTap: (context) async {
-                      referencer.start();
-                    }),
-                    DialogButton(translate('anxeb.common.cancel'), null, onTap: (context) async {
-                      Navigator.of(context).pop();
-                    })
+                    DialogButton(
+                      translate('anxeb.parts.dialogs.referencer.start_button'),
+                      null,
+                      onTap: (context) async {
+                        await referencer.start();
+                      },
+                    ),
+                    DialogButton(
+                      translate('anxeb.common.cancel'),
+                      null,
+                      onTap: (context) async {
+                        Navigator.of(context).pop();
+                      },
+                    ),
                   ],
                   settings: scope.application.settings,
-                  width: buttonsWidth,
+                  width: buttonsWidth ?? scope.window.available.width,
                 ),
               ),
-            )
+            ),
           ],
         ),
       ),

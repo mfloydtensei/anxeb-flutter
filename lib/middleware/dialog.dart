@@ -389,7 +389,7 @@ class FormButton {
   final Color? fillColor;
   final Color? textColor;
   final IconData? icon;
-  final Future<void> Function(FormScope scope)? onTap;
+  final Future<dynamic> Function(FormScope scope)? onTap;
   final bool? swapIcon;
   final bool? visible;
   final bool? enabled;

@@ -5,10 +5,13 @@ import 'package:flutter/material.dart' hide Dialog;
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../../middleware/application.dart';
 
-class SliderDialog<V> extends ScopeDialog {
+class SliderDialog<V> extends ScopeDialog<V> {
   final List<SliderItem> slides;
 
-  SliderDialog(Scope scope, {this.slides}) : super(scope) {
+  SliderDialog(
+    Scope scope, {
+    required this.slides,
+  }) : super(scope) {
     super.dismissible = true;
   }
 
@@ -16,7 +19,6 @@ class SliderDialog<V> extends ScopeDialog {
   Widget build(BuildContext context) {
     return _SliderBlock(
       scope: scope,
-      context: context,
       slides: slides,
     );
   }
@@ -24,110 +26,117 @@ class SliderDialog<V> extends ScopeDialog {
 
 class _SliderBlock extends StatefulWidget {
   final Scope scope;
-  final BuildContext context;
   final List<SliderItem> slides;
 
-  _SliderBlock({this.scope, this.context, this.slides});
+  const _SliderBlock({
+    required this.scope,
+    required this.slides,
+  });
 
   @override
-  _SliderBlockState createState() => _SliderBlockState();
+  State<_SliderBlock> createState() => _SliderBlockState();
 }
 
 class _SliderBlockState extends State<_SliderBlock> {
-  int _index;
-  double _width;
+  late final PageController _controller;
+  int _index = 0;
+  late final double _width;
 
   @override
   void initState() {
-    if (widget.slides.length > 0) {
+    super.initState();
+    _controller = PageController(keepPage: true);
+
+    _width = widget.scope.window.available.width;
+
+    if (widget.slides.isNotEmpty) {
       widget.slides.first.onOpened?.call();
     }
+  }
 
-    _width = _width ?? widget.scope.window.available.width;
-
-    super.initState();
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final radius = BorderRadius.all(Radius.circular(24));
-    final controller = PageController(keepPage: true);
+    final radius = BorderRadius.circular(24);
 
-    final pages = widget.slides.map((e) {
-      final fillColor = e.color ?? Colors.white;
+    final pages = widget.slides.map((slide) {
+      final fillColor = slide.color ?? Colors.white;
 
       return Stack(
+        fit: StackFit.expand,
         children: [
-          e.cover != null
-              ? Container(
-                  decoration: BoxDecoration(
-                    image: DecorationImage(
-                      colorFilter: ColorFilter.mode(fillColor.withOpacity(0.4), BlendMode.screen),
-                      fit: BoxFit.cover,
-                      alignment: Alignment.center,
-                      image: e.cover.image,
-                    ),
+          if (slide.cover != null)
+            Container(
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  colorFilter: ColorFilter.mode(
+                    fillColor.withOpacity(0.4),
+                    BlendMode.screen,
                   ),
-                )
-              : Container(),
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                  image: slide.cover!.image,
+                ),
+              ),
+            ),
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                begin: FractionalOffset.topCenter,
-                end: FractionalOffset.bottomCenter,
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
                 colors: [
                   fillColor.withOpacity(0.5),
-                  Colors.white.withOpacity(0.5),
-                  Colors.white.withOpacity(0.5),
+                  Colors.white.withOpacity(0.6),
+                  Colors.white.withOpacity(0.8),
                 ],
-                stops: [0.0, 0.5, 1.0],
+                stops: const [0.0, 0.5, 1.0],
               ),
             ),
           ),
           Column(
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    alignment: Alignment.center,
-                    padding: EdgeInsets.only(top: 30, bottom: 30, left: 7, right: 7),
-                    width: _width * .6,
-                    child: Text(
-                      e.title,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 26, fontWeight: FontWeight.w500),
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 30),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                child: Text(
+                  slide.title ?? '',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w600),
+                ),
               ),
-              e.image != null
-                  ? Container(
-                      width: _width * .3,
-                      height: _width * .3,
-                      child: e.image,
-                    )
-                  : Container(),
+              if (slide.image != null)
+                SizedBox(
+                  width: _width * 0.35,
+                  height: _width * 0.35,
+                  child: slide.image,
+                ),
               Expanded(
-                child: Container(
-                  padding: EdgeInsets.only(top: 20, left: 18, right: 18),
-                  child: e.content?.call() ??
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+                  child: slide.content?.call() ??
                       Text(
-                        e.body ?? '',
+                        slide.body ?? '',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w400, letterSpacing: -0.1),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: -0.1,
+                        ),
                       ),
                 ),
               ),
-              e.action != null
-                  ? Container(
-                      padding: EdgeInsets.symmetric(horizontal: 40),
-                      child: e.action,
-                    )
-                  : Container(),
-              SizedBox(
-                height: 60,
-              )
+              if (slide.action != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                  child: slide.action!,
+                ),
+              const SizedBox(height: 60),
             ],
           ),
         ],
@@ -135,20 +144,18 @@ class _SliderBlockState extends State<_SliderBlock> {
     }).toList();
 
     return Container(
-      margin: EdgeInsets.only(bottom: 80, top: 40),
+      margin: const EdgeInsets.only(bottom: 80, top: 40),
       child: AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: radius),
         contentPadding: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
-        content: Container(
-          width: double.maxFinite,
-          height: double.maxFinite,
+        content: SizedBox(
+          width: double.infinity,
+          height: double.infinity,
           child: Stack(
             children: [
               PageView(
-                allowImplicitScrolling: true,
-                pageSnapping: true,
-                controller: controller,
+                controller: _controller,
                 children: pages,
                 onPageChanged: (index) {
                   setState(() {
@@ -157,66 +164,73 @@ class _SliderBlockState extends State<_SliderBlock> {
                   });
                 },
               ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Row(
+              // 🔹 Indicadores + botones navegación
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _isOnePage == true
-                          ? Container(width: 45)
-                          : Anxeb.IconButton(
-                              padding: EdgeInsets.only(left: 12),
-                              iconSize: 24,
-                              fillColor: _isFirstPage ? Colors.white.withOpacity(0) : Colors.white.withOpacity(0.5),
-                              innerColor: _isFirstPage ? application.settings.colors.primary.withOpacity(0.4) : application.settings.colors.primary,
-                              size: 33,
-                              icon: Icons.chevron_left,
-                              action: () async {
-                                if (!_isFirstPage) {
-                                  controller.previousPage(duration: Duration(milliseconds: 300), curve: Curves.ease);
-                                }
-                              },
+                      if (!_isOnePage)
+                        Anxeb.IconButton(
+                          padding: const EdgeInsets.only(left: 12),
+                          iconSize: 24,
+                          fillColor: _isFirstPage
+                              ? Colors.transparent
+                              : Colors.white.withOpacity(0.5),
+                          innerColor: _isFirstPage
+                              ? application.settings.colors.primary.withOpacity(0.3)
+                              : application.settings.colors.primary,
+                          size: 33,
+                          icon: Icons.chevron_left,
+                          action: () async {
+                            if (!_isFirstPage) {
+                              await _controller.previousPage(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.ease,
+                              );
+                            }
+                          },
+                        ),
+                      if (pages.length > 1)
+                        Expanded(
+                          child: Center(
+                            child: SmoothPageIndicator(
+                              controller: _controller,
+                              count: pages.length,
+                              effect: WormEffect(
+                                dotHeight: 8,
+                                dotWidth: 8,
+                                activeDotColor: application.settings.colors.primary,
+                                dotColor: application.settings.colors.primary.withOpacity(0.3),
+                              ),
                             ),
-                      Expanded(
-                        child: pages.length > 1
-                            ? Container(
-                                alignment: Alignment.center,
-                                child: SmoothPageIndicator(
-                                  controller: controller,
-                                  count: pages.length,
-                                  effect: WormEffect(
-                                    dotHeight: 8,
-                                    dotWidth: 8,
-                                    activeDotColor: application.settings.colors.primary,
-                                    dotColor: application.settings.colors.primary.withOpacity(0.3),
-                                    type: WormType.normal,
-                                  ),
-                                ),
-                              )
-                            : Container(),
-                      ),
+                          ),
+                        ),
                       Anxeb.IconButton(
-                        padding: EdgeInsets.only(right: 12),
+                        padding: const EdgeInsets.only(right: 12),
                         iconSize: 24,
                         fillColor: Colors.white.withOpacity(0.5),
-                        innerColor: _isLastPage ? application.settings.colors.primary.withOpacity(0.5) : application.settings.colors.primary,
+                        innerColor: _isLastPage
+                            ? application.settings.colors.primary.withOpacity(0.5)
+                            : application.settings.colors.primary,
                         size: 33,
                         icon: _isLastPage ? Icons.check : Icons.chevron_right,
                         action: () async {
                           if (_isLastPage) {
-                            Navigator.of(widget.context).pop();
+                            Navigator.of(context).pop();
                           } else {
-                            controller.nextPage(duration: Duration(milliseconds: 300), curve: Curves.ease);
+                            await _controller.nextPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.ease,
+                            );
                           }
                         },
-                      )
+                      ),
                     ],
                   ),
-                  SizedBox(
-                    height: 12,
-                  )
-                ],
+                ),
               ),
             ],
           ),
@@ -227,22 +241,31 @@ class _SliderBlockState extends State<_SliderBlock> {
 
   bool get _isOnePage => widget.slides.length == 1;
 
-  bool get _isLastPage => _isOnePage ? true : (_index ?? 0) >= widget.slides.length - 1;
+  bool get _isLastPage => _isOnePage ? true : _index >= widget.slides.length - 1;
 
-  bool get _isFirstPage => _isOnePage ? true : (_index ?? 0) == 0;
+  bool get _isFirstPage => _isOnePage ? true : _index == 0;
 
   Application get application => widget.scope.application;
 }
 
 class SliderItem {
-  final String title;
-  final String body;
-  final Widget Function() content;
-  final Image cover;
-  final Image image;
-  final Color color;
-  final Anxeb.TextButton action;
-  final Function() onOpened;
+  final String? title;
+  final String? body;
+  final Widget Function()? content;
+  final Image? cover;
+  final Image? image;
+  final Color? color;
+  final Anxeb.TextButton? action;
+  final VoidCallback? onOpened;
 
-  SliderItem({this.title, this.body, this.content, this.cover, this.image, this.color, this.action, this.onOpened});
+  const SliderItem({
+    this.title,
+    this.body,
+    this.content,
+    this.cover,
+    this.image,
+    this.color,
+    this.action,
+    this.onOpened,
+  });
 }
