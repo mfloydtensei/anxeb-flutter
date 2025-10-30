@@ -187,7 +187,7 @@ class FieldsForm {
 
     if (payload != null) {
       payload.forEach((key, value) {
-        if (value is FileInputValue && value.title.isNotEmpty) {
+        if (value is FileInputValue && (value.title?.isNotEmpty == true)) {
           result[key] = value;
         }
       });
