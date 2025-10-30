@@ -70,8 +70,8 @@ class ScreenTabs {
         // Encapsula con refresher y panel si están disponibles
         final refresher = scope.view.parts.refresher;
         final panel = scope.view.parts.panel;
-        content = refresher.wrap(content);
-        content = panel.wrap(content);
+        content = refresher?.wrap(content) ?? content;
+        content = panel?.wrap(content) ?? content;
 
         return content;
       }).toList(),

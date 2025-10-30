@@ -13,8 +13,19 @@ class ScreenScope extends Scope implements IScope {
   @override
   Future<bool> dismiss() => view.dismiss();
 
-  Future<T> push<T>(ScreenWidget screen, {ScreenTransitionType transition, int delay, ScreenPushAction action}) async {
-    return view.push(screen, transition: transition, action: action);
+  Future<T?> push<T>(
+    ScreenWidget screen, {
+    ScreenTransitionType? transition,
+    int? delay,
+    ScreenPushAction? action,
+  }) async {
+    // ⚠️ 'delay' no se usa actualmente, pero lo conservamos por compatibilidad
+    return view.push(
+      screen,
+      transition: transition ?? ScreenTransitionType.fade,
+      action: action ?? ScreenPushAction.push,
+
+    );
   }
 
   @override
@@ -24,13 +35,12 @@ class ScreenScope extends Scope implements IScope {
   String get key => view.name;
 
   @override
-  String get title => view.title;
+  String get title => view.title ?? '';
 
   @override
   bool get mounted => view.mounted == true;
 
-  @override
-  void rasterize([VoidCallback fn]) {
-    view.rasterize(fn);
-  }
+ @override
+void rasterize([VoidCallback? fn]) => view.rasterize(fn ?? () {});
+
 }

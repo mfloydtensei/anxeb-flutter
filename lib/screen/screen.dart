@@ -30,63 +30,58 @@ enum ScreenTransitionType {
 
 class ScreenWidget<A extends Application> extends StatefulWidget implements IView {
   final String name;
-  final String title;
+  final String? title;
   final A application;
   final bool root;
-  final Key key;
 
-  ScreenWidget(
+  const ScreenWidget(
     this.name, {
+    super.key,
+    required this.application,
     this.title,
-    this.application,
-    this.root,
-    this.key,
-  })  : assert(name != null),
-        super(key: key);
+    this.root = false,
+  });
 
   @override
   ScreenView createState() => ScreenView();
 }
 
 abstract class ScreenState<T extends ScreenWidget> extends State<T> {
-  String name;
-  ScreenScope scope;
+  String get name;
+  ScreenScope get scope;
 
   Future<bool> dismiss();
-
-  Future<bool> submit([value]);
-
-  Future<bool> pop({dynamic result, bool force});
-
+  Future<bool> submit([dynamic value]);
+  Future<bool> pop({dynamic result, bool force = false});
   GlobalKey<ScaffoldState> get scaffold;
 }
 
 class ScreenView<T extends ScreenWidget, A extends Application> extends ScreenState<T> with AfterInitMixin<T> {
-  GlobalKey<ScaffoldState> _scaffold;
-  ScreenActionLocator _locator;
-  ScreenScope _scope;
-  ScreenScope _parent;
-  A _application;
-  ScreenPanel _panel;
-  ScreenRefresher _refresher;
-  ScreenHeader _header;
-  ScreenFooter _footer;
-  ScreenAction _action;
-  ScreenTabs _tabs;
-  _ScreenParts _parts;
-  bool _initialized;
-  bool _initializing;
-  bool _postinitialized;
+  final GlobalKey<ScaffoldState> _scaffold = GlobalKey<ScaffoldState>();
+
+  late ScreenScope _scope;
+  late A _application;
+  late ScreenHeader? _header;
+  late ScreenRefresher? _refresher;
+  late ScreenPanel? _panel;
+  late ScreenAction? _action;
+  late ScreenTabs? _tabs;
+  late ScreenFooter? _footer;
+  late FloatingActionButtonLocation _locator;
+  late _ScreenParts _parts;
+
+  ScreenScope? _parent;
+
+  bool _initialized = false;
+  bool _initializing = false;
+  bool _postinitialized = false;
+
   dynamic value;
 
   @protected
-  bool resizeToAvoidBottomInset;
+  bool? resizeToAvoidBottomInset;
 
-  ScreenView() {
-    _scaffold = GlobalKey<ScaffoldState>();
-  }
-
-  void rasterize([VoidCallback fn]) {
+  void rasterize([VoidCallback? fn]) {
     if (!mounted) {
       fn?.call();
     } else {
@@ -97,54 +92,57 @@ class ScreenView<T extends ScreenWidget, A extends Application> extends ScreenSt
   }
 
   @protected
-  Future init() async {}
+  Future<void> init() async {}
 
   @protected
-  void setup() => null;
+  void setup() {}
 
   @override
-  void didInitState() {
-    _init();
-  }
+  void didInitState() => _init();
 
-  Future _init() async {
-    _application = arguments?.application;
-    _parent = arguments?.scope;
+  Future<void> _init() async {
+    final args = arguments;
+    _application = args.application;
+    _parent = args.scope is ScreenScope ? args.scope as ScreenScope : null;
     _scope = ScreenScope(context, this);
+
     _header = header();
     _refresher = refresher();
     _panel = panel();
     _action = action();
     _tabs = tabs();
     _footer = footer();
+
     await _scope.setup();
     setup();
     _scope.window.overlay.apply();
   }
 
   @override
-  initState() {
+  void initState() {
     super.initState();
     rasterize();
   }
 
   @override
-  dispose() {
+  void dispose() {
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     _checkParts();
-    _locator = _locator ?? _action?.locator ?? ScreenActionLocator();
+    _locator = _action?.locator ?? ScreenActionLocator();
 
     prebuild();
-    var $drawer = drawer();
+    final $drawer = drawer();
 
-    var scaffoldContent = Scaffold(
+    final scaffoldContent = Scaffold(
       key: _scaffold,
       appBar: _header?.build(),
-      drawer: $drawer == true ? application.drawer(scope) : ($drawer is Drawer || $drawer is ScreenNavigator ? $drawer : null),
+      drawer: $drawer == true
+          ? application.drawer(scope)
+          : ($drawer is Drawer || $drawer is ScreenNavigator ? $drawer : null),
       resizeToAvoidBottomInset: resizeToAvoidBottomInset ?? true,
       floatingActionButton: _action?.build(),
       floatingActionButtonLocation: _locator,
@@ -154,28 +152,26 @@ class ScreenView<T extends ScreenWidget, A extends Application> extends ScreenSt
       extendBodyBehindAppBar: _scope.window.overlay.extendBodyBehindAppBar,
       body: WillPopScope(
         onWillPop: () async {
-          if (_scope.isBusy) {
+          if (_scope.isBusy) return false;
+          if (_scope.alerts.isAny) {
+            await _scope.alerts.dispose();
             return false;
-          } else {
-            if (_scope.alerts.isAny) {
-              await _scope.alerts.dispose();
-              return false;
-            } else if (scaffold != null && scaffold.currentState != null && scaffold.currentState.isDrawerOpen) {
-              scaffold.currentState.openEndDrawer();
-              return false;
-            } else if (_header is SearchHeader && (_header as SearchHeader).isActive) {
-              (_header as SearchHeader).end();
-              return false;
-            }
-            var result = await beforePop();
-            if (result == true) {
-              await _beginPop(null);
-            }
-            return result;
           }
+          if (scaffold.currentState?.isDrawerOpen == true) {
+            scaffold.currentState?.openEndDrawer();
+            return false;
+          }
+          if (_header is SearchHeader && (_header as SearchHeader).isActive) {
+            (_header as SearchHeader).end();
+            return false;
+          }
+
+          final result = await beforePop();
+          if (result == true) await _beginPop(null);
+          return result;
         },
-        child: Container(
-          child: LayoutBuilder(builder: (BuildContext context, BoxConstraints viewportConstraints) {
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints viewportConstraints) {
             _scope.window.update(constraints: viewportConstraints);
             return GestureDetector(
               onTap: () {
@@ -184,16 +180,12 @@ class ScreenView<T extends ScreenWidget, A extends Application> extends ScreenSt
               },
               child: _initializeContent(),
             );
-          }),
+          },
         ),
       ),
     );
 
-    if (_tabs != null) {
-      return _tabs.setup(scaffoldContent);
-    } else {
-      return scaffoldContent;
-    }
+    return _tabs?.setup(scaffoldContent) ?? scaffoldContent;
   }
 
   @protected
@@ -206,69 +198,70 @@ class ScreenView<T extends ScreenWidget, A extends Application> extends ScreenSt
   dynamic drawer() => null;
 
   @protected
-  Widget content() => Container();
+  Widget content() => const SizedBox.shrink();
 
   @protected
-  ScreenHeader header() => null;
+  ScreenHeader? header() => null;
 
   @protected
-  ScreenRefresher refresher() => null;
+  ScreenRefresher? refresher() => null;
 
   @protected
-  ScreenPanel panel() => null;
+  ScreenPanel? panel() => null;
 
   @protected
-  ScreenTabs tabs() => null;
+  ScreenTabs? tabs() => null;
 
   @protected
-  ScreenAction action() => null;
+  ScreenAction? action() => null;
 
   @protected
-  ScreenFooter footer() => null;
+  ScreenFooter? footer() => null;
 
   @protected
-  Future<bool> beforePop() async {
-    if (scope.isBusy) {
-      return false;
-    } else {
-      return true;
-    }
-  }
+  Future<bool> beforePop() async => !scope.isBusy;
 
   @protected
-  Future closing() async {}
+  Future<void> closing() async {}
 
   @protected
-  Future closed() async {}
+  Future<void> closed() async {}
 
+  @override
   Future<bool> dismiss() async => await pop();
 
-  Future<bool> submit([value]) async => await pop(result: value, force: true);
+  @override
+  Future<bool> submit([dynamic value]) async => await pop(result: value, force: true);
 
-  Future<bool> pop({dynamic result, bool force}) async {
+  @override
+  Future<bool> pop({dynamic result, bool force = false}) async {
     scope.idle();
     await scope.alerts.dispose(quick: true);
 
-    if (force == true) {
+    if (force) {
       await _beginPop(result);
       return true;
-    } else {
-      try {
-        var value = await beforePop();
-        if (value == true) {
-          await _beginPop(result);
-          return true;
-        }
-      } catch (err) {}
     }
+
+    try {
+      if (await beforePop()) {
+        await _beginPop(result);
+        return true;
+      }
+    } catch (_) {}
     return false;
   }
 
-  Future<T> push<T>(ScreenWidget screen, {ScreenTransitionType transition, int delay, ScreenPushAction action}) async {
+  Future<T?> push<T>(
+    ScreenWidget screen, {
+    ScreenTransitionType transition = ScreenTransitionType.fade,
+    int delay = 200,
+    ScreenPushAction action = ScreenPushAction.push,
+  }) async {
     scope.idle();
     await scope.alerts.dispose(quick: true);
 
-    var settings = RouteSettings(
+    final settings = RouteSettings(
       name: screen.name,
       arguments: _PushedScreenArguments<A>(
         application: application,
@@ -276,74 +269,70 @@ class ScreenView<T extends ScreenWidget, A extends Application> extends ScreenSt
       ),
     );
 
-    var $route;
-    if (transition != null) {
-      $route = PageRouteBuilder(
-        pageBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) => screen,
-        settings: settings,
-        transitionDuration: Duration(milliseconds: delay ?? 200),
-        transitionsBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
-          if (transition == ScreenTransitionType.fade) {
-            return FadeTransition(
-              opacity: Tween<double>(begin: 0, end: 1).animate(animation),
-              child: FadeTransition(opacity: Tween<double>(begin: 1, end: .5).animate(secondaryAnimation), child: child),
-            );
-          } else {
-            Offset from = Offset.zero;
-            Offset to = Offset.zero;
+    final route = PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => screen,
+      settings: settings,
+      transitionDuration: Duration(milliseconds: delay),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        if (transition == ScreenTransitionType.fade) {
+          return FadeTransition(
+            opacity: Tween<double>(begin: 0, end: 1).animate(animation),
+            child: FadeTransition(
+              opacity: Tween<double>(begin: 1, end: .5).animate(secondaryAnimation),
+              child: child,
+            ),
+          );
+        }
 
-            switch (transition) {
-              case ScreenTransitionType.fromBottom:
-                from = Offset(0, 1);
-                to = Offset(0, -.5);
-                break;
-              case ScreenTransitionType.fromLeft:
-                from = Offset(-1, 0);
-                to = Offset(.5, 0);
-                break;
-              case ScreenTransitionType.fromRight:
-                from = Offset(1, 0);
-                to = Offset(-.5, 0);
-                break;
-              case ScreenTransitionType.fromTop:
-                from = Offset(0, -1);
-                to = Offset(0, .5);
-                break;
-              case ScreenTransitionType.fade:
-            }
+        Offset from = Offset.zero;
+        Offset to = Offset.zero;
 
-            return SlideTransition(
-              position: Tween<Offset>(begin: from, end: Offset.zero).animate(animation),
-              child: SlideTransition(
-                position: Tween<Offset>(begin: Offset.zero, end: to).animate(secondaryAnimation),
-                child: FadeTransition(
-                  opacity: Tween<double>(begin: 1, end: 0.5).animate(secondaryAnimation),
-                  child: child,
-                ),
-              ),
-            );
-          }
-        },
-      );
-    } else {
-      $route = MaterialPageRoute(builder: (BuildContext context) => screen, settings: settings);
-    }
+        switch (transition) {
+          case ScreenTransitionType.fromBottom:
+            from = const Offset(0, 1);
+            to = const Offset(0, -.5);
+            break;
+          case ScreenTransitionType.fromLeft:
+            from = const Offset(-1, 0);
+            to = const Offset(.5, 0);
+            break;
+          case ScreenTransitionType.fromRight:
+            from = const Offset(1, 0);
+            to = const Offset(-.5, 0);
+            break;
+          case ScreenTransitionType.fromTop:
+            from = const Offset(0, -1);
+            to = const Offset(0, .5);
+            break;
+          case ScreenTransitionType.fade:
+            break;
+        }
 
-    var result;
-    if (action == ScreenPushAction.replace) {
-      result = await Navigator.of(_scope.context).pushReplacement($route);
-    } else {
-      result = await Navigator.of(_scope.context).push($route);
-    }
+        return SlideTransition(
+          position: Tween<Offset>(begin: from, end: Offset.zero).animate(animation),
+          child: SlideTransition(
+            position: Tween<Offset>(begin: Offset.zero, end: to).animate(secondaryAnimation),
+            child: FadeTransition(
+              opacity: Tween<double>(begin: 1, end: 0.5).animate(secondaryAnimation),
+              child: child,
+            ),
+          ),
+        );
+      },
+    );
+
+    final result = action == ScreenPushAction.replace
+        ? await Navigator.of(_scope.context).pushReplacement(route)
+        : await Navigator.of(_scope.context).push(route);
 
     await _scope.setup();
     if (mounted) {
       setup();
       _scope.window.overlay.apply();
-      Future.delayed(Duration(milliseconds: 150), rasterize);
-      Future.delayed(Duration(milliseconds: 250), rasterize);
+      Future.delayed(const Duration(milliseconds: 150), rasterize);
+      Future.delayed(const Duration(milliseconds: 250), rasterize);
     }
-    return result as T;
+    return result as T?;
   }
 
   void _checkParts() {
@@ -365,26 +354,18 @@ class ScreenView<T extends ScreenWidget, A extends Application> extends ScreenSt
   }
 
   Widget _initializeContent() {
-    var contentResult;
-    if (_tabs != null) {
-      contentResult = _tabs.build(_initialized);
-    } else {
-      var $content = (_initialized == true ? content() : null) ?? Container();
-      $content = _refresher != null ? _refresher.wrap($content) : $content;
-      $content = _panel != null ? _panel.wrap($content) : $content;
-      contentResult = $content;
-    }
+    final contentResult = _tabs?.build() ?? content();
 
-    if (_initialized != true && _initializing != true) {
+    if (!_initialized && !_initializing) {
       _initializing = true;
-      Future.delayed(Duration(milliseconds: 0), () async {
+      Future.microtask(() async {
         await init();
         _initialized = true;
         _initializing = false;
         rasterize();
       });
-    } else if (_initialized == true && _postinitialized != true) {
-      Future.delayed(Duration(milliseconds: 0), () async {
+    } else if (_initialized && !_postinitialized) {
+      Future.microtask(() async {
         postinit();
         _postinitialized = true;
         rasterize();
@@ -393,69 +374,61 @@ class ScreenView<T extends ScreenWidget, A extends Application> extends ScreenSt
     return contentResult;
   }
 
-  Future _beginPop(result) async {
-    if (scaffold != null && scaffold.currentState != null && scaffold.currentState.isDrawerOpen) {
-      scaffold.currentState.openEndDrawer();
+  Future<void> _beginPop(dynamic result) async {
+    if (scaffold.currentState?.isDrawerOpen == true) {
+      scaffold.currentState?.openEndDrawer();
     }
     value = result ?? value;
     await closing();
-    if (widget.root != true) {
+    if (!widget.root) {
       Navigator.of(_scope.context).pop(value);
     }
     await closed();
   }
 
-  Future process(Future Function() func, {String busyLabel}) async {
+  Future<void> process(Future<void> Function() func, {String? busyLabel}) async {
     await scope.busy(text: busyLabel ?? translate('anxeb.common.loading'));
     try {
       await func();
     } catch (err) {
-      scope.alerts.error(err).show();
+      await scope.alerts.error(err).show();
     } finally {
       await scope.idle();
     }
   }
 
-  bool equals(String name) {
-    return this.name == name;
-  }
+  bool equals(String name) => this.name == name;
 
+  @override
   String get name => widget.name;
 
+  @override
   ScreenScope get scope => _scope;
 
-  ScreenScope get parent => _parent;
-
+  ScreenScope? get parent => _parent;
   Window get window => _scope.window;
-
-  A get application => (_application ?? widget.application) as A;
-
-  Settings get settings => application?.settings;
-
+  A get application => _application;
+  Settings get settings => application.settings;
+  @override
   GlobalKey<ScaffoldState> get scaffold => _scaffold;
-
-  String get title => widget?.title;
+  String? get title => widget.title;
 
   bool get isFooter => _footer != null;
-
   bool get isHeader => _header != null;
-
-  ScreenActionLocator get locator => _locator;
-
-  _PushedScreenArguments get arguments => ModalRoute.of(context).settings?.arguments;
-
+  FloatingActionButtonLocation get locator => _locator;
+  _PushedScreenArguments<A> get arguments => ModalRoute.of(context)!.settings.arguments as _PushedScreenArguments<A>;
   _ScreenParts get parts => _parts;
 }
 
 class _ScreenParts {
-  final ScreenHeader header;
-  final ScreenRefresher refresher;
-  final ScreenPanel panel;
-  final ScreenAction action;
-  final ScreenFooter footer;
-  final ScreenTabs tabs;
+  final ScreenHeader? header;
+  final ScreenRefresher? refresher;
+  final ScreenPanel? panel;
+  final ScreenAction? action;
+  final ScreenFooter? footer;
+  final ScreenTabs? tabs;
 
-  _ScreenParts({
+  const _ScreenParts({
     this.header,
     this.refresher,
     this.panel,
@@ -469,8 +442,8 @@ class _PushedScreenArguments<A extends Application> {
   final A application;
   final Scope scope;
 
-  _PushedScreenArguments({
-    @required this.application,
-    @required this.scope,
+  const _PushedScreenArguments({
+    required this.application,
+    required this.scope,
   });
 }

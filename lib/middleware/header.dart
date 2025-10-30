@@ -40,9 +40,9 @@ class ScreenHeader {
         scope.window.overlay.background;
 
     final double appBarElevation = elevation?.call() ?? 0;
-    final Widget? appBarTitle = body() ?? title?.call() ?? Text(scope.view.title);
+    final Widget? appBarTitle = body() ?? title?.call() ?? Text(scope.view.title ?? '');
 
-    final Widget? appBarBottom = scope.view.parts.tabs.header.call(
+    final Widget? appBarBottom = scope.view.parts.tabs?.header.call(
           bottomBody: bottom?.call() ?? const SizedBox.shrink(),
           height: height ?? () => 0.0,
         );
