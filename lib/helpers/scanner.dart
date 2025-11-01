@@ -9,70 +9,77 @@ import 'package:flutter_translate/flutter_translate.dart';
 
 import '../middleware/device.dart';
 
-class ScannerHelper extends ScreenWidget {
-  final String title;
+class ScannerHelper extends ScreenWidget<Application> {
+  final String? title;
   final bool autoflash;
 
-  ScannerHelper({
+  const ScannerHelper({
+    required Application application,
     this.title,
-    this.autoflash,
-  }) : super('anxeb_scanner_helper', title: title);
+    this.autoflash = false,
+  }) : super(
+          'anxeb_scanner_helper',
+          application: application,
+          title: title,
+        );
 
   @override
-  _ScannerHelperState createState() => new _ScannerHelperState();
+  ScreenView<ScannerHelper, Application> createState() => _ScannerHelperState();
 }
 
 class _ScannerHelperState extends ScreenView<ScannerHelper, Application> {
-  ScannerController _scannerController;
-  bool _flashOn;
+  late final ScannerController _scannerController;
+  bool _flashOn = false;
 
   @override
-  Future init() async {
-    _flashOn = widget.autoflash == true;
+  Future<void> init() async {
+    _flashOn = widget.autoflash;
 
-    _scannerController = ScannerController(scannerResult: (result) {
-      pop(result: result, force: true);
-    }, scannerViewCreated: () async {
-      if (Device.isIOS) {
-        await Future.delayed(Duration(milliseconds: 700), () {
-          _scannerController.startCamera();
-          _scannerController.startCameraPreview();
-        });
-      } else {
-        await Future.delayed(Duration(milliseconds: 0), () {
-          _scannerController.startCamera();
-          _scannerController.startCameraPreview();
-        });
-      }
+    _scannerController = ScannerController(
+      scannerResult: (result) {
+        pop(result: result, force: true);
+      },
+      scannerViewCreated: () async {
+        if (Device.isIOS) {
+          // delay ligero para evitar crash en iOS
+          await Future.delayed(const Duration(milliseconds: 700));
+        }
 
-      if (_flashOn == true) {
-        _onFlash();
-      } else {
-        _offFlash();
-      }
-    });
+        _scannerController.startCamera();
+        _scannerController.startCameraPreview();
+
+        if (_flashOn) {
+          _onFlash();
+        } else {
+          _offFlash();
+        }
+      },
+    );
   }
 
   void _offFlash() {
-    _scannerController.stopCameraPreview();
-    _scannerController.closeFlash();
-    _scannerController.startCameraPreview();
+    try {
+      _scannerController.stopCameraPreview();
+      _scannerController.closeFlash();
+      _scannerController.startCameraPreview();
+    } catch (_) {}
   }
 
   void _onFlash() {
-    _scannerController.stopCameraPreview();
-    _scannerController.openFlash();
-    _scannerController.startCameraPreview();
+    try {
+      _scannerController.stopCameraPreview();
+      _scannerController.openFlash();
+      _scannerController.startCameraPreview();
+    } catch (_) {}
   }
 
   void _flush() {
     try {
       _scannerController.stopCameraPreview();
-    } catch (x) {}
+    } catch (_) {}
     try {
       _scannerController.stopCamera();
-    } catch (x) {}
-
+    } catch (_) {}
     _offFlash();
   }
 
@@ -84,8 +91,10 @@ class _ScannerHelperState extends ScreenView<ScannerHelper, Application> {
 
   @override
   void setup() {
-    window.overlay.brightness = Brightness.dark;
-    window.overlay.extendBodyFullScreen = false;
+    window.overlay
+      ..brightness = Brightness.dark
+      ..extendBodyFullScreen = false
+      ..apply();
   }
 
   @override
@@ -94,8 +103,10 @@ class _ScannerHelperState extends ScreenView<ScannerHelper, Application> {
   @override
   ActionsHeader header() {
     return ActionsHeader(
-      title: () => Text(widget.title ?? translate('anxeb.helpers.scanner.default_title')), //TR Enfoque el Código
       scope: scope,
+      title: () => Text(
+        widget.title ?? translate('anxeb.helpers.scanner.default_title'),
+      ),
     );
   }
 
@@ -115,13 +126,13 @@ class _ScannerHelperState extends ScreenView<ScannerHelper, Application> {
   ScreenAction action() {
     return ScreenAction(
       scope: scope,
-      icon: () => _flashOn == true ? Icons.lightbulb : Icons.lightbulb_outline,
+      icon: () => _flashOn ? Icons.lightbulb : Icons.lightbulb_outline,
       color: () => scope.application.settings.colors.secudary,
       onPressed: () {
         rasterize(() {
-          _flashOn = _flashOn != true;
+          _flashOn = !_flashOn;
         });
-        if (_flashOn == true) {
+        if (_flashOn) {
           _onFlash();
         } else {
           _offFlash();

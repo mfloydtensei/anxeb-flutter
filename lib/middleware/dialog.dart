@@ -310,8 +310,7 @@ class ScopeDialogs {
               version: QrVersions.auto,
               foregroundColor: _scope.application.settings.colors.text,
               size: qrSize,
-),
-
+            ),
           ),
           if (tip != null)
             Container(
@@ -356,6 +355,37 @@ class ScopeDialogs {
       icon: icon ?? Icons.color_lens,
       title: title ?? '',
     );
+  }
+
+  /// ✅ Added Prompt dialog (for text input)
+  Future<String?> prompt(
+    String title, {
+    String? hint,
+    String? value,
+    IconData? icon,
+  }) async {
+    final controller = TextEditingController(text: value ?? '');
+
+    final result = await MessageDialog(
+      _scope,
+      title: title,
+      icon: icon ?? Icons.text_fields,
+      message: '',
+      dismissible: true,
+      body: (context) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        child: TextField(
+          controller: controller,
+          decoration: InputDecoration(hintText: hint ?? ''),
+        ),
+      ),
+      buttons: [
+        DialogButton(translate('anxeb.common.accept'), true),
+        DialogButton(translate('anxeb.common.cancel'), false),
+      ],
+    ).show();
+
+    return result == true ? controller.text : null;
   }
 }
 

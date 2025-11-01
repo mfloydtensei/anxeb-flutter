@@ -5,47 +5,47 @@ import 'package:anxeb_flutter/screen/screen.dart';
 import 'package:anxeb_flutter/misc/action_menu.dart';
 import 'package:anxeb_flutter/parts/headers/actions.dart';
 import 'package:anxeb_flutter/widgets/blocks/empty.dart';
-import 'package:anxeb_flutter/widgets/components/dialog_progress.dart';
 import 'package:anxeb_flutter/widgets/fields/file.dart';
-import 'package:anxeb_flutter/widgets/fields/text.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:flutter_translate/flutter_translate.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as Path;
 import 'package:photo_view/photo_view.dart';
 import 'package:share/share.dart';
 import 'package:url_launcher/url_launcher.dart' as Launcher;
 
-class DocumentView extends ScreenWidget {
+class DocumentView extends ScreenWidget<Application> {
   final FileInputValue file;
-  final String launchUrl;
+  final String? launchUrl;
   final bool readonly;
-  final Future Function(FileInputValue) updated;
-  final String tag;
-  final PhotoViewComputedScale initialScale;
+  final Future<void> Function(FileInputValue?)? updated;
+  final String? tag;
+  final PhotoViewComputedScale? initialScale;
 
   DocumentView({
-    @required this.file,
-    this.launchUrl,
-    this.readonly = true,
-    this.updated,
-    this.tag,
-    this.initialScale,
-  })  : assert(file != null),
-        super('anxeb_document_helper', title: file?.title ?? translate('anxeb.helpers.document.title')); //TR Vista Archivo
-
+  required Application application,
+  required this.file,
+  this.launchUrl,
+  this.readonly = true,
+  this.updated,
+  this.tag,
+  this.initialScale,
+}) : super(
+        'anxeb_document_helper',
+        application: application,
+        title: file.title ?? translate('anxeb.helpers.document.title'),
+      );
+  
   @override
-  _DocumentState createState() => new _DocumentState();
+  ScreenView<DocumentView, Application> createState() => _DocumentState();
 }
 
 class _DocumentState extends ScreenView<DocumentView, Application> {
-  PhotoViewControllerBase _controller;
-  File _data;
-  bool _refreshing;
-  PDFView _pdfFileAlt;
-  Completer<PDFViewController> _controllerAlt;
+  late final PhotoViewController _controller;
+  File? _data;
+  bool _refreshing = false;
+  PDFView? _pdfFileAlt;
+  late Completer<PDFViewController> _controllerAlt;
   int _pages = 1;
   int _currentPage = 1;
 
@@ -53,7 +53,7 @@ class _DocumentState extends ScreenView<DocumentView, Application> {
   Future init() async {
     _controller = PhotoViewController();
     _controllerAlt = Completer<PDFViewController>();
-    _refresh();
+    await _refresh();
   }
 
   @override
@@ -72,69 +72,71 @@ class _DocumentState extends ScreenView<DocumentView, Application> {
   ActionsHeader header() {
     return ActionsHeader(
       scope: scope,
-      title: () {
-        return Text(widget.file?.title ?? translate('anxeb.helpers.document.title')); //TR Vista Archivo
-      },
-      actions: <ActionMenu>[
-        ActionMenu(
-          actions: [
-            ActionMenuItem(
-              caption: () => translate('anxeb.helpers.document.menu.reload_file'), //TR 'Recargar Archivo',
-              icon: () => Icons.refresh,
-              onPressed: () => _refresh(),
-            ),
-            ActionMenuItem(
-              caption: () => translate('anxeb.helpers.document.menu.change_title'), //TR 'Cambiar Título',
-              icon: () => Icons.text_fields,
-              onPressed: () => _changeTitle(),
-              isVisible: () => widget.readonly != true && widget.file?.id != null,
-            ),
-            ActionMenuItem(
-              caption: () => translate('anxeb.helpers.document.menu.open_browser'), //TR 'Abrir en Navegador',
-              icon: () => Icons.launch,
-              isVisible: () => widget.launchUrl != null && widget.file?.url != null,
-              onPressed: () => _launch(),
-            ),
-            ActionMenuItem(
-              caption: () => translate('anxeb.helpers.document.menu.share'), //TR 'Compartir o Enviar',
-              icon: () => Icons.share,
-              isVisible: () => widget.file?.url != null,
-              onPressed: () => _share(),
-            ),
-            ActionMenuItem(
-              caption: () => translate('anxeb.helpers.document.menu.download_browser'), //TR 'Descargar en Navegador',
-              icon: () => Icons.file_download,
-              isVisible: () => widget.launchUrl != null && widget.file?.url != null,
-              onPressed: () => _download(),
-            ),
-            ActionMenuItem(
-              caption: () => translate('anxeb.helpers.document.menu.delete_file'),
-              //TR Eliminar Archivo
-              icon: () => Icons.close,
-              divided: () => true,
-              color: () => scope.application.settings.colors.danger,
-              onPressed: () => _removeFile(),
-              isVisible: () => widget.readonly != true && widget.file?.url != null,
-            ),
-          ],
-        ),
+      title: () => Text(
+        widget.file.title ?? translate('anxeb.helpers.document.title'),
+      ),
+      actions: [
+        ActionMenu(actions: [
+          ActionMenuItem(
+            caption: () => translate('anxeb.helpers.document.menu.reload_file'),
+            icon: () => Icons.refresh,
+            onPressed: _refresh,
+          ),
+          ActionMenuItem(
+            caption: () =>
+                translate('anxeb.helpers.document.menu.change_title'),
+            icon: () => Icons.text_fields,
+            onPressed: _changeTitle,
+            isVisible: () =>
+                widget.readonly != true && widget.file.id != null,
+          ),
+          ActionMenuItem(
+            caption: () =>
+                translate('anxeb.helpers.document.menu.open_browser'),
+            icon: () => Icons.launch,
+            isVisible: () => widget.file.url != null,
+            onPressed: _launch,
+          ),
+          ActionMenuItem(
+            caption: () => translate('anxeb.helpers.document.menu.share'),
+            icon: () => Icons.share,
+            isVisible: () => widget.file.url != null,
+            onPressed: _share,
+          ),
+          ActionMenuItem(
+            caption: () =>
+                translate('anxeb.helpers.document.menu.download_browser'),
+            icon: () => Icons.file_download,
+            isVisible: () => widget.file.url != null,
+            onPressed: _download,
+          ),
+          ActionMenuItem(
+            caption: () =>
+                translate('anxeb.helpers.document.menu.delete_file'),
+            icon: () => Icons.close,
+            divided: () => true,
+            color: () => scope.application.settings.colors.danger,
+            onPressed: _removeFile,
+            isVisible: () =>
+                widget.readonly != true && widget.file.url != null,
+          ),
+        ]),
       ],
     );
   }
 
   @override
   Widget content() {
-    if (_refreshing == true && _data == null) {
+    if (_refreshing && _data == null) {
       return _getLoading();
-    } else if (_refreshing != true && _data == null) {
+    } else if (!_refreshing && _data == null) {
       return EmptyBlock(
         scope: scope,
-        message: translate('anxeb.helpers.document.content.error_loading_file'),
-        //TR 'Error cargando archivo',
+        message:
+            translate('anxeb.helpers.document.content.error_loading_file'),
         icon: Icons.cloud_off,
         actionText: translate('anxeb.helpers.document.content.refresh'),
-        //TR 'Refrescar',
-        actionCallback: () async => _refresh(),
+        actionCallback: _refresh,
       );
     }
 
@@ -142,226 +144,154 @@ class _DocumentState extends ScreenView<DocumentView, Application> {
       return Stack(
         children: [
           PhotoView(
-            imageProvider: FileImage(_data),
+            imageProvider: FileImage(_data!),
             gaplessPlayback: true,
-            backgroundDecoration: BoxDecoration(
-                gradient: LinearGradient(
-              begin: FractionalOffset.topCenter,
-              end: FractionalOffset.bottomCenter,
-              colors: [
-                Color(0xfff0f0f0),
-                Color(0xffc3c3c3),
-              ],
-              stops: [0.0, 1.0],
-            )),
-            controller: _controller,
-            initialScale: widget.initialScale ?? PhotoViewComputedScale.covered,
-            errorBuilder: (context, error, stackTrace) {
-              return Center(
-                child: Icon(
-                  Icons.broken_image,
-                  size: 140,
-                  color: application.settings.colors.primary.withOpacity(0.2),
-                ),
-              );
-            },
-            loadingBuilder: (context, event) {
-              return _getLoading();
-            },
-          ),
-          _getTag(),
-        ],
-      );
-    } else if (_pdfFileAlt != null) {
-      return Stack(
-        children: [
-          Container(
-            child: _pdfFileAlt,
-          ),
-          Container(
-            alignment: Alignment.topRight,
-            padding: EdgeInsets.all(20),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.black45,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              child: Text(
-                '$_currentPage / $_pages',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w400, fontSize: 16),
+            backgroundDecoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xfff0f0f0), Color(0xffc3c3c3)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
               ),
             ),
+            controller: _controller,
+            initialScale: widget.initialScale ?? PhotoViewComputedScale.covered,
+            errorBuilder: (context, error, stackTrace) => Center(
+              child: Icon(
+                Icons.broken_image,
+                size: 140,
+                color: application.settings.colors.primary.withOpacity(0.2),
+              ),
+            ),
+            loadingBuilder: (_, __) => _getLoading(),
           ),
-          _getTag(),
+          if (widget.tag != null) _getTag(),
         ],
       );
-    } else {
-      return EmptyBlock(
-        scope: scope,
-        message: translate('anxeb.helpers.document.content.error_previewing_file'),
-        //TR 'Archivo no puede ser visualizado',
-        icon: Icons.insert_drive_file_sharp,
-        actionText: translate('anxeb.helpers.document.content.refresh'),
-        //TR 'Refrescar'
-        actionCallback: () async => _refresh(),
-      );
     }
+
+    return Stack(
+      children: [
+        _pdfFileAlt ?? const SizedBox(),
+        Positioned(
+          top: 20,
+          right: 20,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.black45,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            child: Text(
+              '$_currentPage / $_pages',
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w400,
+                  fontSize: 16),
+            ),
+          ),
+        ),
+        if (widget.tag != null) _getTag(),
+      ],
+    );
   }
 
   Widget _getTag() {
-    if (widget.tag == null) {
-      return Container();
-    }
-    return Container(
+    return Align(
       alignment: Alignment.bottomCenter,
-      padding: EdgeInsets.all(20),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.black45,
-          borderRadius: BorderRadius.circular(scope.application.settings.dialogs.dialogRadius ?? 20),
+          borderRadius: BorderRadius.circular(
+              scope.application.settings.dialogs.dialogRadius ),
         ),
-        padding: EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-        margin: EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        margin: const EdgeInsets.only(bottom: 10),
         child: Text(
-          widget.tag,
+          widget.tag ?? '',
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w400, fontSize: 22),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w400,
+            fontSize: 22,
+          ),
         ),
       ),
     );
   }
 
   Widget _getLoading() {
-    var length = window.horizontal(0.16);
+    final length = window.horizontal(0.16);
     return Center(
       child: SizedBox(
-        child: CircularProgressIndicator(
-          strokeWidth: 5,
-          valueColor: AlwaysStoppedAnimation<Color>(scope.application.settings.colors.primary),
-        ),
         height: length,
         width: length,
+        child: CircularProgressIndicator(
+          strokeWidth: 5,
+          valueColor: AlwaysStoppedAnimation<Color>(
+            scope.application.settings.colors.primary,
+          ),
+        ),
       ),
     );
   }
 
   void _share() {
-    var $title = widget.file.title;
-    var $msg = '${translate('anxeb.helpers.document.dialog.shared_file')}\n\n${$title}'; //TR Archivo Compartido
-    var $mime = _isPdf ? 'application/pdf' : 'image/${widget.file.extension}';
-    var $extension = _isPdf ? '.pdf' : '.${widget.file.extension}';
-    var haveExt = Path.extension(_data.path)?.isNotEmpty == true;
-    String newFileName = Path.join(Path.dirname(_data.path), $title + (haveExt ? '' : $extension));
-    _data.copy(newFileName);
+    final title = widget.file.title ?? '';
+    final msg =
+        '${translate('anxeb.helpers.document.dialog.shared_file')}\n\n$title';
+    final mime = _isPdf ? 'application/pdf' : 'image/${widget.file.extension}';
+    final ext = _isPdf ? '.pdf' : '.${widget.file.extension}';
+    final haveExt = Path.extension(_data!.path).isNotEmpty;
+    final newFileName =
+        Path.join(Path.dirname(_data!.path), '$title${haveExt ? '' : ext}');
+    _data!.copy(newFileName);
 
-    final RenderBox box = scope.context.findRenderObject();
-    if (_data != null) {
-      Share.shareFiles([newFileName], mimeTypes: [$mime], text: $msg, subject: $title, sharePositionOrigin: box.localToGlobal(Offset.zero) & box.size);
-    } else {
-      _fetchFileData((data) {
-        Share.shareFiles([newFileName], mimeTypes: [$mime], text: $msg, subject: $title, sharePositionOrigin: box.localToGlobal(Offset.zero) & box.size);
-      });
-    }
-  }
-
-  void _launch({bool download}) async {
-    var option = download == true ? 'download' : 'open';
-    var url = '${widget.launchUrl}${widget.file.url}/$option';
-
-    if (await Launcher.canLaunchUrl(Uri.parse(url))) {
-      await Launcher.launchUrl(Uri.parse(url));
-    } else {
-      scope.alerts.error(translate('anxeb.helpers.document.dialog.error_launching_file')).show(); //TR Error abriendo archivo
-    }
-  }
-
-  void _download() {
-    _launch(download: true);
-  }
-
-  Future<File> _fetchFileData([Function(File data) callback]) async {
-    try {
-      var data = await _fetch(silent: true);
-      if (data != null && callback != null) {
-        callback(data);
-      }
-      return data;
-    } catch (err) {
-      scope.alerts.error(err).show();
-    }
-    return null;
-  }
-
-  Future<File> _fetch({bool silent}) async {
-    var controller = DialogProcessController();
-    scope.dialogs.progress(translate('anxeb.helpers.document.dialog.downloading_file'), icon: Icons.file_download, controller: controller, isDownload: true).show(); //TR 'Descargando Archivo'
-    var cacheDirectory = await getTemporaryDirectory();
-
-    var cancelToken = CancelToken();
-    controller.onCanceled(() {
-      cancelToken.cancel();
-    });
-
-    var $name = widget.title;
-    var $filePath = '${cacheDirectory.path}/${$name}';
-    var $url = widget.file.useFullUrl ? '${widget.file.url}' : '${widget.file.url}/open';
-
-    try {
-      var data = await scope.api.download(
-        $url,
-        progress: (count, total) {
-          controller.update(total: total.toDouble(), value: count.toDouble());
-        },
-        cancelToken: cancelToken,
+    final box = scope.context.findRenderObject() as RenderBox?;
+    if (box != null) {
+      Share.shareFiles(
+        [newFileName],
+        mimeTypes: [mime],
+        text: msg,
+        subject: title,
+        sharePositionOrigin: box.localToGlobal(Offset.zero) & box.size,
       );
-
-      File file = File($filePath);
-      var raf = file.openSync(mode: FileMode.write);
-      raf.writeFromSync(data);
-      await raf.close();
-
-      if (silent == true) {
-        controller.success(silent: true);
-      } else {
-        await controller.success();
-      }
-      return File($filePath);
-    } catch (err) {
-      controller.failed(message: err.toString());
-      scope.alerts.error(err).show();
     }
-    return null;
   }
 
-  Future _refresh() async {
-    rasterize(() {
+  Future<void> _launch({bool download = false}) async {
+    final option = download ? 'download' : 'open';
+    final url = '${widget.launchUrl}${widget.file.url}/$option';
+
+    final uri = Uri.tryParse(url);
+    if (uri != null && await Launcher.canLaunchUrl(uri)) {
+      await Launcher.launchUrl(uri);
+    } else {
+      scope.alerts
+          .error(translate('anxeb.helpers.document.dialog.error_launching_file'))
+          .show();
+    }
+  }
+
+  void _download() => _launch(download: true);
+
+  Future<void> _refresh() async {
+    setState(() {
       _data = null;
       _pdfFileAlt = null;
       _controllerAlt = Completer<PDFViewController>();
       _refreshing = true;
     });
-    await Future.delayed(Duration(milliseconds: 500));
+
+    await Future.delayed(const Duration(milliseconds: 500));
 
     try {
-      if (widget.file.path != null) {
-        rasterize(() {
-          _data = File(widget.file.path);
-        });
-      } else {
-        _data = await _fetch(
-          silent: true,
-        );
-      }
-
-      if (_data == null) {
-        return;
-      }
+      setState(() => _data = File(widget.file.path!));
+      if (_data == null) return;
 
       if (_isPdf) {
-        rasterize(() async {
+        setState(() {
           _pdfFileAlt = PDFView(
-            filePath: _data.path,
+            filePath: _data!.path,
             fitEachPage: true,
             fitPolicy: FitPolicy.WIDTH,
             enableSwipe: true,
@@ -370,24 +300,16 @@ class _DocumentState extends ScreenView<DocumentView, Application> {
             pageFling: false,
             preventLinkNavigation: true,
             pageSnap: false,
-            onRender: (_pages) {
+            onRender: (pages) {
+              setState(() => _pages = pages ?? 1);
+            },
+            onError: (error) => scope.alerts.error(error).show(),
+            onPageError: (_, error) => scope.alerts.error(error).show(),
+            onViewCreated: (controller) => _controllerAlt.complete(controller),
+            onPageChanged: (page, total) {
               setState(() {
-                _pages = _pages;
-              });
-            },
-            onError: (error) {
-              scope.alerts.error(error).show();
-            },
-            onPageError: (page, error) {
-              scope.alerts.error(error).show();
-            },
-            onViewCreated: (PDFViewController pdfViewController) {
-              _controllerAlt.complete(pdfViewController);
-            },
-            onPageChanged: (int page, int total) {
-              setState(() {
-                _currentPage = (page + 1);
-                _pages = total;
+                _currentPage = (page ?? 0) + 1;
+                _pages = total ?? _pages;
               });
             },
           );
@@ -397,17 +319,23 @@ class _DocumentState extends ScreenView<DocumentView, Application> {
       scope.alerts.error(err).show();
     }
 
-    rasterize(() {
-      _refreshing = false;
-    });
+    setState(() => _refreshing = false);
   }
 
-  Future _removeFile() async {
-    var result = await scope.dialogs.confirm(translate('anxeb.helpers.document.dialog.delete_confirmation')).show(); //TR ¿Estás seguro que quieres eliminar este archivo?
-    if (result) {
+  Future<void> _removeFile() async {
+    final result = await scope.dialogs
+        .confirm(translate('anxeb.helpers.document.dialog.delete_confirmation'))
+        .show();
+    if (result == true) {
       try {
+        if (widget.file.url == null) {
+          scope.alerts
+              .error(translate('anxeb.helpers.document.dialog.error_no_file_url'))
+              .show();
+          return;
+        }
         await scope.busy();
-        await scope.api.delete(widget.file.url);
+        await scope.api.delete(widget.file.url!);
         await widget.updated?.call(null);
         pop(force: true);
       } catch (err) {
@@ -418,28 +346,20 @@ class _DocumentState extends ScreenView<DocumentView, Application> {
     }
   }
 
-  Future _changeTitle() async {
-    var title = await scope.dialogs
-        .prompt(
-          translate('anxeb.helpers.document.dialog.new_title'), //TR 'Título Nuevo'
-          hint: translate('anxeb.helpers.document.dialog.title'), //TR 'Título'
-          type: TextInputFieldType.text,
-          value: widget.file.title,
-          icon: Icons.text_fields,
-        )
-        .show();
+  Future<void> _changeTitle() async {
+   final title = await scope.dialogs.prompt(
+      translate('anxeb.helpers.document.dialog.new_title'),
+      hint: translate('anxeb.helpers.document.dialog.title'),
+      value: widget.file.title,
+      icon: Icons.text_fields,
+);
 
     if (title != null && title != widget.file.title) {
-      rasterize(() {
-        widget.file.title = title;
-      });
+      setState(() => widget.file.title = title);
       try {
         await scope.busy();
-        await scope.api.post(widget.file.url, {
-          'file': {
-            'id': widget.file.id,
-            'title': widget.file.title,
-          }
+        await scope.api.post(widget.file.url!, {
+          'file': {'id': widget.file.id, 'title': widget.file.title}
         });
         await widget.updated?.call(widget.file);
       } catch (err) {

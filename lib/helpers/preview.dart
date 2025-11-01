@@ -4,33 +4,45 @@ import 'package:anxeb_flutter/screen/screen.dart';
 import 'package:anxeb_flutter/widgets/actions/float.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:flutter/material.dart';
-
 import '../middleware/device.dart';
 
-class ImagePreviewHelper extends ScreenWidget {
-  final String title;
+class ImagePreviewHelper extends ScreenWidget<Application> {
+  final String? title;
   final ImageProvider image;
   final bool canRemove;
   final bool fullImage;
   final bool fromCamera;
 
-  ImagePreviewHelper({this.title, this.image, this.canRemove, this.fullImage, this.fromCamera}) : super('anxeb_preview_helper', title: title);
+  const ImagePreviewHelper({
+    required Application application,
+    this.title,
+    required this.image,
+    this.canRemove = false,
+    this.fullImage = false,
+    this.fromCamera = false,
+  }) : super(
+          'anxeb_preview_helper',
+          application: application,
+          title: title,
+        );
 
   @override
-  _ImagePreviewState createState() => new _ImagePreviewState();
+  ScreenView<ImagePreviewHelper, Application> createState() => _ImagePreviewState();
 }
 
 class _ImagePreviewState extends ScreenView<ImagePreviewHelper, Application> {
-  PhotoViewControllerBase _controller;
+  late final PhotoViewController _controller;
 
   @override
   void setup() {
-    window.overlay.brightness = Brightness.light;
-    window.overlay.extendBodyFullScreen = true;
+    window.overlay
+      ..brightness = Brightness.light
+      ..extendBodyFullScreen = true
+      ..apply();
   }
 
   @override
-  Future init() async {
+  Future<void> init() async {
     _controller = PhotoViewController();
   }
 
@@ -41,73 +53,77 @@ class _ImagePreviewState extends ScreenView<ImagePreviewHelper, Application> {
   }
 
   Widget _getLoading() {
-    var length = window.horizontal(0.16);
+    final length = window.horizontal(0.16);
     return Center(
       child: SizedBox(
-        child: CircularProgressIndicator(
-          strokeWidth: 5,
-          valueColor: AlwaysStoppedAnimation<Color>(scope.application.settings.colors.primary),
-        ),
         height: length,
         width: length,
+        child: CircularProgressIndicator(
+          strokeWidth: 5,
+          valueColor: AlwaysStoppedAnimation<Color>(
+            scope.application.settings.colors.primary,
+          ),
+        ),
       ),
     );
   }
 
   @override
   Widget content() {
-    double size = scope.window.horizontal(0.90);
-    double topPadding = scope.window.vertical(0.1);
+    final size = scope.window.horizontal(0.90);
+    final topPadding = scope.window.vertical(0.1);
 
-    if (widget.fullImage == true) {
+    // 🔹 Mostrar imagen completa con PhotoView
+    if (widget.fullImage) {
       return PhotoView(
         imageProvider: widget.image,
         tightMode: false,
         gaplessPlayback: true,
         initialScale: PhotoViewComputedScale.covered,
-        backgroundDecoration: BoxDecoration(
+        backgroundDecoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: FractionalOffset.topCenter,
-            end: FractionalOffset.bottomCenter,
-            colors: [
-              Color(0xfff0f0f0),
-              Color(0xffc3c3c3),
-            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xfff0f0f0), Color(0xffc3c3c3)],
             stops: [0.0, 1.0],
           ),
         ),
         controller: _controller,
-        errorBuilder: (context, error, stackTrace) {
-          return Center(
-            child: Icon(
-              Icons.broken_image,
-              size: 140,
-              color: application.settings.colors.primary.withOpacity(0.2),
-            ),
-          );
-        },
-        loadingBuilder: (context, event) {
-          return _getLoading();
-        },
+        errorBuilder: (_, __, ___) => Center(
+          child: Icon(
+            Icons.broken_image,
+            size: 140,
+            color: scope.application.settings.colors.primary.withOpacity(0.2),
+          ),
+        ),
+        loadingBuilder: (_, __) => _getLoading(),
       );
     }
 
-    return Container(
+    // 🔹 Mostrar miniatura centrada
+    return Align(
       alignment: Alignment.topCenter,
-      padding: EdgeInsets.only(top: topPadding),
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [BoxShadow(offset: Offset(0, 5), blurRadius: 18, spreadRadius: 2, color: Color(0xaa888888))],
-          borderRadius: new BorderRadius.all(
-            Radius.circular(22.0),
-          ),
-          image: DecorationImage(
-            fit: BoxFit.contain,
-            alignment: Alignment.center,
-            image: widget.image,
+      child: Padding(
+        padding: EdgeInsets.only(top: topPadding),
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: const [
+              BoxShadow(
+                offset: Offset(0, 5),
+                blurRadius: 18,
+                spreadRadius: 2,
+                color: Color(0xaa888888),
+              ),
+            ],
+            borderRadius: const BorderRadius.all(Radius.circular(22.0)),
+            image: DecorationImage(
+              fit: BoxFit.contain,
+              alignment: Alignment.center,
+              image: widget.image,
+            ),
           ),
         ),
       ),
@@ -119,14 +135,17 @@ class _ImagePreviewState extends ScreenView<ImagePreviewHelper, Application> {
     return ScreenAction(
       scope: scope,
       color: () => scope.application.settings.colors.secudary,
-      icon: () => widget.fromCamera == true ? null : (Device.isAndroid ? Icons.arrow_back : Icons.chevron_left),
+      // 👇 Siempre devolver IconData (no IconData?)
+      icon: () => widget.fromCamera
+          ? Icons.image_outlined // valor por defecto si viene de cámara
+          : (Device.isAndroid ? Icons.arrow_back : Icons.chevron_left),
       onPressed: () => pop(result: true),
       alternates: [
         AltAction(
           color: () => scope.application.settings.colors.secudary,
-          isVisible: () => widget.fromCamera == true,
+          isVisible: () => widget.fromCamera && widget.canRemove,
           icon: () => Icons.delete,
-          onPressed: () => dismiss(),
+          onPressed: () => pop(result: false),
         ),
       ],
     );
