@@ -6,18 +6,18 @@ import '../middleware/menu.dart';
 class PageNavigator extends StatefulWidget {
   final Application application;
   final bool Function(Anxeb.MenuItem item) isActive;
-  final bool Function() isVisible;
-  final List<MenuGroup> Function() groups;
-  final String Function() role;
-  final List<String> Function() roles;
-  final Widget Function() header;
-  final Widget Function() footer;
-  final Color backgroundColor;
+  final bool Function()? isVisible;
+  final List<MenuGroup> Function()? groups;
+  final String Function()? role;
+  final List<String> Function()? roles;
+  final Widget Function()? header;
+  final Widget Function()? footer;
+  final Color? backgroundColor;
 
-  PageNavigator({
-    Key key,
-    @required this.application,
-    @required this.isActive,
+  const PageNavigator({
+    super.key,
+    required this.application,
+    required this.isActive,
     this.isVisible,
     this.groups,
     this.role,
@@ -25,100 +25,108 @@ class PageNavigator extends StatefulWidget {
     this.header,
     this.footer,
     this.backgroundColor,
-  }) : super(key: key);
+  });
 
   @override
   State<PageNavigator> createState() => _PageNavigatorState();
 }
 
 class _PageNavigatorState extends State<PageNavigator> {
-  ScrollController _scrollController;
-  bool _showTopButton;
-  bool _showDownButton;
-  List<MenuGroup> _groups;
-  String _role;
-  List<String> _roles;
-  Widget _header;
-  Widget _footer;
+  late final ScrollController _scrollController;
+  bool _showTopButton = false;
+  bool _showDownButton = false;
+
+  List<MenuGroup> _groups = [];
+  String _role = '';
+  List<String> _roles = [];
+  Widget? _header;
+  Widget? _footer;
 
   @override
   void initState() {
+    super.initState();
+
     _scrollController = ScrollController();
     _scrollController.addListener(() {
       final showTop = _scrollController.offset > 0;
-      final showDown = _scrollController.offset < _scrollController.position.maxScrollExtent - 5;
+      final showDown = _scrollController.offset <
+          _scrollController.position.maxScrollExtent - 5;
 
-      if (_showTopButton != showTop) {
+      if (_showTopButton != showTop || _showDownButton != showDown) {
         setState(() {
           _showTopButton = showTop;
-        });
-      }
-
-      if (_showDownButton != showDown) {
-        setState(() {
           _showDownButton = showDown;
         });
       }
     });
-    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    _groups = widget.groups();
-    _role = widget.role?.call();
-    _roles = widget.roles?.call();
+    // 🔹 Recuperar props de callbacks, con fallback
+    _groups = widget.groups?.call() ?? [];
+    _role = widget.role?.call() ?? '';
+    _roles = widget.roles?.call() ?? [];
     _header = widget.header?.call();
     _footer = widget.footer?.call();
 
-    Future.delayed(Duration(milliseconds: 0)).then((value) => mounted == true ? setState(() {}) : null);
-    if (_showDownButton == null && _scrollController.hasClients == true) {
-      _showDownButton = _scrollController.offset < _scrollController.position.maxScrollExtent - 5;
+    if (_groups.isEmpty || widget.isVisible?.call() == false) {
+      return const SizedBox.shrink();
     }
 
-    if (_groups?.isEmpty == true || widget.isVisible?.call() == false) {
-      return Container();
-    }
     return Container(
       color: widget.backgroundColor ?? Colors.black,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.max,
-        children: <Widget>[
-          _header ?? Container(),
+        children: [
+          _header ?? const SizedBox.shrink(),
           Expanded(
             child: Stack(
               children: [
+                // 🔹 Contenido scrollable
                 SingleChildScrollView(
                   controller: _scrollController,
-                  child: Container(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Column(
-                        children: _groups.map(($group) => _buildItem($group)).toList() + (_footer != null ? [_footer] : []),
-                      ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Column(
+                      children: [
+                        for (final group in _groups) _buildItem(group),
+                        if (_footer != null) _footer!,
+                      ],
                     ),
                   ),
                 ),
+
+                // 🔹 Botones de navegación arriba / abajo
                 Column(
                   children: [
                     _getAnimatedButton(
-                        icon: Icons.arrow_drop_up_sharp,
-                        visible: _showTopButton == true,
-                        onTap: () {
-                          _scrollController.position.animateTo(0, duration: Duration(milliseconds: 500), curve: Curves.decelerate);
-                        }),
-                    Expanded(
-                      child: Container(),
+                      icon: Icons.arrow_drop_up_sharp,
+                      visible: _showTopButton,
+                      onTap: () => _scrollController.animateTo(
+                        0,
+                        duration: const Duration(milliseconds: 500),
+                        curve: Curves.decelerate,
+                      ),
                     ),
+                    const Spacer(),
                     _getAnimatedButton(
-                        icon: Icons.arrow_drop_down_sharp,
-                        visible: _showDownButton == true,
-                        onTap: () {
-                          _scrollController.position.animateTo(_scrollController.position.maxScrollExtent, duration: Duration(milliseconds: 500), curve: Curves.decelerate);
-                        }),
+                      icon: Icons.arrow_drop_down_sharp,
+                      visible: _showDownButton,
+                      onTap: () => _scrollController.animateTo(
+                        _scrollController.position.maxScrollExtent,
+                        duration: const Duration(milliseconds: 500),
+                        curve: Curves.decelerate,
+                      ),
+                    ),
                   ],
-                )
+                ),
               ],
             ),
           ),
@@ -127,162 +135,136 @@ class _PageNavigatorState extends State<PageNavigator> {
     );
   }
 
-  Widget _getAnimatedButton({IconData icon, bool visible, Function() onTap}) {
+  /// =======================================================
+  /// Helper: botón animado para scroll
+  /// =======================================================
+  Widget _getAnimatedButton({
+    required IconData icon,
+    required bool visible,
+    required VoidCallback onTap,
+  }) {
     return Material(
       color: widget.backgroundColor ?? Colors.black,
       child: InkWell(
         enableFeedback: true,
         hoverColor: Colors.white24,
-        onTap: onTap,
+        onTap: visible ? onTap : null,
         child: AnimatedContainer(
-          duration: Duration(milliseconds: 400),
+          duration: const Duration(milliseconds: 400),
           curve: Curves.ease,
           height: visible ? 24 : 0,
-          child: Container(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AnimatedOpacity(
-                  duration: Duration(milliseconds: 200),
-                  curve: Curves.ease,
-                  opacity: visible ? 1 : 0,
-                  child: Container(
-                    margin: const EdgeInsets.only(),
-                    child: Icon(
-                      icon,
-                      size: 24,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.ease,
+                opacity: visible ? 1 : 0,
+                child: Icon(icon, size: 24, color: Colors.white),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildItem(Anxeb.MenuItem $item) {
-    var $activeColor = widget.application.settings.colors.active;
-    var $error = $item.error ?? ($item.isError != null ? $item.isError() : null);
-    var $active = _isItemActive($item);
-    var $fontSize = 10.0;
-    var $hidden = $item.visible == false || ($item.isVisible != null && $item.isVisible() == false);
-    var $unauthorized = (_role != null && $item.roles != null && !$item.roles.contains(_role)) || (_roles != null && $item.roles != null && !_roles.any(($role) => $item.roles.contains($role)));
-    var $disabled = $item.isDisabled != null ? $item.isDisabled() : null;
-    var $enabled = $disabled == true ? false : ($item.enabled != null ? $item.enabled : ($item.isEnabled != null ? $item.isEnabled() : null));
+  /// =======================================================
+  /// Helper: construcción de item del menú
+  /// =======================================================
+  Widget _buildItem(Anxeb.MenuItem item) {
+    final settings = widget.application.settings;
+    final activeColor = settings.colors.active;
+    final error = item.error ?? item.isError?.call();
+    final active = _isItemActive(item);
+    const fontSize = 10.0;
+    final hidden =
+        item.visible == false || (item.isVisible?.call() == false);
+    final unauthorized = (item.roles != null &&
+            !item.roles!.contains(_role)) ||
+        (item.roles != null &&
+            !_roles.any((r) => item.roles!.contains(r)));
+    final disabled = item.isDisabled?.call() ?? false;
+    final enabled = disabled ? false : (item.enabled);
 
-    if ($hidden || $unauthorized) {
-      return Container();
+    if (hidden || unauthorized) return const SizedBox.shrink();
+
+    Color textColor = Colors.white;
+    if (active) {
+      textColor = activeColor;
+    } else if (!enabled) {
+      textColor = error != null
+          ? settings.colors.danger.withAlpha(150)
+          : settings.colors.text.withAlpha(90);
     }
 
-    var $itemStyle = TextStyle(
-      color: Colors.white,
-      fontSize: $fontSize,
+    final itemStyle = TextStyle(
+      color: textColor,
+      fontSize: fontSize,
       letterSpacing: 0.5,
       fontWeight: FontWeight.w400,
     );
 
-    if ($active == true) {
-      $itemStyle = TextStyle(
-        color: $activeColor,
-        fontSize: $fontSize,
-        letterSpacing: 0.5,
-        fontWeight: FontWeight.w400,
-      );
-    }
-
-    if ($enabled == false) {
-      $itemStyle = TextStyle(
-        color: $error != null ? widget.application.settings.colors.danger.withAlpha(150) : widget.application.settings.colors.text.withAlpha(90),
-        fontSize: $fontSize,
-        letterSpacing: 0.5,
-        fontWeight: FontWeight.w400,
-      );
-    }
-
-    var menuItemContent = Container(
-      padding: EdgeInsets.only(top: 6, bottom: 6),
+    final menuItemContent = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Container(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  $item.icon,
-                  color: $active == true ? $activeColor : Colors.white,
-                  size: 30.0 * ($item.iconScale ?? 1),
-                ),
-              ],
-            ),
+        children: [
+          Icon(
+            item.icon,
+            color: active ? activeColor : Colors.white,
+            size: 30.0 * (item.iconScale ?? 1),
           ),
-          Container(
-            padding: EdgeInsets.only(top: 2),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                Text(
-                  $item.caption().toUpperCase(),
-                  overflow: TextOverflow.visible,
-                  textAlign: TextAlign.center,
-                  style: $itemStyle,
-                ),
-              ],
-            ),
+          const SizedBox(height: 2),
+          Text(
+            (item.caption?.call() ?? '').toUpperCase(),
+            overflow: TextOverflow.visible,
+            textAlign: TextAlign.center,
+            style: itemStyle,
           ),
-          $error != null
-              ? Padding(
-                  padding: const EdgeInsets.only(top: 5),
-                  child: Text($error.toUpperCase(),
-                      style: TextStyle(
-                        color: $enabled == false ? widget.application.settings.colors.danger.withAlpha(150) : widget.application.settings.colors.danger,
-                        fontSize: 11,
-                        letterSpacing: 0.2,
-                        fontWeight: FontWeight.w400,
-                      )),
-                )
-              : Container(),
+          if (error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 5),
+              child: Text(
+                error.toUpperCase(),
+                style: TextStyle(
+                  color: !enabled
+                      ? settings.colors.danger.withAlpha(150)
+                      : settings.colors.danger,
+                  fontSize: 11,
+                  letterSpacing: 0.2,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ),
         ],
       ),
     );
 
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Container(
-        decoration: BoxDecoration(
-          color: $active == true ? Colors.white.withOpacity(0.1) : Colors.transparent,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Material(
+        color: active
+            ? Colors.white.withOpacity(0.1)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
           borderRadius: BorderRadius.circular(8),
-        ),
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          child: InkWell(
-            child: menuItemContent,
-            borderRadius: BorderRadius.circular(8),
-            hoverColor: Colors.white24,
-            onTap: () async {
-              if ($item.onTab != null) {
-                var result = await $item.onTab();
-                if (result == false) {
-                  return;
-                }
-              }
-            },
-          ),
+          hoverColor: Colors.white24,
+          onTap: () async {
+            final result = await (item.onTap?.call() ?? Future.value(null));
+            if (result != false) setState(() {});
+          },
+          child: menuItemContent,
         ),
       ),
     );
   }
 
+  /// =======================================================
+  /// Helper: determina si un item está activo
+  /// =======================================================
   bool _isItemActive(Anxeb.MenuItem item) {
-    var result = item.active != null ? item.active : (item.isActive != null ? item.isActive() : null);
-    if (result == null && widget.isActive != null) {
-      return widget.isActive(item);
-    }
-    return result;
+    return item.active;
   }
 }

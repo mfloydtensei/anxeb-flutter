@@ -72,8 +72,7 @@ class EntryScreen extends StatelessWidget {
 /// =======================================================
 /// ENTRY PAGE (multi-page router-based apps)
 /// =======================================================
-class EntryPage<A extends Application, M extends PageInfo>
-    extends StatefulWidget {
+class EntryPage<A extends Application, M extends PageInfo<A, M>> extends StatefulWidget{
   final ThemeData? theme;
   final String? title;
   final PageMiddleware<A, M> middleware;
