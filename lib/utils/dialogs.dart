@@ -6,17 +6,24 @@ import 'package:community_material_icon/community_material_icon.dart';
 import 'package:ionicons/ionicons.dart';
 
 class Dialogs {
-  Future<bool> shouldUseCamera(Scope scope, {bool useDocumentLabel}) async {
-    var option;
+  Future<bool?> shouldUseCamera(
+    Scope scope, {
+    bool useDocumentLabel = false,
+  }) async {
+    String? option;
+
     await scope.dialogs.panel(
       items: [
         PanelMenuItem(
           actions: [
             PanelMenuAction(
-              label: () => useDocumentLabel == true ? translate('anxeb.utils.dialogs.browse_document') : translate('anxeb.utils.dialogs.browse_image'),
-              //TR 'Buscar\nImagen',
+              label: () => useDocumentLabel
+                  ? translate('anxeb.utils.dialogs.browse_document')
+                  : translate('anxeb.utils.dialogs.browse_image'),
               textScale: 0.9,
-              icon: () => useDocumentLabel == true ? CommunityMaterialIcons.file : Icons.image,
+              icon: () => useDocumentLabel
+                  ? CommunityMaterialIcons.file
+                  : Icons.image,
               fillColor: () => scope.application.settings.colors.secudary,
               onPressed: () {
                 option = 'browse';
@@ -24,7 +31,6 @@ class Dialogs {
             ),
             PanelMenuAction(
               label: () => translate('anxeb.utils.dialogs.use_camera'),
-              //TR 'Usar\nCámara',
               textScale: 0.9,
               icon: () => Ionicons.camera,
               fillColor: () => scope.application.settings.colors.secudary,
@@ -37,6 +43,7 @@ class Dialogs {
         ),
       ],
     ).show();
+
     if (option != null) {
       return option == 'camera';
     }
