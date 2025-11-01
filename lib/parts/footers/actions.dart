@@ -1,33 +1,44 @@
-import 'package:anxeb_flutter/anxeb.dart';
+import 'package:anxeb_flutter/screen/scope.dart';
+import 'package:anxeb_flutter/misc/action_icon.dart';
+import 'package:anxeb_flutter/misc/action_button.dart';
+import 'package:anxeb_flutter/middleware/footer.dart';
 import 'package:flutter/material.dart';
 
 class ActionsFooter extends ScreenFooter {
-  @protected
-  List<ActionIcon> actions;
-  List<ActionButton> buttons;
+  final List<ActionIcon>? actions;
+  final List<ActionButton>? buttons;
 
-  ActionsFooter({
-    @required Scope scope,
-    bool Function() isVisible,
+  const ActionsFooter({
+    required ScreenScope scope,
+    bool Function()? isVisible,
     this.actions,
     this.buttons,
   }) : super(scope: scope, isVisible: isVisible);
 
   @override
   Widget content() {
-    var $actions = actions != null ? actions.where(($action) => $action.isVisible?.call() != false).map(($action) => $action.build()).toList() : null;
-    var $buttons = buttons != null ? buttons.where(($button) => $button.isVisible?.call() != false).map(($button) => $button.build()).toList() : null;
+    final visibleActions = (actions ?? [])
+        .where((a) => a.isVisible?.call() != false)
+        .map((a) => a.build())
+        .toList();
+
+    final visibleButtons = (buttons ?? [])
+        .where((b) => b.isVisible?.call() != false)
+        .map((b) => b.build())
+        .toList();
 
     return Row(
-      children: <Widget>[
-        Container(child: Row(children: $actions ?? [])),
+      children: [
+        // 🔹 Acciones (izquierda)
+        Row(children: visibleActions),
+        // 🔹 Botones (derecha)
         Expanded(
           child: Container(
-            padding: EdgeInsets.only(right: 5),
+            padding: const EdgeInsets.only(right: 5),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisAlignment: MainAxisAlignment.end,
-              children: $buttons ?? [],
+              children: visibleButtons,
             ),
           ),
         ),
