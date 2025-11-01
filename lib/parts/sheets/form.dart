@@ -1,75 +1,79 @@
-import 'package:anxeb_flutter/middleware/scope.dart';
-import 'package:anxeb_flutter/middleware/sheet.dart';
 import 'package:flutter/material.dart' hide Dialog;
-
-import '../../middleware/device.dart';
+import 'package:anxeb_flutter/middleware/sheet.dart';
+import 'package:anxeb_flutter/middleware/device.dart';
+import 'package:anxeb_flutter/screen/scope.dart';
+import 'package:anxeb_flutter/middleware/scope.dart';
 
 class FormSheet extends ScopeSheet {
-  final String title;
-  final Color fill;
-  final LinearGradient gradient;
-  final BoxDecoration boxDecoration;
-  final EdgeInsets titlePadding;
-  final TextStyle titleStyle;
+  final String? title;
+  final Color? fill;
+  final LinearGradient? gradient;
+  final BoxDecoration? boxDecoration;
+  final EdgeInsets? titlePadding;
+  final TextStyle? titleStyle;
 
-  FormSheet(
-    Scope scope, {
+  const FormSheet(
+    Scope scope, { // ✅ corregido aquí
     this.title,
     this.fill,
     this.gradient,
     this.boxDecoration,
     this.titlePadding,
     this.titleStyle,
-  })  : assert(title != null),
-        super(scope);
+  }) : super(scope);
 
   @protected
-  Widget content(BuildContext context, Scope scope) {
-    return Container();
+  Widget content(BuildContext context, Scope scope) { // ✅ tipo base
+    return const SizedBox.shrink();
   }
 
   @override
   Widget build(BuildContext context) {
+    final safeFill = fill ?? Theme.of(context).colorScheme.surface;
+
     return ConstrainedBox(
-      constraints: BoxConstraints(
-        minHeight: 0,
-      ),
+      constraints: const BoxConstraints(minHeight: 0),
       child: Container(
         padding: EdgeInsets.only(bottom: scope.window.insets.bottom),
-        decoration: this.boxDecoration ??
+        decoration: boxDecoration ??
             BoxDecoration(
-              color: this.fill,
+              color: safeFill,
               shape: BoxShape.rectangle,
-              borderRadius: BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
-              gradient: this.gradient ??
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+              gradient: gradient ??
                   LinearGradient(
                     begin: FractionalOffset.topCenter,
                     end: FractionalOffset.bottomCenter,
                     colors: [
-                      fill.withOpacity(1),
-                      fill.withOpacity(1),
+                      safeFill.withOpacity(1),
+                      safeFill.withOpacity(1),
                     ],
-                    stops: [0.0, 1.0],
+                    stops: const [0.0, 1.0],
                   ),
             ),
         child: SafeArea(
           top: false,
           bottom: true,
           child: Padding(
-            padding: scope.window.overlay.extendBodyFullScreen && Device.isAndroid ? EdgeInsets.only(bottom: 64) : EdgeInsets.zero,
+            padding: scope.window.overlay.extendBodyFullScreen && Device.isAndroid
+                ? const EdgeInsets.only(bottom: 64)
+                : EdgeInsets.zero,
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
+                children: [
                   Container(
-                    padding: titlePadding ?? EdgeInsets.only(bottom: 0, top: 8, left: 8, right: 8),
+                    padding: titlePadding ?? const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                     child: Row(
-                      children: <Widget>[
+                      children: [
                         Expanded(
                           child: Padding(
-                            padding: EdgeInsets.only(left: 14),
+                            padding: const EdgeInsets.only(left: 14),
                             child: Text(
-                              title,
+                              title ?? '',
                               style: titleStyle ??
                                   TextStyle(
                                     fontSize: 20,
@@ -85,15 +89,13 @@ class FormSheet extends ScopeSheet {
                           iconSize: 24,
                           padding: EdgeInsets.zero,
                           color: scope.application.settings.colors.primary,
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
+                          onPressed: () => Navigator.of(context).pop(),
                         ),
                       ],
                     ),
                   ),
-                  Container(
-                    padding: EdgeInsets.only(left: 22, right: 22, bottom: 20),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 22, right: 22, bottom: 20),
                     child: content(context, scope),
                   ),
                 ],

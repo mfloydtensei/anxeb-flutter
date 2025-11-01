@@ -4,26 +4,33 @@ import 'package:anxeb_flutter/widgets/blocks/image.dart';
 import 'package:flutter/material.dart' hide Dialog;
 import 'package:anxeb_flutter/anxeb.dart' as Anxeb;
 import 'package:flutter_translate/flutter_translate.dart';
-
 import '../../middleware/device.dart';
 
 class NotificationSheet extends ScopeSheet {
   final String title;
   final String message;
-  final String imageUrl;
+  final String? imageUrl;
   final DateTime date;
-  final IconData icon;
-  final Widget body;
-  final VoidCallback onDelete;
+  final IconData? icon;
+  final Widget? body;
+  final VoidCallback? onDelete;
   final List<NotificationSheetAction> actions;
 
-  NotificationSheet(Scope scope, {this.title, this.message, this.imageUrl, this.icon, this.body, this.actions, this.onDelete, this.date})
-      : assert(title != null),
-        super(scope);
+  const NotificationSheet(
+    Scope scope, {
+    required this.title,
+    required this.message,
+    required this.date,
+    this.imageUrl,
+    this.icon,
+    this.body,
+    this.onDelete,
+    this.actions = const [],
+  }) : super(scope);
 
   @override
   Widget build(BuildContext context) {
-    Color foreground = scope.application.settings.colors.text;
+    final foreground = scope.application.settings.colors.text;
 
     return ConstrainedBox(
       constraints: BoxConstraints(
@@ -37,27 +44,24 @@ class NotificationSheet extends ScopeSheet {
           bottom: true,
           child: Padding(
             padding: scope.window.overlay.extendBodyFullScreen && Device.isAndroid
-                ? EdgeInsets.only(
-                    top: 25,
-                    left: 25,
-                    right: 25,
-                    bottom: 64,
-                  )
-                : EdgeInsets.all(25),
+                ? const EdgeInsets.only(top: 25, left: 25, right: 25, bottom: 64)
+                : const EdgeInsets.all(25),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 🔹 Header
                   Container(
-                    padding: EdgeInsets.only(bottom: 10),
-                    margin: EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.only(bottom: 10),
+                    margin: const EdgeInsets.only(bottom: 10),
                     decoration: BoxDecoration(
                       border: Border(
                         bottom: BorderSide(width: 0.5, color: foreground),
                       ),
                     ),
                     child: Row(
-                      children: <Widget>[
+                      children: [
                         Padding(
                           padding: const EdgeInsets.only(right: 5),
                           child: Icon(
@@ -79,105 +83,112 @@ class NotificationSheet extends ScopeSheet {
                       ],
                     ),
                   ),
-                  date != null
-                      ? Container(
-                          child: Row(
-                            children: [
-                              Text(Anxeb.Utils.convert.fromDateToHumanString(date, withTime: true, complete: true)),
-                            ],
+
+                  // 🔹 Fecha
+                  Row(
+                    children: [
+                      Text(
+                        Anxeb.Utils.convert.fromDateToHumanString(
+                          date,
+                          withTime: true,
+                          complete: true,
+                        ),
+                        style: TextStyle(
+                          color: foreground.withOpacity(0.8),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // 🔹 Imagen opcional
+                  if (imageUrl != null && imageUrl!.isNotEmpty)
+                    Container(
+                      margin: const EdgeInsets.only(top: 10),
+                      height: 200,
+                      child: ImageLinkBlock(
+                        url: imageUrl,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+
+                  // 🔹 Mensaje principal
+                  Container(
+                    padding: const EdgeInsets.only(top: 12, bottom: 8),
+                    child: Text(
+                      message,
+                      style: TextStyle(
+                        fontSize: 21.5,
+                        height: 1.3,
+                        fontWeight: FontWeight.w300,
+                        color: foreground,
+                      ),
+                    ),
+                  ),
+
+                  // 🔹 Cuerpo opcional
+                  if (body != null) body!,
+
+                  // 🔹 Acciones
+                  if (actions.isNotEmpty)
+                    Column(
+                      children: actions
+                          .where((a) => a.isVisible != false)
+                          .map((action) {
+                        return Anxeb.TextButton(
+                          caption: action.caption,
+                          icon: action.icon,
+                          color: action.color ??
+                              scope.application.settings.colors.secudary,
+                          margin: const EdgeInsets.only(top: 12),
+                          radius:
+                              scope.application.settings.dialogs.buttonRadius,
+                          onPressed: () {
+                            Navigator.pop(context);
+                            action.onPressed?.call();
+                          },
+                          type: Anxeb.ButtonType.primary,
+                          size: Anxeb.ButtonSize.normal,
+                        );
+                      }).toList(),
+                    ),
+
+                  // 🔹 Botones inferiores (Eliminar / Cerrar)
+                  Container(
+                    margin: const EdgeInsets.only(top: 12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Anxeb.TextButton(
+                            caption: translate('anxeb.common.delete'),
+                            color:
+                                scope.application.settings.colors.danger,
+                            margin: const EdgeInsets.only(right: 6),
+                            radius:
+                                scope.application.settings.dialogs.buttonRadius,
+                            onPressed: () {
+                              Navigator.pop(context);
+                              onDelete?.call();
+                            },
+                            type: Anxeb.ButtonType.primary,
+                            size: Anxeb.ButtonSize.normal,
                           ),
-                        )
-                      : Container(),
-                  imageUrl != null
-                      ? Container(
-                          margin: EdgeInsets.only(top: 10),
-                          child: ImageLinkBlock(
-                            url: imageUrl,
-                            fit: BoxFit.cover,
+                        ),
+                        Expanded(
+                          child: Anxeb.TextButton(
+                            caption: translate('anxeb.common.close'),
+                            color: scope.application.settings.colors.secudary,
+                            margin: const EdgeInsets.only(left: 6),
+                            radius:
+                                scope.application.settings.dialogs.buttonRadius,
+                            onPressed: () => Navigator.pop(context),
+                            type: Anxeb.ButtonType.primary,
+                            size: Anxeb.ButtonSize.normal,
                           ),
-                          height: 200,
-                        )
-                      : Container(),
-                  message != null
-                      ? Container(
-                          padding: EdgeInsets.only(top: 12, bottom: 8),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  message,
-                                  style: TextStyle(
-                                    fontSize: 21.5,
-                                    height: 1.3,
-                                    fontWeight: FontWeight.w300,
-                                    color: foreground,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : Container(),
-                  body ?? Container(),
-                  actions != null && actions.isNotEmpty
-                      ? Container(
-                          child: Column(
-                            children: actions.where((element) => element.isVisible != false).map(($action) {
-                              return Anxeb.TextButton(
-                                caption: $action.caption,
-                                icon: $action.icon,
-                                color: $action.color ?? scope.application.settings.colors.secudary,
-                                margin: EdgeInsets.only(top: 12),
-                                radius: scope.application.settings.dialogs.buttonRadius,
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                  $action.onPressed?.call();
-                                },
-                                type: Anxeb.ButtonType.primary,
-                                size: Anxeb.ButtonSize.normal,
-                              );
-                            }).toList(),
-                          ),
-                        )
-                      : Container(),
-                  onDelete != null
-                      ? Container(
-                          margin: EdgeInsets.only(top: 12),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Anxeb.TextButton(
-                                  caption: translate('anxeb.common.delete'),
-                                  //TR 'Eliminar',
-                                  margin: EdgeInsets.only(right: 6),
-                                  color: scope.application.settings.colors.danger,
-                                  radius: scope.application.settings.dialogs.buttonRadius,
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                    onDelete?.call();
-                                  },
-                                  type: Anxeb.ButtonType.primary,
-                                  size: Anxeb.ButtonSize.normal,
-                                ),
-                              ),
-                              Expanded(
-                                child: Anxeb.TextButton(
-                                  caption: translate('anxeb.common.close'),
-                                  //TR 'Cerrar',
-                                  margin: EdgeInsets.only(left: 6),
-                                  color: scope.application.settings.colors.secudary,
-                                  radius: scope.application.settings.dialogs.buttonRadius,
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                  },
-                                  type: Anxeb.ButtonType.primary,
-                                  size: Anxeb.ButtonSize.normal,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : Container(),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -196,14 +207,14 @@ class NotificationSheet extends ScopeSheet {
 
 class NotificationSheetAction {
   final String caption;
-  final IconData icon;
-  final VoidCallback onPressed;
-  final Color color;
-  final bool isDisabled;
-  final bool isVisible;
+  final IconData? icon;
+  final VoidCallback? onPressed;
+  final Color? color;
+  final bool? isDisabled;
+  final bool? isVisible;
 
-  NotificationSheetAction({
-    this.caption,
+  const NotificationSheetAction({
+    required this.caption,
     this.icon,
     this.onPressed,
     this.color,
