@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:anxeb_flutter/middleware/scope.dart';
+import 'package:anxeb_flutter/screen/scope.dart';
 import 'package:anxeb_flutter/misc/action_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_translate/flutter_translate.dart';
@@ -7,166 +7,175 @@ import 'actions.dart';
 
 class SearchHeader extends ActionsHeader {
   final bool actionRightPositioned;
-  final int Function() submitDelay;
-  final String hint;
-  final Future Function(String text) onSearch;
-  final Future Function() onClear;
-  final Function(String text) onCompleted;
-  final Future Function() onBegin;
-  TextEditingController _inputController;
-  FocusNode _focusNode;
-  String _currentText;
-  bool _active;
-  bool _busy;
+  final int Function()? submitDelay;
+  final String? hint;
+  final Future<void> Function(String text)? onSearch;
+  final Future<void> Function()? onClear;
+  final Future<void> Function(String text)? onCompleted;
+  final Future<void> Function()? onBegin;
+
+  late final TextEditingController _inputController;
+  late final FocusNode _focusNode;
+  String _currentText = '';
+  bool _active = false;
+  bool _busy = false;
+  Timer? _writeTimer;
 
   SearchHeader({
-    Scope scope,
-    Widget Function() title,
-    List<ActionItem> actions,
-    VoidCallback dismiss,
-    VoidCallback back,
-    ActionIcon leading,
-    Widget Function() bottom,
-    double Function() elevation,
-    double Function() height,
-    this.actionRightPositioned,
+    required ScreenScope scope,
+    Widget Function()? title,
+    List<ActionItem>? actions,
+    VoidCallback? dismiss,
+    VoidCallback? back,
+    ActionIcon? leading,
+    Widget Function()? bottom,
+    double Function()? elevation,
+    double Function()? height,
+    this.actionRightPositioned = false,
     this.hint,
     this.submitDelay,
     this.onSearch,
     this.onClear,
     this.onCompleted,
     this.onBegin,
-  }) : super(scope: scope, dismiss: dismiss, back: back, leading: leading, title: title, bottom: bottom, elevation: elevation, height: height) {
-    super.actions = actions ?? <ActionItem>[];
+  }) : super(
+          scope: scope,
+          dismiss: dismiss,
+          back: back,
+          leading: leading,
+          title: title,
+          bottom: bottom,
+          elevation: elevation,
+          height: height,
+          actions: actions,
+        ) {
+    // Agregar ícono de búsqueda
+    final searchItem = ActionIcon(
+      icon: () => Icons.search,
+      onPressed: _beginSearch,
+    );
 
-    if (actionRightPositioned == true) {
-      ActionItem item = ActionIcon(icon: () => Icons.search, onPressed: _beginSearch);
-      super.actions.add(item);
+    if (actionRightPositioned) {
+      super.actions?.add(searchItem);
     } else {
-      ActionItem item = ActionIcon(icon: () => Icons.search, onPressed: _beginSearch);
-      super.actions.insert(0, item);
+      super.actions?.insert(0, searchItem);
     }
+
     _init();
   }
 
   void _init() {
-    _inputController = new TextEditingController();
+    _inputController = TextEditingController();
     _focusNode = FocusNode();
-    _busy = false;
-    _active = false;
-    _currentText = '';
-    Timer writeTimer;
-    int searchTick;
 
     _focusNode.addListener(() {
-      if (!_focusNode.hasFocus) {
-        if (_active == true && _busy != true) {
-          _endSearch();
-        }
+      if (!_focusNode.hasFocus && _active && !_busy) {
+        _endSearch();
       }
     });
 
     _inputController.addListener(() {
-      if (submitDelay != null && submitDelay() != null && submitDelay() > 0) {
-        searchTick = DateTime.now().toUtc().millisecondsSinceEpoch;
+      final delay = submitDelay?.call() ?? 0;
+      final text = _inputController.text;
 
-        if (writeTimer == null || writeTimer.isActive == false) {
-          writeTimer = Timer.periodic(new Duration(milliseconds: submitDelay() ?? 250), (timer) {
-            var currentTick = DateTime.now().toUtc().millisecondsSinceEpoch;
-            if (currentTick - searchTick > 500) {
-              _lookup(_inputController.text);
-              writeTimer.cancel();
-            }
-          });
-        }
+      if (delay > 0) {
+        _writeTimer?.cancel();
+        _writeTimer = Timer(Duration(milliseconds: delay), () {
+          _lookup(text);
+        });
       } else {
-        _lookup(_inputController.text);
+        _lookup(text);
       }
     });
   }
 
-  Future _lookup(String text) async {
-    if (_currentText != text) {
+  Future<void> _lookup(String text) async {
+    if (_currentText != text && onSearch != null) {
       _currentText = text;
       _busy = true;
-      scope.rasterize();
-      await onSearch?.call(_currentText);
+      if (scope.mounted) scope.rasterize();
+      await onSearch!(text);
       _busy = false;
-      scope.rasterize();
+      if (scope.mounted) scope.rasterize();
     }
   }
 
-  Future clear({bool inactivate}) async {
+  Future<void> clear({bool inactivate = false}) async {
     _busy = true;
-    scope.rasterize();
+    if (scope.mounted) scope.rasterize();
     await onClear?.call();
     _inputController.clear();
     _currentText = '';
     _busy = false;
-    if (inactivate == true) {
-      _active = false;
-    }
-    scope.rasterize();
+    if (inactivate) _active = false;
+    if (scope.mounted) scope.rasterize();
   }
 
-  Future _beginSearch() async {
+  Future<void> _beginSearch() async {
     _active = true;
     _busy = true;
-    scope.rasterize();
+    if (scope.mounted) scope.rasterize();
     await onBegin?.call();
     _inputController.clear();
     _currentText = '';
     _focusSearch();
     _busy = false;
-    scope.rasterize();
+    if (scope.mounted) scope.rasterize();
   }
 
-  Future _endSearch() async {
+  Future<void> _endSearch() async {
     _busy = true;
-    scope.rasterize();
-    var result = _inputController.text;
+    if (scope.mounted) scope.rasterize();
+
+    final result = _inputController.text;
     _inputController.clear();
     _currentText = '';
     _active = false;
     _busy = false;
+
     await onCompleted?.call(result);
-    scope.rasterize();
+    if (scope.mounted) scope.rasterize();
   }
 
-  Future end() async {
-    await _endSearch();
-  }
+  Future<void> end() async => await _endSearch();
 
   void _focusSearch() {
-    Future.delayed(Duration(milliseconds: 200), () {
-      scope.focus(_focusNode);
-      _inputController.selection = TextSelection(baseOffset: 0, extentOffset: _inputController.text.length);
+    Future.delayed(const Duration(milliseconds: 200), () {
+      if (scope.mounted) {
+        scope.focus(_focusNode);
+        _inputController.selection = TextSelection(
+          baseOffset: 0,
+          extentOffset: _inputController.text.length,
+        );
+      }
     });
   }
 
   AppBar _buildSearchBar() {
-    var $actions = <Widget>[];
+    final List<Widget> actions = [];
 
     if (_busy) {
-      $actions.add(Container(
-        alignment: Alignment.center,
-        padding: EdgeInsets.only(right: 15),
-        child: SizedBox(
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xffffffff)),
+      actions.add(
+        Container(
+          alignment: Alignment.center,
+          padding: const EdgeInsets.only(right: 15),
+          child: const SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
           ),
-          width: 18,
-          height: 18,
         ),
-      ));
-    } else if (_inputController.text.length > 0) {
-      $actions.add(IconButton(
-        icon: const Icon(Icons.clear),
-        onPressed: () {
-          clear();
-        },
-      ));
+      );
+    } else if (_inputController.text.isNotEmpty) {
+      actions.add(
+        IconButton(
+          icon: const Icon(Icons.clear),
+          onPressed: clear,
+        ),
+      );
     }
 
     return AppBar(
@@ -176,9 +185,14 @@ class SearchHeader extends ActionsHeader {
         autofocus: true,
         cursorColor: Colors.white,
         decoration: InputDecoration.collapsed(
-          hintText: hint ?? translate('anxeb.parts.headers.search.hint_text'), //TR Búsqueda
+          hintText: hint ?? translate('anxeb.parts.headers.search.hint_text'),
           border: InputBorder.none,
-          hintStyle: const TextStyle(color: Colors.white60, fontSize: 20.0, decoration: TextDecoration.none, fontWeight: FontWeight.w500),
+          hintStyle: const TextStyle(
+            color: Colors.white60,
+            fontSize: 20.0,
+            decoration: TextDecoration.none,
+            fontWeight: FontWeight.w500,
+          ),
         ),
         style: const TextStyle(
           decoration: TextDecoration.none,
@@ -190,33 +204,35 @@ class SearchHeader extends ActionsHeader {
         textInputAction: TextInputAction.done,
         autocorrect: false,
         enableSuggestions: false,
-        onSubmitted: (val) {
-          _endSearch();
-        },
+        onSubmitted: (_) => _endSearch(),
         onTap: _focusSearch,
-        onChanged: (val) {
-          scope.rasterize();
+        onChanged: (_) {
+          if (scope.mounted) scope.rasterize();
         },
       ),
-      actions: $actions,
-      bottom: scope?.view?.parts?.tabs?.header?.call(bottomBody: bottom?.call(), height: height) ?? bottom?.call(),
+      actions: actions,
+      bottom: (scope.view.parts.tabs?.header(
+                bottomBody: bottom?.call(),
+                height: height,
+              )) ??
+          (bottom?.call() as PreferredSizeWidget?),
       automaticallyImplyLeading: false,
-      leading: BackButton(
-        onPressed: () {
-          _endSearch();
-        },
-      ),
+      leading: BackButton(onPressed: _endSearch),
     );
   }
 
   String get text => _currentText;
 
-  bool get isActive => _active == true;
-
-  bool get isNotEmpty => _currentText?.isNotEmpty == true;
-
-  bool get isEmpty => !isNotEmpty;
+  bool get isActive => _active;
+  bool get isNotEmpty => _currentText.isNotEmpty;
+  bool get isEmpty => _currentText.isEmpty;
 
   @override
   PreferredSizeWidget build() => _active ? _buildSearchBar() : super.build();
+
+  void dispose() {
+    _inputController.dispose();
+    _focusNode.dispose();
+    _writeTimer?.cancel();
+  }
 }
