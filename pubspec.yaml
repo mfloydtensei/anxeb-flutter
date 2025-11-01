@@ -30,9 +30,9 @@ dependencies:
   shared_preferences: ^2.0.15
   sliding_up_panel: ^2.0.0+1
   pull_to_refresh_flutter3: ^2.0.1
-  google_sign_in: ^5.4.2
+  google_sign_in: ^6.2.1
   oauth1: ^2.0.0
-  flutter_facebook_auth: ^4.4.1+1
+  flutter_facebook_auth: ^6.2.0
   device_info: ^2.0.3
   percent_indicator: ^4.2.2
   another_flushbar: ^1.12.29
@@ -41,7 +41,7 @@ dependencies:
   photo_view: ^0.14.0
   credit_card_validator: ^2.1.0
   file_picker: ^5.2.3
-  sign_in_with_apple: ^4.2.0
+  sign_in_with_apple: ^6.1.0
   firebase_core: ^2.6.0
   firebase_messaging: ^14.2.3
   firebase_analytics: ^10.1.2

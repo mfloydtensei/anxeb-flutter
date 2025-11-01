@@ -1,63 +1,72 @@
 import 'package:anxeb_flutter/anxeb.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class AppleAuth extends AuthProvider {
-  String _fetchCallbackRoute;
-  String Function() _nonce;
-  Api _api;
+  final String fetchCallbackRoute;
+  final String Function() nonce;
+  final Api api;
 
-  AppleAuth(Application application) : super(application) {
-    _fetchCallbackRoute = application.settings.auths.apple.fetchCallbackRoute;
-    _nonce = application.settings.auths.apple.nonce;
-    _api = application.settings.auths.apple.api ?? application.api;
+  AppleAuth(Application application)
+      : fetchCallbackRoute = application.settings.auths.apple.fetchCallbackRoute,
+        nonce = application.settings.auths.apple.nonce,
+        api = application.settings.auths.apple.api ?? application.api,
+        super(application);
+
+  @override
+  Future<void> logout() async {
+    // Apple Sign-In no maneja sesión persistente en el dispositivo.
+    // Aquí podrías limpiar tokens o llamar a tu backend si fuera necesario.
+    return;
   }
 
   @override
-  Future logout() async {}
-
-  @override
-  Future<AuthResultModel> login({bool silent}) async {
+  Future<AuthResultModel?> login({bool silent = false}) async {
     try {
-      final session = await SignInWithApple.getAppleIDCredential(
-        nonce: _nonce?.call(),
-        scopes: [
-          AppleIDAuthorizationScopes.email, //ASAuthorizationAppleIDCredential containing the user info until you can validate that an account has succesfully been created on your server.
+      final credential = await SignInWithApple.getAppleIDCredential(
+        nonce: nonce.call(),
+        scopes: const [
+          AppleIDAuthorizationScopes.email,
           AppleIDAuthorizationScopes.fullName,
         ],
       );
 
-      if (session != null) {
-        var res = await _api.post(_fetchCallbackRoute, {
-          'identifier': session.userIdentifier,
-          'first_name': session.givenName,
-          'last_name': session.familyName,
-          'email': session.email,
-          'token': session.identityToken,
-          'code': session.authorizationCode,
-        });
-        var info = res['info'] ?? {};
+      // 🔹 Enviamos los datos al backend configurado
+      final response = await api.post(fetchCallbackRoute, {
+        'identifier': credential.userIdentifier,
+        'first_name': credential.givenName,
+        'last_name': credential.familyName,
+        'email': credential.email,
+        'token': credential.identityToken,
+        'code': credential.authorizationCode,
+      });
 
-        AuthResultModel result = AuthResultModel();
-        result.id = session.userIdentifier;
-        result.firstNames = session.givenName ?? info['first_name'];
-        result.lastNames = session.familyName ?? info['last_name'];
-        result.email = session.email ?? info['email'];
-        result.photo = null;
-        result.token = session.identityToken;
-        result.provider = 'apple';
-        result.meta = {
-          'state': session.state,
-          'authorizationCode': session.authorizationCode,
+      final info = response['info'] ?? {};
+
+      // 🔹 Construimos el resultado de autenticación
+      final result = AuthResultModel()
+        ..id = credential.userIdentifier
+        ..firstNames = credential.givenName ?? info['first_name']
+        ..lastNames = credential.familyName ?? info['last_name']
+        ..email = credential.email ?? info['email']
+        ..photo = null
+        ..token = credential.identityToken
+        ..provider = 'apple'
+        ..meta = {
+          'state': credential.state,
+          'authorizationCode': credential.authorizationCode,
         };
-        return result;
-      }
+
+      return result;
     } on SignInWithAppleAuthorizationException catch (err) {
-      if (err.code == AuthorizationErrorCode.canceled || err.code == AuthorizationErrorCode.unknown) {
+      // 🔹 Manejo específico de errores de Apple
+      if (err.code == AuthorizationErrorCode.canceled ||
+          err.code == AuthorizationErrorCode.unknown) {
         return null;
       }
-      throw err;
+      rethrow;
     } catch (err) {
-      throw err;
+      // 🔹 Manejo genérico de errores
+      rethrow;
     }
-    return null;
   }
 }
