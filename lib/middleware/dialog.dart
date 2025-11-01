@@ -82,7 +82,6 @@ class ScopeDialogs {
       referencer: Referencer<V>(
         loader: loader,
         comparer: comparer ?? (a, b) => false,
-        updater: updater ?? () {},
         filter: filter ?? (item, query) => true,
       ),
       itemWidget: itemWidget ?? (ReferencerPage<V>? page, V? item) => Text(item?.toString() ?? ''),

@@ -73,11 +73,13 @@ class ValueBlock extends StatefulWidget {
 
 class _ValueBlockState extends State<ValueBlock> {
   String get _value {
-    return Utils.convert.fromAnyToNumber(
-      widget.value,
-      decimals: widget.discrete ? 0 : 2,
-    );
-  }
+  return Utils.convert.fromAnyToNumber(
+        widget.value,
+        decimals: widget.discrete ? 0 : 2,
+      ) ??
+      '0.00';
+}
+
 
   String get _integers {
     final value = _value;
