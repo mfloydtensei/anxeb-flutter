@@ -278,8 +278,9 @@ final File? result = await Device.photo(
     } else if (widget.scope is ScreenScope) {
       result = await (widget.scope as ScreenScope).push(
         ImagePreviewHelper(
-          title: widget.label,
-          image: image,
+          application: widget.scope.application,
+          title: widget.label ?? '',
+          image: image!,
           canRemove: true,
           fullImage: widget.fullImage,
         ),
