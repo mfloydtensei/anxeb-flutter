@@ -82,6 +82,7 @@ class Device {
     if (useCameraHelper) {
       result = await scope.push<File?>(
         CameraHelper(
+          application: scope.application,
           title: title ?? '',
           fullImage: fullImage ?? false,
           initFaceCamera: initFaceCamera ?? false,

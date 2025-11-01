@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 
+// Exportación de todos los paquetes de íconos disponibles
 export 'package:fluttericon/brandico_icons.dart';
 export 'package:fluttericon/elusive_icons.dart';
 export 'package:fluttericon/entypo_icons.dart';
@@ -22,194 +23,209 @@ export 'package:fluttericon/zocial_icons.dart';
 export 'package:community_material_icon/community_material_icon.dart';
 export 'package:ionicons/ionicons.dart';
 
+/// =======================================================
+/// GLOBAL ICON HELPER
+/// =======================================================
 class GlobalIcons {
-  IconData getFileColor(String extension) {
-    final obj = _mimeTypes[extension];
-    if (obj != null) {
-      return obj['color'];
+  /// Retorna un color asociado a la extensión del archivo
+  IconData getFileIcon(String extension) {
+    final data = _mimeTypes[extension.toLowerCase()];
+    if (data != null && data['icon'] is IconData) {
+      return data['icon'] as IconData;
     }
     return FontAwesome5.file_alt;
   }
 
+  /// Retorna los metadatos del ícono (caption, color, etc)
   IconFileMeta getFileMeta(String extension) {
-    if (extension == null){
-      return null;
-    }
-    final obj = _mimeTypes[extension];
-    if (obj != null) {
+    final ext = extension.toLowerCase();
+    final data = _mimeTypes[ext];
+
+    if (data != null) {
       return IconFileMeta(
-        icon: obj['icon'],
-        caption: obj['caption'],
-        color: obj['color'],
-        image: obj['image'],
+        icon: data['icon'] as IconData,
+        caption: data['caption'] as String,
+        color: data['color'] as Color,
+        image: data['image'] as bool? ?? false,
       );
     }
+
     return IconFileMeta(
       icon: FontAwesome5.file_alt,
-      caption: extension.toUpperCase(),
+      caption: ext.toUpperCase(),
       color: Colors.black,
+      image: false,
     );
   }
 
-  final _mimeTypes = {
+  /// Mapeo de extensiones a sus propiedades visuales
+  final Map<String, Map<String, dynamic>> _mimeTypes = {
     'doc': {
       'icon': FontAwesome5.file_word,
       'caption': 'DOC',
-      'color': const Color(0xff2A5399),
+      'color': Color(0xff2A5399),
       'image': false,
     },
     'xls': {
       'icon': FontAwesome5.file_excel,
       'caption': 'XLS',
-      'color': const Color(0xff207245),
+      'color': Color(0xff207245),
       'image': false,
     },
     'ppt': {
       'icon': FontAwesome5.file_powerpoint,
       'caption': 'PPT',
-      'color': const Color(0xffD4522F),
+      'color': Color(0xffD4522F),
       'image': false,
     },
     'abw': {
       'icon': FontAwesome5.file_alt,
       'caption': 'ABW',
-      'color': const Color(0xff6f6f6f),
+      'color': Color(0xff6f6f6f),
       'image': false,
     },
     'avi': {
       'icon': FontAwesome5.file_video,
       'caption': 'AVI',
-      'color': const Color(0xffff0909),
+      'color': Color(0xffff0909),
       'image': false,
     },
     'bin': {
       'icon': FontAwesome5.file_code,
       'caption': 'BIN',
-      'color': const Color(0xff313131),
+      'color': Color(0xff313131),
       'image': false,
     },
     'xml': {
       'icon': FontAwesome5.file_code,
       'caption': 'XML',
-      'color': const Color(0xff364355),
+      'color': Color(0xff364355),
       'image': false,
     },
     'bz': {
       'icon': FontAwesome5.file_archive,
       'caption': 'BZ',
-      'color': const Color(0xff8e7f5b),
+      'color': Color(0xff8e7f5b),
       'image': false,
     },
     'gz': {
       'icon': FontAwesome5.file_archive,
       'caption': 'GZ',
-      'color': const Color(0xff8e7f5b),
+      'color': Color(0xff8e7f5b),
       'image': false,
     },
     'ico': {
       'icon': FontAwesome5.file_image,
       'caption': 'ICO',
-      'color': const Color(0xffb35e00),
+      'color': Color(0xffb35e00),
       'image': false,
     },
     'jar': {
       'icon': FontAwesome5.file_archive,
       'caption': 'JAR',
-      'color': const Color(0xff8e7f5b),
+      'color': Color(0xff8e7f5b),
       'image': false,
     },
     'jpg': {
       'icon': FontAwesome5.file_image,
       'caption': 'JPEG',
-      'color': const Color(0xffe08c32),
+      'color': Color(0xffe08c32),
       'image': true,
     },
     'js': {
       'icon': FontAwesome5.file_code,
       'caption': 'JS',
-      'color': const Color(0xffd71e8d),
+      'color': Color(0xffd71e8d),
       'image': false,
     },
     'json': {
       'icon': FontAwesome5.file_code,
       'caption': 'JSON',
-      'color': const Color(0xff2f2f2f),
+      'color': Color(0xff2f2f2f),
       'image': false,
     },
     'mp3': {
       'icon': FontAwesome5.file_audio,
       'caption': 'MP3',
-      'color': const Color(0xff2a1da0),
+      'color': Color(0xff2a1da0),
       'image': false,
     },
     'mpeg': {
       'icon': FontAwesome5.file_video,
       'caption': 'MPEG',
-      'color': const Color(0xffff3636),
+      'color': Color(0xffff3636),
       'image': false,
     },
     'rar': {
       'icon': FontAwesome5.file_archive,
       'caption': 'RAR',
-      'color': const Color(0xff158a9c),
+      'color': Color(0xff158a9c),
       'image': false,
     },
     'svg': {
       'icon': FontAwesome5.file_image,
       'caption': 'SVG',
-      'color': const Color(0xff158a9c),
+      'color': Color(0xff158a9c),
       'image': false,
     },
     'csv': {
       'icon': FontAwesome5.file_csv,
       'caption': 'CSV',
-      'color': const Color(0xff347179),
+      'color': Color(0xff347179),
       'image': false,
     },
     'txt': {
       'icon': FontAwesome5.file_alt,
       'caption': 'TXT',
-      'color': const Color(0xffee718b),
+      'color': Color(0xffee718b),
       'image': false,
     },
     'pdf': {
       'icon': FontAwesome5.file_pdf,
       'caption': 'PDF',
-      'color': const Color(0xffB20D02),
+      'color': Color(0xffB20D02),
       'image': false,
     },
     'gif': {
       'icon': FontAwesome5.file_image,
       'caption': 'GIF',
-      'color': const Color(0xffe08c32),
+      'color': Color(0xffe08c32),
       'image': true,
     },
     'bmp': {
       'icon': FontAwesome5.file_image,
       'caption': 'BMP',
-      'color': const Color(0xffe08c32),
+      'color': Color(0xffe08c32),
       'image': true,
     },
     'png': {
       'icon': FontAwesome5.file_image,
       'caption': 'PNG',
-      'color': const Color(0xffe08c32),
+      'color': Color(0xffe08c32),
       'image': true,
     },
     'zip': {
       'icon': FontAwesome5.file_archive,
       'caption': 'ZIP',
-      'color': const Color(0xff8e7f5b),
+      'color': Color(0xff8e7f5b),
       'image': false,
     },
   };
 }
 
+/// =======================================================
+/// FILE ICON METADATA MODEL
+/// =======================================================
 class IconFileMeta {
   final IconData icon;
   final String caption;
   final Color color;
   final bool image;
 
-  IconFileMeta({this.icon, this.caption, this.color, this.image = false});
+  const IconFileMeta({
+    required this.icon,
+    required this.caption,
+    required this.color,
+    this.image = false,
+  });
 }

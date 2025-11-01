@@ -1,16 +1,16 @@
 import 'package:anxeb_flutter/parts/headers/actions.dart';
 import 'package:flutter/material.dart';
 
-class ActionButton with ActionItem {
-  final IconData Function() icon;
-  final String Function() caption;
-  final Color Function() color;
-  final Color Function() fill;
-  final bool Function() isDisabled;
-  final bool Function() isVisible;
-  final VoidCallback onPressed;
-  final Widget Function() child;
-  final BorderRadius Function() borderRadius;
+class ActionButton extends ActionItem {
+  final IconData Function()? icon;
+  final String Function()? caption;
+  final Color Function()? color;
+  final Color Function()? fill;
+  final bool Function()? isDisabled;
+  final bool Function()? isVisible;
+  final VoidCallback? onPressed;
+  final Widget Function()? child;
+  final BorderRadius Function()? borderRadius;
 
   ActionButton({
     this.caption,
@@ -25,43 +25,51 @@ class ActionButton with ActionItem {
   });
 
   Widget build() {
-    var $disabled = isDisabled?.call() == true;
-    var $color = color?.call() ?? Colors.white;
-    $color = $disabled ? $color.withOpacity(0.4) : $color;
+    // 🔹 Determinar visibilidad
+    if (isVisible?.call() == false) {
+      return const SizedBox.shrink();
+    }
 
-    return Container(
-      child: TextButton(
-        style: ButtonStyle(
-          backgroundColor: fill != null ? MaterialStateProperty.all<Color>(fill()) : null,
-          padding: MaterialStateProperty.all<EdgeInsets>(EdgeInsets.symmetric(horizontal: 10)),
-          shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-            RoundedRectangleBorder(
-              borderRadius: borderRadius?.call() ?? BorderRadius.all(Radius.circular(8.0)),
-            ),
+    final bool disabled = isDisabled?.call() ?? false;
+    final Color baseColor = color?.call() ?? Colors.white;
+    final Color currentColor = disabled ? baseColor.withOpacity(0.4) : baseColor;
+    final Color backgroundColor = fill?.call() ?? Colors.transparent;
+
+    return TextButton(
+      style: ButtonStyle(
+        backgroundColor: MaterialStateProperty.all<Color>(backgroundColor),
+        padding: MaterialStateProperty.all<EdgeInsets>(
+          const EdgeInsets.symmetric(horizontal: 10),
+        ),
+        shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+          RoundedRectangleBorder(
+            borderRadius: borderRadius?.call() ?? BorderRadius.circular(8.0),
           ),
         ),
-        child: child?.call() ?? Row(
-          children: <Widget>[
-            icon != null
-                ? Padding(
-              padding: const EdgeInsets.only(right: 5.0),
-              child: Icon(
-                icon(),
-                color: $color,
-              ),
-            )
-                : Container(),
-            Text(
-              caption?.call()?.toUpperCase() ?? '',
-              style: TextStyle(
-                color: $color,
-                letterSpacing: -0.2,
-              ),
-            ),
-          ],
-        ),
-        onPressed: $disabled ? null : onPressed,
       ),
+      onPressed: disabled ? null : onPressed,
+      child: child?.call() ??
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 5.0),
+                  child: Icon(
+                    icon!.call(),
+                    color: currentColor,
+                  ),
+                ),
+              if (caption != null)
+                Text(
+                  caption!.call().toUpperCase(),
+                  style: TextStyle(
+                    color: currentColor,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+            ],
+          ),
     );
   }
 }
