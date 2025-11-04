@@ -12,7 +12,7 @@ import '../../widgets/fields/text.dart';
 class LookupDialog<V> extends ScopeDialog<V> {
   final String title;
   final IconData? icon;
-  final Future<List<V>> Function(String text) list;
+  final Future<List<V>> Function(String? text) list; // ✅ acepta null
   final String Function(V value) displayText;
   final String label;
   final FieldWidgetTheme theme;
@@ -37,7 +37,7 @@ class LookupDialog<V> extends ScopeDialog<V> {
   Widget build(BuildContext context) {
     Future<void> cancel(BuildContext context) async {
       Future.delayed(Duration.zero).then((_) => scope.unfocus());
-      Navigator.of(context).pop(null);
+      if (context.mounted) Navigator.of(context).pop(null);
     }
 
     final buttons = <DialogButton>[
@@ -49,7 +49,6 @@ class LookupDialog<V> extends ScopeDialog<V> {
           return null;
         },
       ),
-      // Puedes agregar el botón "aceptar" si lo usas en el futuro
     ];
 
     return AlertDialog(
@@ -58,7 +57,8 @@ class LookupDialog<V> extends ScopeDialog<V> {
           Radius.circular(scope.application.settings.dialogs.dialogRadius),
         ),
       ),
-      contentPadding: const EdgeInsets.only(bottom: 20, left: 24, right: 24, top: 5),
+      contentPadding:
+          const EdgeInsets.only(bottom: 20, left: 24, right: 24, top: 5),
       contentTextStyle: TextStyle(
         fontSize: 16.4,
         color: scope.application.settings.colors.text,
@@ -71,7 +71,11 @@ class LookupDialog<V> extends ScopeDialog<V> {
             if (icon != null)
               Padding(
                 padding: const EdgeInsets.only(right: 7),
-                child: Icon(icon, size: 29, color: scope.application.settings.colors.primary),
+                child: Icon(
+                  icon,
+                  size: 29,
+                  color: scope.application.settings.colors.primary,
+                ),
               ),
             Expanded(
               child: Text(
@@ -100,7 +104,7 @@ class LookupDialog<V> extends ScopeDialog<V> {
             initialLookup: initialLookup,
             onSelect: (V item) {
               Future.delayed(Duration.zero).then((_) => scope.unfocus());
-              Navigator.of(context).pop(item);
+              if (context.mounted) Navigator.of(context).pop(item);
             },
           ),
           Padding(
@@ -122,7 +126,7 @@ class LookupDialog<V> extends ScopeDialog<V> {
 
 class LookupListBlock<V> extends StatefulWidget {
   final Scope scope;
-  final Future<List<V>> Function(String text) list;
+  final Future<List<V>> Function(String? text) list; // ✅ acepta null
   final String Function(V value) displayText;
   final String label;
   final FieldWidgetTheme theme;
@@ -155,20 +159,19 @@ class _LookupListBlockState<V> extends State<LookupListBlock<V>> {
   void initState() {
     super.initState();
     form.clear();
-
     _loadInitial();
   }
 
   Future<void> _loadInitial() async {
     setState(() => _busy = true);
     try {
-      final results = await widget.list(widget.initialLookup ?? '');
+      final results = await widget.list(widget.initialLookup);
       setState(() => _items = results);
       form.focus('lookup', force: true);
     } catch (err) {
       setState(() => _items = []);
     } finally {
-      setState(() => _busy = false);
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -204,26 +207,32 @@ class _LookupListBlockState<V> extends State<LookupListBlock<V>> {
                           iconTrailScale: 0.4,
                           busy: false,
                           iconScale: 0.6,
-                          margin: const EdgeInsets.symmetric(vertical: 3),
-                          iconColor: widget.scope.application.settings.colors.secudary,
+                          margin:
+                              const EdgeInsets.symmetric(vertical: 3),
+                          iconColor: widget
+                              .scope.application.settings.colors.secudary,
                           title: widget.displayText(e),
-                          subtitle: widget.subtitleText?.call(e),
+                          subtitle: widget.subtitleText?.call(e) ?? '',
                           onTap: () async => widget.onSelect(e),
-                          padding: const EdgeInsets.only(left: 12, top: 5, bottom: 6, right: 5),
+                          padding: const EdgeInsets.only(
+                              left: 12, top: 5, bottom: 6, right: 5),
                           borderRadius: BorderRadius.all(
-                            Radius.circular(widget.scope.application.settings.dialogs.buttonRadius),
+                            Radius.circular(widget.scope.application.settings
+                                .dialogs.buttonRadius),
                           ),
                         ),
                       )
                       .toList()
                   : [
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        padding:
+                            const EdgeInsets.symmetric(vertical: 20),
                         child: Center(
                           child: Text(
                             translate('anxeb.common.no_results'),
                             style: TextStyle(
-                              color: widget.scope.application.settings.colors.text,
+                              color:
+                                  widget.scope.application.settings.colors.text,
                               fontSize: 14,
                             ),
                           ),
@@ -251,13 +260,13 @@ class _LookupListBlockState<V> extends State<LookupListBlock<V>> {
           onActionSubmit: (text) async {
             setState(() => _busy = true);
             try {
-              _items = await widget.list(text);
+              _items = await widget.list(text); // ✅ text es String?
               form.focus('lookup', force: true);
               setState(() {});
             } catch (_) {
               _items = [];
             } finally {
-              setState(() => _busy = false);
+              if (mounted) setState(() => _busy = false);
             }
           },
         ),

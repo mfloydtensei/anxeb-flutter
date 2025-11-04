@@ -73,11 +73,13 @@ class Device {
     bool useCameraHelper = false;
     File? result;
 
-    if (option == FileSourceOption.prompt) {
-      useCameraHelper = await Utils.dialogs.shouldUseCamera(scope);
-    } else {
-      useCameraHelper = option == FileSourceOption.camera;
-    }
+   if (option == FileSourceOption.prompt) {
+  final bool? shouldUse = await Utils.dialogs.shouldUseCamera(scope);
+  useCameraHelper = shouldUse ?? false;
+} else {
+  useCameraHelper = option == FileSourceOption.camera;
+}
+
 
     if (useCameraHelper) {
       result = await scope.push<File?>(
@@ -113,10 +115,12 @@ class Device {
     bool useCameraHelper = false;
 
     if (option == FileSourceOption.prompt) {
-      useCameraHelper = await Utils.dialogs.shouldUseCamera(scope);
-    } else {
-      useCameraHelper = option == FileSourceOption.camera;
-    }
+  final bool? shouldUse = await Utils.dialogs.shouldUseCamera(scope);
+  useCameraHelper = shouldUse ?? false;
+} else {
+  useCameraHelper = option == FileSourceOption.camera;
+}
+
 
     if (useCameraHelper) {
       try {

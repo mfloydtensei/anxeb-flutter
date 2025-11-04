@@ -8,7 +8,7 @@ class ReferencerBlock<V> extends StatefulWidget {
   final Anxeb.ReferenceItemWidget<V>? itemWidget;
   final Anxeb.ReferenceHeaderWidget<V>? headerWidget;
   final Anxeb.ReferenceCreateWidget<V>? footerWidget;
-  final Anxeb.ReferenceEmptyWidget<V>? emptyWidget;
+  final Widget Function(Anxeb.ReferencerPage<V>? page)? emptyWidget;
   final EdgeInsets? padding;
 
   const ReferencerBlock({

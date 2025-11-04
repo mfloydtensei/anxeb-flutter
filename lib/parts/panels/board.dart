@@ -23,26 +23,26 @@ class BoardPanel extends ScreenPanel {
     this.padding,
     this.margin,
     this.fill,
-    double? backdropOpacity,
+    double backdropOpacity = 0.0,
     double? minHeight,
     Function(double state)? onPanelSlide,
   }) : super(
-          scope: scope,
-          height: height ?? 400,
-          isDisabled: isDisabled,
-          gapless: gapless,
-          barColor: barColor,
-          showBar: showBar,
-          backdropOpacity: backdropOpacity,
-          minHeight: minHeight,
-          onPanelSlide: onPanelSlide,
-        );
+      scope: scope,
+      height: height ?? 400,
+      isDisabled: isDisabled,
+      gapless: gapless,
+      barColor: barColor,
+      showBar: showBar,
+      backdropOpacity: backdropOpacity,
+      minHeight: minHeight ?? 0.0,
+      onPanelSlide: onPanelSlide,
+    );
 
   @override
   Widget content([Widget? child]) {
     return super.content(
       Container(
-        height: (dynamicHeight ?? height) - 70,
+        height: (dynamicHeight ?? height ?? 0) - 70,
         width: scope.window.available.width,
         margin: margin ?? const EdgeInsets.symmetric(horizontal: 12),
         padding: padding ?? const EdgeInsets.all(12),

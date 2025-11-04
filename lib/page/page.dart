@@ -66,7 +66,7 @@ class PageWidget<A extends Application, M extends PageInfo<A, M>>
     PageContainer<A, M>? container,
     M? parent,
   }) {
-    _meta.info = _meta.info ?? (setup(state) ?? PageInfo<A, M>() as M);
+    _meta.info = _meta.info;
 
     _meta.info
       .._name = state?.name
@@ -149,14 +149,21 @@ class PageWidget<A extends Application, M extends PageInfo<A, M>>
 /// =======================================================
 /// PageState / PageView
 /// =======================================================
-abstract class PageState<T extends PageWidget, A extends Application, M extends PageInfo<A, M>>
+abstract class PageState<
+    T extends PageWidget<A, dynamic>,
+    A extends Application,
+    M extends PageInfo<A, dynamic>>
     extends State<T> {
   Future<bool> dismiss();
   Future<bool> submit([dynamic value]);
   Future<bool> pop({dynamic result, bool force});
 }
 
-class PageView<T extends PageWidget, A extends Application, M extends PageInfo<A, M>>
+
+
+
+
+class PageView<T extends PageWidget<A, M>, A extends Application, M extends PageInfo<A, M>>
     extends PageState<T, A, M> with AfterInitMixin<T> {
   final GlobalKey<ScaffoldState> _scaffold = GlobalKey<ScaffoldState>();
   late final PageScope<A, M> _scope;

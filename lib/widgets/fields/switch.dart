@@ -53,7 +53,6 @@ class _SwitchFieldState extends Field<bool, SwitchField> {
   Widget field() {
     return FormField<bool>(
       builder: (FormFieldState<bool> state) {
-        // 🔹 Obtiene el tamaño del borde de forma segura
         final double borderSize = widget.theme?.border?.borderSide.width ??
             widget.scope.application.settings.fields.border.borderSide.width;
 
@@ -77,15 +76,18 @@ class _SwitchFieldState extends Field<bool, SwitchField> {
               fontSize: 15,
             ),
           ),
-          readonly: widget.readonly,
-          value: value ?? false,
-          onToggle: widget.readonly
-              ? null
-              : (newValue) {
-                  value = newValue;
-                  validate();
-                  widget.onChanged?.call(newValue);
-                },
+          readonly: widget.readonly ?? false, // ✅ ya es bool, sin ??
+          value: value ?? false,     // ✅ nunca nulo
+          onToggle: (bool newValue) {
+            // ✅ condiciones null-safe y firmas correctas
+            if (widget.readonly == true) return;
+
+            value = newValue;
+            validate();
+
+            // El callback acepta bool?, así que pasamos el valor directamente
+            widget.onChanged?.call(newValue);
+          },
         );
       },
     );

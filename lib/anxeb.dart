@@ -33,7 +33,7 @@ export 'widgets/fields/switch.dart';
 export 'widgets/fields/map.dart';
 export 'misc/key_value.dart';
 export 'middleware/api.dart';
-export 'middleware/model.dart';
+export 'middleware/model.dart' hide ModelLoadedCallback;
 export 'middleware/footer.dart';
 export 'middleware/menu.dart';
 export 'widgets/blocks/user.dart';
