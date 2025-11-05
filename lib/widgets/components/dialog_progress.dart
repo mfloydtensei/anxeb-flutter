@@ -1,6 +1,5 @@
 import 'package:anxeb_flutter/middleware/scope.dart';
 import 'package:anxeb_flutter/middleware/utils.dart';
-import 'package:anxeb_flutter/parts/dialogs/message.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';

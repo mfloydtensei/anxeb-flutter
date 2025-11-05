@@ -237,7 +237,7 @@ class Device {
 }
 
 class DevicePermissions {
-  Permission get calendar => Permission.calendar;
+  Permission get calendar => Permission.calendarFullAccess;
   Permission get camera => Permission.camera;
   Permission get contacts => Permission.contacts;
   Permission get location => Permission.location;
@@ -262,27 +262,28 @@ class DevicePermissions {
 }
 
 class DeviceSettings {
-  Future<void> wifi() => AppSettings.openWIFISettings();
-  Future<void> wireless() => AppSettings.openWirelessSettings();
-  Future<void> location() => AppSettings.openLocationSettings();
-  Future<void> security() => AppSettings.openSecuritySettings();
-  Future<void> lock() => AppSettings.openLockAndPasswordSettings();
-  Future<void> bluetooth() => AppSettings.openBluetoothSettings();
-  Future<void> roaming() => AppSettings.openDataRoamingSettings();
-  Future<void> date() => AppSettings.openDateSettings();
-  Future<void> display() => AppSettings.openDisplaySettings();
-  Future<void> notification() => AppSettings.openNotificationSettings();
-  Future<void> sound() => AppSettings.openSoundSettings();
-  Future<void> storage() => AppSettings.openInternalStorageSettings();
-  Future<void> battery() => AppSettings.openBatteryOptimizationSettings();
-  Future<void> app() => AppSettings.openAppSettings();
-  Future<void> nfc() => AppSettings.openNFCSettings();
-  Future<void> device() => AppSettings.openDeviceSettings();
-  Future<void> vpn() => AppSettings.openVPNSettings();
-  Future<void> accessibility() => AppSettings.openAccessibilitySettings();
-  Future<void> development() => AppSettings.openDevelopmentSettings();
-  Future<void> hotspot() => AppSettings.openHotspotSettings();
+  Future<void> wifi() => AppSettings.openAppSettings(type: AppSettingsType.wifi);
+  Future<void> wireless() => AppSettings.openAppSettings(type: AppSettingsType.wireless);
+  Future<void> location() => AppSettings.openAppSettings(type: AppSettingsType.location);
+  Future<void> security() => AppSettings.openAppSettings(type: AppSettingsType.security);
+  Future<void> lock() => AppSettings.openAppSettings(type: AppSettingsType.lockAndPassword);
+  Future<void> bluetooth() => AppSettings.openAppSettings(type: AppSettingsType.bluetooth);
+  Future<void> roaming() => AppSettings.openAppSettings(type: AppSettingsType.dataRoaming);
+  Future<void> date() => AppSettings.openAppSettings(type: AppSettingsType.date);
+  Future<void> display() => AppSettings.openAppSettings(type: AppSettingsType.display);
+  Future<void> notification() => AppSettings.openAppSettings(type: AppSettingsType.notification);
+  Future<void> sound() => AppSettings.openAppSettings(type: AppSettingsType.sound);
+  Future<void> storage() => AppSettings.openAppSettings(type: AppSettingsType.internalStorage);
+  Future<void> battery() => AppSettings.openAppSettings(type: AppSettingsType.batteryOptimization);
+  Future<void> app() => AppSettings.openAppSettings(); // ✅ corregido
+  Future<void> nfc() => AppSettings.openAppSettings(type: AppSettingsType.nfc);
+  Future<void> device() => AppSettings.openAppSettings(type: AppSettingsType.device);
+  Future<void> vpn() => AppSettings.openAppSettings(type: AppSettingsType.vpn);
+  Future<void> accessibility() => AppSettings.openAppSettings(type: AppSettingsType.accessibility);
+  Future<void> development() => AppSettings.openAppSettings(); // ✅ corregido
+  Future<void> hotspot() => AppSettings.openAppSettings(type: AppSettingsType.hotspot);
 }
+
 
 class DeviceInfo {
   IosDeviceInfo? _ios;

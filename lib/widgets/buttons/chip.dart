@@ -70,7 +70,7 @@ class _ChipButtonState extends State<ChipButton> {
       return Container(
         margin: widget.margin,
         decoration: BoxDecoration(
-          color: effectiveFill.withOpacity(0.5),
+          color: effectiveFill.withValues(alpha: 0.5),
           borderRadius: widget.borderRadius,
         ),
         child: body,
@@ -86,7 +86,7 @@ class _ChipButtonState extends State<ChipButton> {
         child: InkWell(
           onTap: widget.onPressed,
           borderRadius: widget.borderRadius,
-          splashColor: Colors.white.withOpacity(0.2),
+          splashColor: Colors.white.withValues(alpha: 0.2),
           child: body,
         ),
       ),

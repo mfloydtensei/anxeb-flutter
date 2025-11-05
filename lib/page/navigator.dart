@@ -245,7 +245,7 @@ class _PageNavigatorState extends State<PageNavigator> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Material(
         color: active
-            ? Colors.white.withOpacity(0.1)
+            ? Colors.white.withValues(alpha: 0.1)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(8),
         child: InkWell(

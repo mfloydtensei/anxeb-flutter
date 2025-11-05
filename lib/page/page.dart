@@ -79,7 +79,7 @@ class PageWidget<A extends Application, M extends PageInfo<A, M>>
     // 🔹 Ejecutar preload si existe
     final extra = state?.extra;
     if (extra is Map && extra['preload'] is Function) {
-      if (state?.matchedLocation == state?.location) {
+      if (state?.matchedLocation == state?.uri.toString()) {
         extra['preload'](_meta.info);
         extra['preload'] = null;
       }
@@ -159,10 +159,6 @@ abstract class PageState<
   Future<bool> pop({dynamic result, bool force});
 }
 
-
-
-
-
 class PageView<T extends PageWidget<A, M>, A extends Application, M extends PageInfo<A, M>>
     extends PageState<T, A, M> with AfterInitMixin<T> {
   final GlobalKey<ScaffoldState> _scaffold = GlobalKey<ScaffoldState>();
@@ -206,7 +202,7 @@ class PageView<T extends PageWidget<A, M>, A extends Application, M extends Page
     if (!_initialized && !_initializing) {
       _initializing = true;
       await init();
-      if (info.state?.matchedLocation == info.state?.location) {
+      if (info.state?.matchedLocation == info.state?.uri.toString()) {
         await setup();
         rasterize();
       }
@@ -238,37 +234,43 @@ class PageView<T extends PageWidget<A, M>, A extends Application, M extends Page
       backgroundColor: application.settings.colors.background,
       extendBody: _scope.window.overlay.extendBody,
       extendBodyBehindAppBar: _scope.window.overlay.extendBodyBehindAppBar,
-      body: WillPopScope(
-        onWillPop: () async {
-          if (_scope.isBusy) return false;
+    body: PopScope(
+  canPop: true,
+  onPopInvokedWithResult: (didPop, result) async {
+    if (didPop) return;
 
-          if (_scope.alerts.isAny) {
-            await _scope.alerts.dispose();
-            return false;
-          }
+    if (_scope.isBusy) return;
 
-          if (_scaffold.currentState?.isDrawerOpen == true) {
-            _scaffold.currentState?.openEndDrawer();
-            return false;
-          }
+    if (_scope.alerts.isAny) {
+      await _scope.alerts.dispose();
+      return;
+    }
 
-          final result = await beforePop();
-          if (result) await _beginPop(null);
-          return result;
+    if (_scaffold.currentState?.isDrawerOpen == true) {
+      _scaffold.currentState?.openEndDrawer();
+      return;
+    }
+
+    final shouldPop = await beforePop();
+    if (shouldPop) {
+      await _beginPop(null);
+    }
+  },
+  child: LayoutBuilder(
+    builder: (context, constraints) {
+      _scope.window.update(constraints: constraints);
+      return GestureDetector(
+        onTap: () {
+          _scope.unfocus();
+          _scope.alerts.dispose();
         },
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            _scope.window.update(constraints: constraints);
-            return GestureDetector(
-              onTap: () {
-                _scope.unfocus();
-                _scope.alerts.dispose();
-              },
-              child: _initialized ? content() : const SizedBox.shrink(),
-            );
-          },
-        ),
-      ),
+        child: _initialized ? content() : const SizedBox.shrink(),
+      );
+    },
+  ),
+),
+
+
     );
 
     return scaffoldContent;

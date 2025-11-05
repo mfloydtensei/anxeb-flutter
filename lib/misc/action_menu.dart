@@ -28,7 +28,7 @@ class ActionMenu extends ActionItem {
 
     final bool disabled = isDisabled?.call() ?? false;
     final Color baseColor = color?.call() ?? Colors.white;
-    final Color currentColor = disabled ? baseColor.withOpacity(0.4) : baseColor;
+    final Color currentColor = disabled ? baseColor.withValues(alpha: 0.4) : baseColor;
     final List<ActionMenuItem> menuActions = actions ?? [];
 
     final List<PopupMenuEntry<ActionMenuItem>> items = [];
@@ -88,7 +88,7 @@ class ActionMenuItem {
   PopupMenuItem<ActionMenuItem> build() {
     final bool disabled = isDisabled?.call() ?? false;
     final Color baseColor = color?.call() ?? const Color(0xff333333);
-    final Color currentColor = disabled ? baseColor.withOpacity(0.4) : baseColor;
+    final Color currentColor = disabled ? baseColor.withValues(alpha: 0.4) : baseColor;
 
     return PopupMenuItem<ActionMenuItem>(
       height: 38,

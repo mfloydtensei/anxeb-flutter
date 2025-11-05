@@ -5,8 +5,8 @@ version: 2.4.0
 homepage: https://github.com/nodrix/anxeb-flutter
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
-  flutter: ">=3.10.0"
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.22.0"
 
 dependencies:
   flutter:
@@ -16,11 +16,11 @@ dependencies:
   android_middleware:
     path: plugins/android_middleware
   cupertino_icons: ^1.0.5
-  flutter_keyboard_visibility: ^5.4.0
+  flutter_keyboard_visibility: ^6.0.0
   fluttericon: ^2.0.0
   community_material_icon: ^5.9.55
   ionicons: ^0.2.1
-  camera: ^0.10.0+4
+  camera: ^0.11.3
   image_crop: ^0.4.1
   path: ^1.8.1
   path_provider: ^2.0.11
@@ -32,43 +32,42 @@ dependencies:
   pull_to_refresh_flutter3: ^2.0.1
   google_sign_in: ^6.2.1
   oauth1: ^2.0.0
-  flutter_facebook_auth: ^6.2.0
-  device_info: ^2.0.3
+  flutter_facebook_auth: ^7.1.2
   percent_indicator: ^4.2.2
   another_flushbar: ^1.12.29
   mime: ^1.0.3
-  qr_flutter: 4.0.0
-  photo_view: ^0.14.0
+  qr_flutter: ^4.1.0
+  photo_view: ^0.15.0
   credit_card_validator: ^2.1.0
-  file_picker: ^5.2.3
-  sign_in_with_apple: ^6.0.0
-  firebase_core: ^2.6.0
-  firebase_messaging: ^14.2.3
-  firebase_analytics: ^10.1.2
+  file_picker: ^10.3.3
+  sign_in_with_apple: ^7.0.1
+  firebase_core: ^4.2.1
+  firebase_messaging: ^16.0.4
+  firebase_analytics: ^12.0.4
   flutter_app_badger: ^1.5.0
   url_launcher: ^6.1.11
   flutter_pdfview: ^1.2.9
   share: ^2.0.4
-  flutter_translate: 4.0.3
+  flutter_translate: ^4.1.0
   intl: ^0.19.0
-  permission_handler: ^11.3.1
-  app_settings: 4.1.8
-  package_info_plus: ^8.0.2
+  permission_handler: ^12.0.1
+  app_settings: ^6.1.1
+  package_info_plus: ^9.0.0
   in_app_review: ^2.0.6
   easy_mask: ^2.0.1
   bluetooth_print: ^4.3.0
   smooth_page_indicator: ^1.0.1
   open_store: ^0.5.0
   scan: ^1.6.0
-  go_router: ^8.0.5
+  go_router: ^16.3.0
   dotted_line: ^3.1.0
   google_maps_flutter_web: ^0.5.0+1
   google_maps_flutter: ^2.2.5
   google_geocoding_api: ^1.2.0
   just_the_tooltip: ^0.0.12
-  pointer_interceptor: ^0.9.3+4
+  pointer_interceptor: ^0.10.1+2
   flutter_colorpicker: ^1.0.3
-  device_info_plus: ^10.1.0
+  device_info_plus: ^12.2.0
 
 flutter:
   uses-material-design: true

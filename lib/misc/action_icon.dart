@@ -37,7 +37,7 @@ class ActionIcon extends ActionItem {
 
     final bool disabled = isDisabled?.call() ?? false;
     final Color baseColor = color?.call() ?? Colors.white;
-    final Color currentColor = disabled ? baseColor.withOpacity(0.4) : baseColor;
+    final Color currentColor = disabled ? baseColor.withValues(alpha: 0.4) : baseColor;
 
     // 🔹 Crear el botón principal
     final button = IconButton(

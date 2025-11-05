@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart' hide Dialog;
 import 'package:anxeb_flutter/middleware/sheet.dart';
 import 'package:anxeb_flutter/middleware/device.dart';
-
+import 'package:anxeb_flutter/middleware/scope.dart';
 
 class FormSheet extends ScopeSheet {
   final String? title;
@@ -47,8 +47,8 @@ class FormSheet extends ScopeSheet {
                     begin: FractionalOffset.topCenter,
                     end: FractionalOffset.bottomCenter,
                     colors: [
-                      safeFill.withOpacity(1),
-                      safeFill.withOpacity(1),
+                      safeFill.withValues(alpha: 1),
+                      safeFill.withValues(alpha: 1),
                     ],
                     stops: const [0.0, 1.0],
                   ),

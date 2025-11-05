@@ -94,7 +94,7 @@ class NotificationSheet extends ScopeSheet {
                           complete: true,
                         ),
                         style: TextStyle(
-                          color: foreground.withOpacity(0.8),
+                          color: foreground.withValues(alpha: 0.8),
                           fontSize: 14,
                         ),
                       ),

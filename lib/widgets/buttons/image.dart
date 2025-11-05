@@ -252,7 +252,7 @@ class _ImageButtonState extends State<ImageButton> {
                 child: CircularProgressIndicator(
                   strokeWidth: widget.loadingThickness ?? 2,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    widget.loadingColor ?? Colors.white.withOpacity(0.8),
+                    widget.loadingColor ?? Colors.white.withValues(alpha: 0.8),
                   ),
                 ),
               ),
@@ -387,7 +387,7 @@ class _ImageButtonState extends State<ImageButton> {
                   (widget.enabled
                       ? null
                       : ColorFilter.mode(
-                          Colors.black.withOpacity(0.9),
+                          Colors.black.withValues(alpha: 0.9),
                           BlendMode.screen,
                         )),
               fit: widget.fit ?? BoxFit.cover,

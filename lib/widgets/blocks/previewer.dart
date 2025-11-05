@@ -126,7 +126,7 @@ class _PreviewerBlockState extends State<PreviewerBlock> {
             child: Icon(
               Icons.broken_image,
               size: 120,
-              color: widget.scope.application.settings.colors.primary.withOpacity(0.25),
+              color: widget.scope.application.settings.colors.primary.withValues(alpha: 0.25),
             ),
           ),
           loadingBuilder: (context, event) => _buildLoading(),

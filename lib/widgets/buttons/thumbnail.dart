@@ -113,9 +113,9 @@ class _ThumbnailButtonState extends State<ThumbnailButton> {
               end: Alignment.bottomCenter,
               stops: const [0, 0.5, 1],
               colors: [
-                Colors.black.withOpacity(0.0),
-                Colors.black.withOpacity(0.0),
-                Colors.black.withOpacity(0.8),
+                Colors.black.withValues(alpha: 0.0),
+                Colors.black.withValues(alpha: 0.0),
+                Colors.black.withValues(alpha: 0.8),
               ],
             ),
           ),
@@ -127,7 +127,7 @@ class _ThumbnailButtonState extends State<ThumbnailButton> {
 
         // Capa táctil
         Material(
-          color: appColors.navigation.withOpacity(0.1),
+          color: appColors.navigation.withValues(alpha: 0.1),
           borderRadius: borderRadius,
           child: InkWell(
             onTap: widget.onTap,

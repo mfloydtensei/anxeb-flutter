@@ -141,100 +141,109 @@ class Scope {
     await alerts.dispose();
 
     showGeneralDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      barrierColor:
-          hasText ? Colors.transparent : application.settings.colors.backdrop,
-      transitionDuration: const Duration(milliseconds: 150),
-      pageBuilder: (context, animation, secondaryAnimation) {
-        return WillPopScope(
-          onWillPop: () async => dismissable,
-          child: SafeArea(
-            child: Builder(
-              builder: (ctx) {
-                var size = window.horizontal(0.16);
-                size = size > 60 ? 60 : size;
+  context: context,
+  barrierDismissible: false,
+  barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+  barrierColor: hasText
+      ? Colors.transparent
+      : application.settings.colors.backdrop,
+  transitionDuration: const Duration(milliseconds: 150),
+  pageBuilder: (context, animation, secondaryAnimation) {
+    return PopScope(
+  canPop: dismissable,
+  onPopInvokedWithResult: (didPop, result) {
+    if (didPop && dismissable) {
+      idle(); // cerrar correctamente el busy si se permite back
+    }
+  },
+  child: SafeArea(
+    child: Builder(
+      builder: (ctx) {
+        var size = window.horizontal(0.16);
+        size = size > 60 ? 60 : size;
 
-                Future.delayed(const Duration(milliseconds: 100), () {
-                  _busying = false;
-                  _busyContext = ctx;
-                  if (!completer.isCompleted) completer.complete();
-                });
+        Future.delayed(const Duration(milliseconds: 100), () {
+          _busying = false;
+          _busyContext = ctx;
+          if (!completer.isCompleted) completer.complete();
+        });
 
-                if (hasText) {
-                  return Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 30,
-                        vertical: 20,
-                      ),
-                      margin: const EdgeInsets.only(bottom: 20),
-                      decoration: BoxDecoration(
-                        color: application.settings.colors.busybox,
-                        boxShadow: const [
-                          BoxShadow(
-                            offset: Offset(0, 8),
-                            blurRadius: 20,
-                            spreadRadius: -10,
-                            color: Color(0x98000000),
-                          )
-                        ],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(
-                            height: 32,
-                            width: 32,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 3,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                application.settings.colors.foreground,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            text,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w200,
-                              color: application.settings.colors.foreground,
-                              decoration: TextDecoration.none,
-                            ),
-                          ),
-                        ],
+        if (hasText) {
+          return Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 30,
+                vertical: 20,
+              ),
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: application.settings.colors.busybox,
+                boxShadow: const [
+                  BoxShadow(
+                    offset: Offset(0, 8),
+                    blurRadius: 20,
+                    spreadRadius: -10,
+                    color: Color(0x98000000),
+                  )
+                ],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    height: 32,
+                    width: 32,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        application.settings.colors.foreground,
                       ),
                     ),
-                  );
-                } else {
-                  return Center(
-                    child: SizedBox(
-                      height: size,
-                      width: size,
-                      child: const CircularProgressIndicator(
-                        strokeWidth: 5,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Color(0xffefefef)),
-                      ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    text,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w200,
+                      color: application.settings.colors.foreground,
+                      decoration: TextDecoration.none,
                     ),
-                  );
-                }
-              },
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
+          );
+        } else {
+          return Center(
+            child: SizedBox(
+              height: size,
+              width: size,
+              child: const CircularProgressIndicator(
+                strokeWidth: 5,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Color(0xffefefef),
+                ),
+              ),
+            ),
+          );
+        }
       },
-    ).then((_) {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        _busyContext = null;
-        _idling = false;
-        rasterize();
-      });
-    });
+    ),
+  ),
+);
+
+  },
+).then((_) {
+  Future.delayed(const Duration(milliseconds: 100), () {
+    _busyContext = null;
+    _idling = false;
+    rasterize();
+  });
+});
+
 
     if (timeout > 0) {
       _busyCountDown = timeout;

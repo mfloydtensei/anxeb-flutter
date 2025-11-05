@@ -38,7 +38,7 @@ class EmptyBlock extends StatelessWidget {
 
     final size = MediaQuery.of(context).size;
     final colors = scope.application.settings.colors;
-    final iconColor = fillColor ?? colors.navigation.withOpacity(0.1);
+    final iconColor = fillColor ?? colors.navigation.withValues(alpha: 0.1);
 
     // 🔹 Ícono o indicador de carga
     Widget iconWidget = SizedBox(
@@ -58,7 +58,7 @@ class EmptyBlock extends StatelessWidget {
         child: CircularProgressIndicator(
           strokeWidth: 4,
           valueColor: AlwaysStoppedAnimation<Color>(
-            fillColor ?? colors.primary.withOpacity(0.8),
+            fillColor ?? colors.primary.withValues(alpha: 0.8),
           ),
         ),
       );

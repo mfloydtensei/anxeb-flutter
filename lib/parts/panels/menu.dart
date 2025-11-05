@@ -88,8 +88,7 @@ class MenuPanel extends BoardPanel {
                           Text(
                             a.label?.call().toUpperCase() ?? '',
                             textAlign: TextAlign.left,
-                            textScaleFactor:
-                                (a.textScale ?? 1.05) * (textScale ?? 1),
+                           textScaler: TextScaler.linear((a.textScale ?? 1.05) * (textScale ?? 1)),
                             style: TextStyle(
                               color: a.textColor?.call() ?? Colors.white,
                               letterSpacing: -0.1,
@@ -113,8 +112,7 @@ class MenuPanel extends BoardPanel {
                           Text(
                             a.label?.call().toUpperCase() ?? '',
                             textAlign: TextAlign.center,
-                            textScaleFactor:
-                                (a.textScale ?? 1.05) * (textScale ?? 1),
+                           textScaler: TextScaler.linear((a.textScale ?? 1.05) * (textScale ?? 1)),
                             style: TextStyle(
                               color: a.textColor?.call() ?? Colors.white,
                               letterSpacing: 0.3,
@@ -126,7 +124,7 @@ class MenuPanel extends BoardPanel {
               );
 
               final br = BorderRadius.all(Radius.circular(buttonRadius ?? 10));
-              final fill = a.fillColor?.call() ?? Colors.white.withOpacity(0.2);
+              final fill = a.fillColor?.call() ?? Colors.white.withValues(alpha: 0.2);
 
               final button = a.isDisabled?.call() == true
                   ? Container(

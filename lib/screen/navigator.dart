@@ -207,7 +207,7 @@ class _ScreenNavigatorState extends State<ScreenNavigator> {
     return Container(
       decoration: BoxDecoration(
         color: active
-            ? app.settings.colors.navigation.withOpacity(0.05)
+            ? app.settings.colors.navigation.withValues(alpha: 0.05)
             : Colors.transparent,
         border: item.divider == true
             ? Border(
@@ -224,7 +224,7 @@ class _ScreenNavigatorState extends State<ScreenNavigator> {
                 border: Border(
                   left: BorderSide(
                     width: 8.0,
-                    color: app.settings.colors.navigation.withOpacity(0.4),
+                    color: app.settings.colors.navigation.withValues(alpha: 0.4),
                   ),
                 ),
               ),

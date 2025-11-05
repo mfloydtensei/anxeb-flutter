@@ -40,7 +40,7 @@ class ScreenFooter {
               border: Border(
                 top: BorderSide(
                   width: divisionBorderWidth ?? 1.0,
-                  color: Colors.white.withOpacity(0.3),
+                  color: Colors.white.withValues(alpha: 0.3),
                 ),
               ),
             )

@@ -228,7 +228,7 @@ class _TextButtonState extends State<TextButton> {
         );
     final subtitleStyle = TextStyle(
       fontSize: fontSize - 5,
-      color: (widget.textColor ?? Colors.white).withOpacity(0.9),
+      color: (widget.textColor ?? Colors.white).withValues(alpha: 0.9),
       fontWeight: FontWeight.w300,
     );
 
@@ -236,7 +236,7 @@ class _TextButtonState extends State<TextButton> {
 
     switch (widget.type) {
       case ButtonType.secondary:
-        fillColor = widget.color ?? Colors.white.withOpacity(0.5);
+        fillColor = widget.color ?? Colors.white.withValues(alpha: 0.5);
         textStyle = textStyle.copyWith(color: widget.textColor ?? Colors.black);
         break;
       case ButtonType.link:

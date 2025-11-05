@@ -49,7 +49,7 @@ class ScreenTabs {
           TabBar(
             controller: _controller,
             isScrollable: true,
-            unselectedLabelColor: Colors.white.withOpacity(0.7),
+            unselectedLabelColor: Colors.white.withValues(alpha: 0.7),
             indicatorColor: Colors.white,
             labelColor: scope.application.settings.colors.active,
             labelStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),

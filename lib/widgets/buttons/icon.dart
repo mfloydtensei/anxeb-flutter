@@ -192,7 +192,7 @@ class _IconButtonState extends State<IconButton> {
         borderRadius: BorderRadius.circular(50),
         child: widget.enabled
             ? InkWell(
-                splashColor: widget.splashColor ?? Colors.white.withOpacity(0.3),
+                splashColor: widget.splashColor ?? Colors.white.withValues(alpha: 0.3),
                 hoverColor: widget.hoverColor,
                 onTap: _enableAction
                     ? () async {

@@ -75,7 +75,7 @@ class _SliderBlockState extends State<_SliderBlock> {
               decoration: BoxDecoration(
                 image: DecorationImage(
                   colorFilter: ColorFilter.mode(
-                    fillColor.withOpacity(0.4),
+                    fillColor.withValues(alpha: 0.4),
                     BlendMode.screen,
                   ),
                   fit: BoxFit.cover,
@@ -90,9 +90,9 @@ class _SliderBlockState extends State<_SliderBlock> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  fillColor.withOpacity(0.5),
-                  Colors.white.withOpacity(0.6),
-                  Colors.white.withOpacity(0.8),
+                  fillColor.withValues(alpha: 0.5),
+                  Colors.white.withValues(alpha: 0.6),
+                  Colors.white.withValues(alpha: 0.8),
                 ],
                 stops: const [0.0, 0.5, 1.0],
               ),
@@ -178,9 +178,9 @@ class _SliderBlockState extends State<_SliderBlock> {
                           iconSize: 24,
                           fillColor: _isFirstPage
                               ? Colors.transparent
-                              : Colors.white.withOpacity(0.5),
+                              : Colors.white.withValues(alpha: 0.5),
                           innerColor: _isFirstPage
-                              ? application.settings.colors.primary.withOpacity(0.3)
+                              ? application.settings.colors.primary.withValues(alpha: 0.3)
                               : application.settings.colors.primary,
                           size: 33,
                           icon: Icons.chevron_left,
@@ -203,7 +203,7 @@ class _SliderBlockState extends State<_SliderBlock> {
                                 dotHeight: 8,
                                 dotWidth: 8,
                                 activeDotColor: application.settings.colors.primary,
-                                dotColor: application.settings.colors.primary.withOpacity(0.3),
+                                dotColor: application.settings.colors.primary.withValues(alpha: 0.3),
                               ),
                             ),
                           ),
@@ -211,9 +211,9 @@ class _SliderBlockState extends State<_SliderBlock> {
                       Anxeb.IconButton(
                         padding: const EdgeInsets.only(right: 12),
                         iconSize: 24,
-                        fillColor: Colors.white.withOpacity(0.5),
+                        fillColor: Colors.white.withValues(alpha: 0.5),
                         innerColor: _isLastPage
-                            ? application.settings.colors.primary.withOpacity(0.5)
+                            ? application.settings.colors.primary.withValues(alpha: 0.5)
                             : application.settings.colors.primary,
                         size: 33,
                         icon: _isLastPage ? Icons.check : Icons.chevron_right,

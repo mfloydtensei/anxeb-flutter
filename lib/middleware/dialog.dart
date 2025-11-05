@@ -290,46 +290,55 @@ class ScopeDialogs {
   }) {
     final qrSize = size ?? _scope.window.available.width * 0.6;
 
-    return MessageDialog(
-      _scope,
-      icon: icon ?? Icons.qr_code_2,
-      title: title ?? '',
-      iconSize: 65,
-      messageColor: _scope.application.settings.colors.text,
-      titleColor: _scope.application.settings.colors.info,
-      buttons: buttons ?? const [],
-      body: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: qrSize,
-            height: qrSize,
-            child: QrImage(
-              data: value,
-              version: QrVersions.auto,
-              foregroundColor: _scope.application.settings.colors.text,
-              size: qrSize,
+return MessageDialog(
+  _scope,
+  icon: icon ?? Icons.qr_code_2,
+  title: title ?? '',
+  iconSize: 65,
+  messageColor: _scope.application.settings.colors.text,
+  titleColor: _scope.application.settings.colors.info,
+  buttons: buttons ?? const [],
+  body: (context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      SizedBox(
+        width: qrSize,
+        height: qrSize,
+        child: QrImageView(
+          data: value,
+          version: QrVersions.auto,
+          size: qrSize,
+          eyeStyle: QrEyeStyle(
+            eyeShape: QrEyeShape.square,
+            color: _scope.application.settings.colors.text,
+          ),
+          dataModuleStyle: QrDataModuleStyle(
+            dataModuleShape: QrDataModuleShape.square,
+            color: _scope.application.settings.colors.text,
+          ),
+          backgroundColor: Colors.transparent,
+        ),
+      ),
+      if (tip != null)
+        Container(
+          width: qrSize,
+          padding: const EdgeInsets.all(6),
+          child: Text(
+            tip,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w400,
+              color: _scope.application.settings.colors.primary,
             ),
           ),
-          if (tip != null)
-            Container(
-              width: qrSize,
-              padding: const EdgeInsets.all(6),
-              child: Text(
-                tip,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  color: _scope.application.settings.colors.primary,
-                ),
-              ),
-            ),
-        ],
-      ),
-      iconColor: _scope.application.settings.colors.primary,
-      dismissible: true,
-    );
+        ),
+    ],
+  ),
+  iconColor: _scope.application.settings.colors.primary,
+  dismissible: true,
+);
+
   }
 
   /// Date-time picker

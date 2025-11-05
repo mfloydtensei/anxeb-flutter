@@ -93,7 +93,7 @@ class _ImagePreviewState extends ScreenView<ImagePreviewHelper, Application> {
           child: Icon(
             Icons.broken_image,
             size: 140,
-            color: scope.application.settings.colors.primary.withOpacity(0.2),
+            color: scope.application.settings.colors.primary.withValues(alpha: 0.2),
           ),
         ),
         loadingBuilder: (_, __) => _getLoading(),

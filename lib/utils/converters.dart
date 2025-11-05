@@ -2,11 +2,9 @@ import 'dart:async';
 
 import 'package:anxeb_flutter/anxeb.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:mime/mime.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:path/path.dart' as Path;
-import 'package:dio/dio.dart';
 import 'package:credit_card_type_detector/constants.dart' as CCTypes;
 
 class Converters {
@@ -93,7 +91,9 @@ class Converters {
     return Color(int.parse(buffer.toString(), radix: 16));
   }
 
-  String fromColorToHex(Color color) => '0x${color.value.toRadixString(16).padLeft(8, '0')}';
+  String fromColorToHex(Color color) =>
+    '0x${color.toARGB32().toRadixString(16).padLeft(8, '0')}';
+
 
   IconData fromHexToIconData(String hexString) {
     // Soporta "0x..." / "#..." / decimal plano

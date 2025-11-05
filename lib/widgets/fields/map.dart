@@ -321,7 +321,7 @@ Future<MapFieldValue?> lookup() async {
           radius: value!.radius!,
           strokeWidth: 0,
           fillColor: value!.color ??
-              widget.scope.application.settings.colors.navigation.withOpacity(0.3),
+              widget.scope.application.settings.colors.navigation.withValues(alpha: 0.3),
         ),
       };
     } else {

@@ -150,39 +150,48 @@ class ScreenView<T extends ScreenWidget, A extends Application> extends ScreenSt
       backgroundColor: _scope.window.overlay.background ?? _scope.application.settings.colors.background,
       extendBody: _scope.window.overlay.extendBody,
       extendBodyBehindAppBar: _scope.window.overlay.extendBodyBehindAppBar,
-      body: WillPopScope(
-        onWillPop: () async {
-          if (_scope.isBusy) return false;
-          if (_scope.alerts.isAny) {
-            await _scope.alerts.dispose();
-            return false;
-          }
-          if (scaffold.currentState?.isDrawerOpen == true) {
-            scaffold.currentState?.openEndDrawer();
-            return false;
-          }
-          if (_header is SearchHeader && (_header as SearchHeader).isActive) {
-            (_header as SearchHeader).end();
-            return false;
-          }
+      body: PopScope(
+  canPop: true,
+  onPopInvokedWithResult: (didPop, result) async {
+    if (didPop) return;
 
-          final result = await beforePop();
-          if (result == true) await _beginPop(null);
-          return result;
+    if (_scope.isBusy) return;
+
+    if (_scope.alerts.isAny) {
+      await _scope.alerts.dispose();
+      return;
+    }
+
+    if (scaffold.currentState?.isDrawerOpen == true) {
+      scaffold.currentState?.openEndDrawer();
+      return;
+    }
+
+    if (_header is SearchHeader && (_header as SearchHeader).isActive) {
+      (_header as SearchHeader).end();
+      return;
+    }
+
+    final shouldPop = await beforePop();
+    if (shouldPop == true) {
+      await _beginPop(null);
+    }
+  },
+  child: LayoutBuilder(
+    builder: (BuildContext context, BoxConstraints viewportConstraints) {
+      _scope.window.update(constraints: viewportConstraints);
+      return GestureDetector(
+        onTap: () {
+          _scope.unfocus();
+          _scope.alerts.dispose();
         },
-        child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints viewportConstraints) {
-            _scope.window.update(constraints: viewportConstraints);
-            return GestureDetector(
-              onTap: () {
-                _scope.unfocus();
-                _scope.alerts.dispose();
-              },
-              child: _initializeContent(),
-            );
-          },
-        ),
-      ),
+        child: _initializeContent(),
+      );
+    },
+  ),
+),
+
+
     );
 
     return _tabs?.setup(scaffoldContent) ?? scaffoldContent;

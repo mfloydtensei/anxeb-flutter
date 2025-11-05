@@ -128,10 +128,10 @@ class SelectorBlock extends StatelessWidget {
       child: Anxeb.ImageButton(
         height: height,
         width: width,
-        loadingColor: colors.primary.withOpacity(0.5),
+        loadingColor: colors.primary.withValues(alpha: 0.5),
         loadingPadding: const EdgeInsets.all(15),
         imageUrl: fullImageUrl,
-        failedIconColor: colors.primary.withOpacity(0.2),
+        failedIconColor: colors.primary.withValues(alpha: 0.2),
         headers: {'Authorization': 'Bearer ${app.api.token}'},
         outerRadius: 10,
         innerRadius: 5,

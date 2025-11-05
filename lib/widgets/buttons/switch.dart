@@ -79,7 +79,7 @@ class SwitchButton extends StatelessWidget {
                 CupertinoSwitch(
                   value: value,
                   onChanged: readonly ? null : onToggle,
-                  activeColor: appColors.primary,
+                  activeTrackColor: appColors.primary,
                 ),
               ],
             ),

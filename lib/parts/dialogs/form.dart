@@ -109,21 +109,22 @@ class FormDialog<V, A extends Application> extends ScopeDialog<V> {
           return dialog;
         }
 
-        return RawKeyboardListener(
-          focusNode: _focusNode,
-          onKey: (event) {
-            // Manejo moderno de ESC (solo en KeyDown para evitar repeticiones)
-            if (event is RawKeyDownEvent && event.logicalKey == LogicalKeyboardKey.escape) {
-              Navigator.of(_context).pop(null);
-            }
-          },
-          child: GestureDetector(
-            onTap: () {
-              FocusScope.of(context).requestFocus(_focusNode);
-            },
-            child: dialog,
-          ),
-        );
+       return KeyboardListener(
+  focusNode: _focusNode,
+  onKeyEvent: (event) {
+    // Manejo moderno de ESC (solo en KeyDown para evitar repeticiones)
+    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.escape) {
+      Navigator.of(_context).pop(null);
+    }
+  },
+  child: GestureDetector(
+    onTap: () {
+      FocusScope.of(context).requestFocus(_focusNode);
+    },
+    child: dialog,
+  ),
+);
+
       },
     );
   }

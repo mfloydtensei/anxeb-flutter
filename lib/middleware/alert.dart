@@ -1,8 +1,6 @@
 import 'package:anxeb_flutter/anxeb.dart';
 import 'package:anxeb_flutter/parts/alerts/snack.dart';
-import 'package:community_material_icon/community_material_icon.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_translate/flutter_translate.dart';
 
 class ScopeAlert {
   final Scope scope;

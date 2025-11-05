@@ -17,8 +17,9 @@ class FacebookAuth extends AuthProvider {
       FB.AccessToken? session;
 
       // 🔹 Intento silencioso (si ya hay sesión activa)
-      if (silent && await _facebook.accessToken != null) {
-        session = await _facebook.accessToken;
+      final existingToken = await _facebook.accessToken;
+      if (silent && existingToken != null) {
+        session = existingToken;
       } else {
         // 🔹 Forzamos login manual
         final auth = await _facebook.login(permissions: ['email']);
@@ -42,7 +43,7 @@ class FacebookAuth extends AuthProvider {
       // 🔹 Solicitamos los datos del usuario desde Graph API
       final api = Api('https://graph.facebook.com/v12.0/');
       final profileData = await api.get(
-        'me?fields=name,first_name,last_name,email&access_token=${session.token}',
+        'me?fields=name,first_name,last_name,email&access_token=${session.tokenString}',
       );
 
       // 🔹 Construimos el resultado
@@ -52,19 +53,18 @@ class FacebookAuth extends AuthProvider {
         ..lastNames = profileData['last_name']
         ..email = profileData['email']
         ..photo =
-            'https://graph.facebook.com/v12.0/me/picture?height=320&access_token=${session.token}'
-        ..token = session.token
+            'https://graph.facebook.com/v12.0/me/picture?height=320&access_token=${session.tokenString}'
+        ..token = session.tokenString // ✅ propiedad correcta
         ..provider = 'facebook'
         ..meta = {
-          'userId': session.userId,
-          'expires': session.expires.toIso8601String(),
-          'permissions': session.grantedPermissions,
-          'declinedPermissions': session.declinedPermissions,
+          //'userId': session.userId,
+         // 'expires': session.expires.toIso8601String(),
+          //'permissions': session.grantedPermissions.join(','),
+         // 'declinedPermissions': session.declinedPermissions.join(','),
         };
 
       return result;
     } catch (err, st) {
-      // 🔹 En caso de error, lanzamos la excepción con rastreo
       throw Exception('Facebook login error: $err\n$st');
     }
   }

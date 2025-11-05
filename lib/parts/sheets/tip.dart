@@ -42,8 +42,8 @@ class TipSheet extends ScopeSheet {
                   begin: FractionalOffset.topCenter,
                   end: FractionalOffset.bottomCenter,
                   colors: [
-                    safeFill.withOpacity(1),
-                    safeFill.withOpacity(0.8),
+                    safeFill.withValues(alpha: 1),
+                    safeFill.withValues(alpha: 0.8),
                   ],
                   stops: const [0.0, 1.0],
                 ),

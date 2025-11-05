@@ -161,7 +161,7 @@ class ReferencerPage<V> {
     var parent = this;
     while (parent._parent != null) {
       if (parent.selected != null) result.add(parent.selected as V);
-      parent = parent._parent!;
+      parent = parent._parent;
     }
     return result.reversed.toList();
   }

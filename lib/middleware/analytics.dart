@@ -71,7 +71,27 @@ class Analytics {
   }
 
   Future<void> log(String name, {Map<String, dynamic>? params}) {
-    return firebase.logEvent(name: name, parameters: params);
+    // 🔹 Convertimos a Map<String, Object> para cumplir con el nuevo tipado
+    return firebase.logEvent(
+      name: name,
+      parameters: _castParams(params),
+    );
+  }
+
+  Map<String, Object>? _castParams(Map<String, dynamic>? params) {
+    if (params == null) return null;
+    final result = <String, Object>{};
+    params.forEach((key, value) {
+      if (value != null) {
+        // 🔹 Forzamos conversión segura solo de tipos compatibles
+        if (value is num || value is String || value is bool) {
+          result[key] = value;
+        } else {
+          result[key] = value.toString();
+        }
+      }
+    });
+    return result;
   }
 
   Future<void> property(String name, String value) {

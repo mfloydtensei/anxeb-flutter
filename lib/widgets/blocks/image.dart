@@ -71,7 +71,7 @@ class _ImageLinkBlockState extends State<ImageLinkBlock> {
     _netImage = SecuredImage(
       imageUrl,
       scale: widget.imageScale ?? 1,
-      headers: widget.headers,
+      headers: widget.headers ?? const <String, String>{},
     );
 
     _netImage!.resolve(const ImageConfiguration()).addListener(
@@ -133,7 +133,7 @@ class _ImageLinkBlockState extends State<ImageLinkBlock> {
               width: widget.width,
               child: Icon(
                 widget.failedIcon ?? Icons.broken_image_outlined,
-                color: widget.failedIconColor ?? Colors.white.withOpacity(0.5),
+                color: widget.failedIconColor ?? Colors.white.withValues(alpha: 0.5),
                 size: widget.failedIconSize ??
                     ((widget.height ?? widget.width ?? 40) * 0.6),
               ),
@@ -152,7 +152,7 @@ class _ImageLinkBlockState extends State<ImageLinkBlock> {
                 child: CircularProgressIndicator(
                   strokeWidth: widget.loadingThickness ?? 2,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    widget.loadingColor ?? Colors.white.withOpacity(0.8),
+                    widget.loadingColor ?? Colors.white.withValues(alpha: 0.8),
                   ),
                 ),
               ),

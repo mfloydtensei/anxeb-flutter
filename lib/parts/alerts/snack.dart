@@ -90,7 +90,7 @@ class SnackAlert extends ScopeAlert {
         end: Alignment.bottomCenter,
         colors: [
           background,
-          Color.alphaBlend(Colors.black.withOpacity(0.15), background),
+          Color.alphaBlend(Colors.black.withValues(alpha: 0.15), background),
         ],
         stops: const [0.0, 1.0],
       ),

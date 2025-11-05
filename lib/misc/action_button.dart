@@ -32,16 +32,16 @@ class ActionButton extends ActionItem {
 
     final bool disabled = isDisabled?.call() ?? false;
     final Color baseColor = color?.call() ?? Colors.white;
-    final Color currentColor = disabled ? baseColor.withOpacity(0.4) : baseColor;
+    final Color currentColor = disabled ? baseColor.withValues(alpha: 0.4) : baseColor;
     final Color backgroundColor = fill?.call() ?? Colors.transparent;
 
     return TextButton(
       style: ButtonStyle(
-        backgroundColor: MaterialStateProperty.all<Color>(backgroundColor),
-        padding: MaterialStateProperty.all<EdgeInsets>(
+        backgroundColor: WidgetStateProperty.all<Color>(backgroundColor),
+        padding: WidgetStateProperty.all<EdgeInsets>(
           const EdgeInsets.symmetric(horizontal: 10),
         ),
-        shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+        shape: WidgetStateProperty.all<RoundedRectangleBorder>(
           RoundedRectangleBorder(
             borderRadius: borderRadius?.call() ?? BorderRadius.circular(8.0),
           ),

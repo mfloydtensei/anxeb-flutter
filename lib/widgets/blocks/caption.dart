@@ -70,7 +70,7 @@ class CaptionBlock extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: colors.text.withOpacity(0.8),
+                          color: colors.text.withValues(alpha: 0.8),
                         ),
                       ),
                     ),

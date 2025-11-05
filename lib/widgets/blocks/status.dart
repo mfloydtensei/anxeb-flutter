@@ -78,7 +78,7 @@ class _StatusBlockState extends State<StatusBlock> {
                     borderRadius: BorderRadius.circular(45),
                     border: Border.all(
                       width: widget.iconBorderWidth,
-                      color: mainColor.withOpacity(0.7),
+                      color: mainColor.withValues(alpha: 0.7),
                     ),
                   )
                 : null,
@@ -172,7 +172,7 @@ class _StatusBlockState extends State<StatusBlock> {
         padding: const EdgeInsets.all(5),
         child: CircularProgressIndicator(
           strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withOpacity(0.9)),
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withValues(alpha: 0.9)),
         ),
       );
     }
