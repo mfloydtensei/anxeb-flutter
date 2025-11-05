@@ -1,5 +1,4 @@
 import 'package:anxeb_flutter/middleware/alert.dart';
-import 'package:anxeb_flutter/middleware/scope.dart';
 import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart' hide Dialog;
 import '../dialogs/form.dart';
@@ -72,12 +71,12 @@ class SnackAlert extends ScopeAlert {
     // Si estamos dentro de un formulario, no mostramos el flushbar
     if (scope is FormScope) {
       (scope as FormScope).warning = FormWarning(
-        message: message,
-        body: messageWidget,
+        message: message ?? '',
+        body: messageWidget ?? const SizedBox.shrink(),
         icon: displayIcon,
-        iconColor: iconColor,
-        textColor: textColor,
-        fillColor: fillColor,
+        iconColor: iconColor ?? Colors.white,
+        textColor: textColor ?? Colors.white,
+        fillColor: fillColor ?? background,
         meta: meta,
       );
       return;
@@ -97,10 +96,7 @@ class SnackAlert extends ScopeAlert {
       ),
       isDismissible: true,
       margin: scope.application.settings.alerts.margin(),
-      borderRadius: scope.application.settings.alerts.margin.call() == null
-          ? null
-          : scope.application.settings.alerts.borderRadius ??
-              const BorderRadius.all(Radius.circular(8)),
+      borderRadius: scope.application.settings.alerts.borderRadius,
       boxShadows: const [
         BoxShadow(
           offset: Offset(0, 2),

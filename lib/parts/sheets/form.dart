@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart' hide Dialog;
 import 'package:anxeb_flutter/middleware/sheet.dart';
 import 'package:anxeb_flutter/middleware/device.dart';
-import 'package:anxeb_flutter/screen/scope.dart';
-import 'package:anxeb_flutter/middleware/scope.dart';
+
 
 class FormSheet extends ScopeSheet {
   final String? title;

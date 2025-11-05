@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:anxeb_flutter/middleware/dialog.dart';
-import 'package:anxeb_flutter/middleware/field.dart';
+import '../../middleware/field.dart';
 import 'package:anxeb_flutter/middleware/scope.dart';
 
-class MultiInputField<V> extends FieldWidget<List<V>> {
+class MultiInputField<V> extends FieldWidget<List<V>, MultiInputField<V>> {
   final Future<List<V>> Function() options;
   final String Function(V value)? displayText;
   final bool Function(V option, List<V> value)? comparer;

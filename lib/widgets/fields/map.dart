@@ -1,13 +1,11 @@
 import 'dart:async';
 import 'dart:math';
-import 'package:anxeb_flutter/middleware/field.dart';
+import '../../middleware/field.dart';
 import 'package:anxeb_flutter/middleware/scope.dart';
 import 'package:flutter/material.dart';
 import 'package:google_geocoding_api/google_geocoding_api.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import '../../middleware/device.dart';
 import '../../middleware/utils.dart';
-import 'text.dart';
 
 class MapFieldValue {
   double? radius;
@@ -60,7 +58,7 @@ class MapFieldController {
   void refresh() => _refresh?.call();
 }
 
-class MapField extends FieldWidget<MapFieldValue> {
+class MapField extends FieldWidget<MapFieldValue, MapField> {
   final double height;
   final String marketImageAsset;
   final Future<MapFieldValue?> Function(String text)? onLookup;

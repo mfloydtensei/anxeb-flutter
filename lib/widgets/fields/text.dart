@@ -1,4 +1,4 @@
-import 'package:anxeb_flutter/middleware/field.dart';
+import '../../middleware/field.dart';
 import 'package:anxeb_flutter/middleware/scope.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -21,7 +21,7 @@ enum TextInputFieldType {
   pin
 }
 
-class TextInputField<V> extends FieldWidget<V> {
+class TextInputField<V> extends FieldWidget<V, TextInputField<V>> {
   final TextEditingController? controller;
   final TextInputFieldType? type;
   final TextInputFormatter? formatter;
@@ -250,7 +250,7 @@ class _TextInputFieldState<V> extends Field<V, TextInputField<V>> {
       },
       onChanged: (text) {
         final val = _convertValue(text);
-        super.setValueSilent(val);
+       value = val;
         if (!_editing) warning = null;
         _editing = true;
         widget.onChanged?.call(val);

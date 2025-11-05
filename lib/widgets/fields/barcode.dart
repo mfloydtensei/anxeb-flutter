@@ -1,12 +1,14 @@
-import 'package:anxeb_flutter/middleware/field.dart';
-import 'package:anxeb_flutter/middleware/scope.dart';
+import '../../middleware/field.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import '../../middleware/device.dart';
 
 enum BarcodeInputFieldType { numeric, alphanumeric }
 
-class BarcodeInputField extends FieldWidget<String> {
+/// =======================================================
+/// BarcodeInputField
+/// =======================================================
+class BarcodeInputField extends FieldWidget<String, BarcodeInputField> {
   final TextEditingController? controller;
   final BarcodeInputFieldType? type;
   final bool autofocus;
@@ -18,30 +20,30 @@ class BarcodeInputField extends FieldWidget<String> {
   final bool autoflash;
   final ValueChanged<String>? onScan;
 
-   BarcodeInputField({
-    required Scope scope,
+  const BarcodeInputField({
+    required super.scope,
+    required super.name,
     super.key,
-    required String name,
-    String? group,
-    String? label,
-    IconData? icon,
-    EdgeInsets? margin,
-    EdgeInsets? padding,
-    bool readonly = false,
-    bool visible = true,
-    ValueChanged<String?>? onSubmitted,
-    ValueChanged<String?>? onApplied,
-    ValueChanged<String?>? onChanged,
-    GestureTapCallback? onTab,
-    GestureTapCallback? onBlur,
-    GestureTapCallback? onFocus,
-    FormFieldValidator<String>? validator,
-    String Function(dynamic value)? parser,
-    FieldFocusType? focusType,
-    bool selected = false,
-    Future<String> Function()? fetcher,
-    Function(String?)? applier,
-    FieldWidgetTheme? theme,
+    super.group,
+    super.label,
+    super.icon,
+    super.margin,
+    super.padding,
+    super.readonly = false,
+    super.visible,
+    super.onSubmitted,
+    super.onApplied,
+    super.onChanged,
+    super.onTab,
+    super.onBlur,
+    super.onFocus,
+    super.validator,
+    super.parser,
+    super.focusType,
+    super.fetcher,
+    super.applier,
+    super.initialSelected,
+    super.theme,
     this.controller,
     this.type = BarcodeInputFieldType.alphanumeric,
     this.autofocus = false,
@@ -52,35 +54,15 @@ class BarcodeInputField extends FieldWidget<String> {
     this.suffix,
     this.autoflash = false,
     this.onScan,
-  }) : super(
-          scope: scope,
-          name: name,
-          group: group,
-          label: label,
-          icon: icon,
-          margin: margin,
-          padding: padding,
-          readonly: readonly,
-          visible: visible,
-          onSubmitted: onSubmitted,
-          onApplied: onApplied,
-          onChanged: onChanged,
-          onTab: onTab,
-          onBlur: onBlur,
-          onFocus: onFocus,
-          validator: validator,
-          parser: parser,
-          focusType: focusType,
-          initialSelected: selected,
-          fetcher: fetcher,
-          applier: applier,
-          theme: theme,
-        );
+  });
 
   @override
-  Field<String, BarcodeInputField> createState() => _BarcodeInputFieldState();
+  State<BarcodeInputField> createState() => _BarcodeInputFieldState();
 }
 
+/// =======================================================
+/// BarcodeInputField State
+/// =======================================================
 class _BarcodeInputFieldState extends Field<String, BarcodeInputField> {
   late TextEditingController _controller;
   bool _editing = false;
@@ -174,7 +156,6 @@ class _BarcodeInputFieldState extends Field<String, BarcodeInputField> {
       },
       onTap: () {
         if (widget.readonly) return;
-
         if (_tabbed) {
           _tabbed = false;
         } else {
@@ -239,7 +220,8 @@ class _BarcodeInputFieldState extends Field<String, BarcodeInputField> {
                 borderSide: BorderSide.none,
                 borderRadius: widget.theme!.borderRadius!,
               )
-            : (widget.theme?.border ?? widget.scope.application.settings.fields.border),
+            : (widget.theme?.border ??
+                widget.scope.application.settings.fields.border),
         disabledBorder: widget.theme?.borderless == true
             ? null
             : (widget.theme?.disabledBorder as InputBorder? ??
@@ -265,7 +247,6 @@ class _BarcodeInputFieldState extends Field<String, BarcodeInputField> {
                 widget.scope.application.settings.fields.focusColor)
             : (widget.theme?.fillColor ??
                 widget.scope.application.settings.fields.fillColor),
-
         hoverColor: widget.theme?.hoverColor ??
             widget.scope.application.settings.fields.hoverColor,
         errorStyle: widget.theme?.errorStyle ??
@@ -276,7 +257,7 @@ class _BarcodeInputFieldState extends Field<String, BarcodeInputField> {
           dragStartBehavior: DragStartBehavior.down,
           behavior: HitTestBehavior.opaque,
           onTap: () {
-            if (widget.readonly == true) return;
+            if (widget.readonly) return;
             _tabbed = true;
 
             if (focused && warning == null && _controller.text.isNotEmpty) {
@@ -300,7 +281,7 @@ class _BarcodeInputFieldState extends Field<String, BarcodeInputField> {
     final theme = widget.theme;
     final colors = widget.scope.application.settings.colors;
 
-    if (widget.readonly == true) {
+    if (widget.readonly) {
       return Icon(
         Icons.lock_outline,
         color: theme?.suffixIconReadonlyColor ?? theme?.suffixIconColor,

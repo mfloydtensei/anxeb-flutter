@@ -1,15 +1,12 @@
 import 'package:anxeb_flutter/anxeb.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 
 class GoogleAuth extends AuthProvider {
   final GoogleSignIn _google;
 
   GoogleAuth(Application application)
       : _google = GoogleSignIn(
-          signInOption:
-              application.settings.auths.google.signInOption ??
-                  SignInOption.standard,
-          scopes: application.settings.auths.google.scopes ?? <String>[],
+          signInOption: application.settings.auths.google.signInOption,
+          scopes: application.settings.auths.google.scopes,
           hostedDomain: application.settings.auths.google.hostedDomain,
           clientId: application.settings.auths.google.clientId,
         ),

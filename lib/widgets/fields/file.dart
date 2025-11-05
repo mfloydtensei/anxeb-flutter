@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:anxeb_flutter/helpers/document.dart';
-import 'package:anxeb_flutter/middleware/field.dart';
+import '../../middleware/field.dart';
 import 'package:anxeb_flutter/middleware/scope.dart';
 import 'package:anxeb_flutter/misc/icons.dart';
 import 'package:camera/camera.dart';
@@ -41,7 +41,7 @@ class FileInputValue {
   }
 }
 
-class FileInputField extends FieldWidget<FileInputValue> {
+class FileInputField extends FieldWidget<FileInputValue, FileInputField> {
   final List<String>? allowedExtensions;
   final String? launchUrlPrefix;
   final Future Function({

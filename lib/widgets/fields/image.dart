@@ -5,9 +5,10 @@ import 'dart:io';
 import 'package:anxeb_flutter/helpers/preview.dart';
 import 'package:flutter/material.dart';
 
+
 enum ImageInputFieldType { front, rear, local, web }
 
-class ImageInputField extends FieldWidget<String> {
+class ImageInputField extends FieldWidget<String, ImageInputField> {
   final ImageInputFieldType type;
   final bool fullImage;
   final bool initFaceCamera;

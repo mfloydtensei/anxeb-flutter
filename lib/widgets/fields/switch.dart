@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:anxeb_flutter/middleware/field.dart';
+import '../../middleware/field.dart';
 import 'package:anxeb_flutter/middleware/scope.dart';
 import '../buttons/switch.dart';
 
-class SwitchField extends FieldWidget<bool> {
+class SwitchField extends FieldWidget<bool, SwitchField> {
   final ListTileControlAffinity? controlAffinity;
 
   SwitchField({

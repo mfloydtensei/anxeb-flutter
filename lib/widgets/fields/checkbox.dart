@@ -1,47 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:anxeb_flutter/middleware/field.dart';
-import 'package:anxeb_flutter/middleware/scope.dart';
+import '../../middleware/field.dart';
 
-class CheckBoxField extends FieldWidget<bool> {
+class CheckBoxField extends FieldWidget<bool, CheckBoxField> {
   final ListTileControlAffinity? controlAffinity;
 
-   CheckBoxField({
-    required Scope scope,
-    required String name,
+  const CheckBoxField({
+    required super.scope,
+    required super.name,
     super.key,
-    String? group,
-    String? label,
-    EdgeInsets? margin,
-    EdgeInsets? padding,
-    ValueChanged<bool?>? onChanged,
-    GestureTapCallback? onTab,
-    GestureTapCallback? onFocus,
-    FormFieldValidator<bool>? validator,
-    FieldFocusType? focusType,
-    bool readonly = false,
-    Future<bool> Function()? fetcher,
-    Function(bool?)? applier,
-    FieldWidgetTheme? theme,
+    super.group,
+    super.label,
+    super.margin,
+    super.padding,
+    super.readonly = false,
+    super.onChanged,
+    super.onFocus,
+    super.validator,
+    super.focusType,
+    super.fetcher,
+    super.applier,
+    super.theme,
     this.controlAffinity,
-  }) : super(
-          scope: scope,
-          name: name,
-          group: group,
-          margin: margin,
-          padding: padding,
-          readonly: readonly,
-          onChanged: onChanged,
-          onFocus: onFocus,
-          validator: validator,
-          focusType: focusType,
-          fetcher: fetcher,
-          applier: applier,
-          theme: theme,
-          label: label,
-          );
- 
+  });
+
   @override
-  Field<bool, CheckBoxField> createState() => _CheckBoxFieldState();
+  State<CheckBoxField> createState() => _CheckBoxFieldState();
 }
 
 class _CheckBoxFieldState extends Field<bool, CheckBoxField> {
@@ -52,7 +35,6 @@ class _CheckBoxFieldState extends Field<bool, CheckBoxField> {
       visualDensity: VisualDensity.standard,
       dense: false,
       activeColor: widget.scope.application.settings.colors.primary,
-      // tileColor is meant for backgrounds; keeping transparent to avoid overlay issues
       tileColor: Colors.transparent,
       title: Text(
         widget.label ?? '',
@@ -73,13 +55,11 @@ class _CheckBoxFieldState extends Field<bool, CheckBoxField> {
             )
           : null,
       value: value ?? false,
-      onChanged: (widget.readonly)
+      onChanged: widget.readonly
           ? null
           : (newValue) {
               if (newValue == null) return;
-              setState(() {
-                value = newValue;
-              });
+              setState(() => value = newValue);
               validate();
               widget.onChanged?.call(newValue);
             },

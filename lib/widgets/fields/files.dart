@@ -11,11 +11,11 @@ import '../../screen/scope.dart';
 import 'file.dart';
 
 import 'package:anxeb_flutter/helpers/document.dart';
-import 'package:anxeb_flutter/middleware/field.dart';
+import '../../middleware/field.dart';
 import 'package:anxeb_flutter/middleware/scope.dart';
 import 'package:anxeb_flutter/misc/icons.dart';
 
-class FilesInputField extends FieldWidget<List<FileInputValue>> {
+class FilesInputField extends FieldWidget<List<FileInputValue>, FilesInputField> {
   final bool allowMultiples;
   final List<String>? allowedExtensions;
   final String? launchUrlPrefix;

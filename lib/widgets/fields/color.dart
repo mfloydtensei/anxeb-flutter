@@ -1,8 +1,8 @@
-import 'package:anxeb_flutter/middleware/field.dart';
+import '../../middleware/field.dart';
 import 'package:anxeb_flutter/middleware/scope.dart';
 import 'package:flutter/material.dart';
 
-class ColorInputField extends FieldWidget<Color> {
+class ColorInputField extends FieldWidget<Color, ColorInputField> {
   final Widget Function(Color? value)? displayWidget;
   final dynamic Function(Color? value)? dataValue;
 

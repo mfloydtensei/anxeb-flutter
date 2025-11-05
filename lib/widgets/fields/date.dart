@@ -1,9 +1,10 @@
-import 'package:anxeb_flutter/middleware/field.dart';
+import '../../middleware/field.dart';
+
 import 'package:anxeb_flutter/middleware/scope.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-class DateInputField extends FieldWidget<DateTime> {
+class DateInputField extends FieldWidget<DateTime, DateInputField> {
   final String? displayFormat;
   final String Function(DateTime?)? displayText;
   final dynamic Function(DateTime?)? dataValue;
@@ -64,7 +65,7 @@ class DateInputField extends FieldWidget<DateTime> {
         );
 
   @override
-  State<DateInputField> createState() => _DateInputFieldState();
+  Field<DateTime, DateInputField> createState() => _DateInputFieldState();
 }
 
 class _DateInputFieldState extends Field<DateTime, DateInputField> {

@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:photo_view/photo_view.dart';
-import '../../middleware/application.dart';
 import '../../screen/scope.dart';
 
 class PreviewerBlock extends StatefulWidget {

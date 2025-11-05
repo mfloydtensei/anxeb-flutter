@@ -1,8 +1,8 @@
-import 'package:anxeb_flutter/middleware/field.dart';
+import '../../middleware/field.dart';
 import 'package:anxeb_flutter/middleware/scope.dart';
 import 'package:flutter/material.dart';
 
-class LookupInputField<V> extends FieldWidget<V> {
+class LookupInputField<V> extends FieldWidget<V, LookupInputField<V>> {
   final Future<V?> Function()? onLookup;
   final String Function(V value)? displayText;
   final dynamic Function(V value)? dataValue;
@@ -58,7 +58,7 @@ class LookupInputField<V> extends FieldWidget<V> {
         );
 
   @override
-  State<LookupInputField<V>> createState() => _LookupInputFieldState<V>();
+  Field<V, LookupInputField<V>> createState() => _LookupInputFieldState<V>();
 }
 
 class _LookupInputFieldState<V> extends Field<V, LookupInputField<V>> {
