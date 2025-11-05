@@ -12,7 +12,7 @@ class SelectorBlock extends StatelessWidget {
   final String? logoUrl;
   final double? width;
   final double? height;
-  final VoidCallback? onTap;
+  final Future<void> Function()? onTap;
   final bool flat;
   final Icon? failedIcon;
   final EdgeInsets? margin;
@@ -152,7 +152,9 @@ class SelectorBlock extends StatelessWidget {
               ],
         fit: BoxFit.contain,
         shape: BoxShape.rectangle,
-        onTap: onTap,
+        onTap: onTap == null ? null : () async {
+          onTap!();
+        },
         horizontal: !onlyImage,
         expanded: true,
         margin: const EdgeInsets.symmetric(vertical: 5),

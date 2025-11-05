@@ -227,7 +227,7 @@ class _FileInputFieldState extends Field<FileInputValue, FileInputField> {
       result = await widget.onPreview!.call(
         launchUrl: widget.launchUrlPrefix,
         file: value,
-        readonly: widget.readonly ?? false,
+        readonly: widget.readonly,
       );
     } else if (widget.scope is ScreenScope) {
       result = await (widget.scope as ScreenScope).push(
@@ -235,7 +235,8 @@ class _FileInputFieldState extends Field<FileInputValue, FileInputField> {
           launchUrl: widget.launchUrlPrefix ?? '',
           file: value!,
           initialScale: PhotoViewComputedScale.contained,
-          readonly: widget.readonly ?? false,
+          readonly: widget.readonly,
+          application: widget.scope.application,
         ),
       );
     }

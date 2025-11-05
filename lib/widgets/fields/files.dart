@@ -234,10 +234,11 @@ class _FilesInputFieldState extends Field<List<FileInputValue>, FilesInputField>
     } else if (widget.scope is ScreenScope) {
       result = await (widget.scope as ScreenScope).push(
         DocumentView(
+          application: (widget.scope as ScreenScope).application,
           launchUrl: widget.launchUrlPrefix ?? '',
           file: file,
           initialScale: PhotoViewComputedScale.contained,
-          readonly: widget.readonly ?? false,
+          readonly: widget.readonly,
         ),
       );
     }

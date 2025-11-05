@@ -101,7 +101,7 @@ class FieldWidget<V> extends StatefulWidget {
   final IconData? sufixIcon;
   final EdgeInsets? margin;
   final EdgeInsets? padding;
-  final bool? readonly;
+  final bool readonly;
   final bool? visible;
   final ValueChanged<V?>? onSubmitted;
   final ValueChanged<V?>? onApplied;
@@ -113,7 +113,7 @@ class FieldWidget<V> extends StatefulWidget {
   final V? Function(dynamic value)? parser;
   final FieldFocusType? focusType;
   final Future<V?> Function()? fetcher;
-  final Function(V? value)? applier;
+  final ValueChanged<V?>? applier;
   final bool? initialSelected;
   final FieldWidgetTheme? theme;
 
@@ -126,7 +126,7 @@ class FieldWidget<V> extends StatefulWidget {
     this.icon,
     this.margin,
     this.padding,
-    this.readonly,
+    this.readonly = false,
     this.visible,
     this.onSubmitted,
     this.onApplied,
@@ -146,7 +146,8 @@ class FieldWidget<V> extends StatefulWidget {
         super(key: key ?? scope.forms.key(group ?? scope.key, name));
 
   @override
-  Field createState() => Field();
+Field<V, FieldWidget<V>> createState() => Field<V, FieldWidget<V>>();
+
 }
 
 abstract class FieldState<V, F extends FieldWidget<V>> extends State<F> {

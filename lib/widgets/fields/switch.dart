@@ -76,7 +76,7 @@ class _SwitchFieldState extends Field<bool, SwitchField> {
               fontSize: 15,
             ),
           ),
-          readonly: widget.readonly ?? false, // ✅ ya es bool, sin ??
+          readonly: widget.readonly,  // ✅ ya es bool, sin ??
           value: value ?? false,     // ✅ nunca nulo
           onToggle: (bool newValue) {
             // ✅ condiciones null-safe y firmas correctas

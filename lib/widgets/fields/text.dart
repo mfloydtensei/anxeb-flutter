@@ -1,6 +1,5 @@
 import 'package:anxeb_flutter/middleware/field.dart';
 import 'package:anxeb_flutter/middleware/scope.dart';
-import 'package:anxeb_flutter/middleware/utils.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -226,8 +225,8 @@ class _TextInputFieldState<V> extends Field<V, TextInputField<V>> {
       focusNode: focusNode,
       textInputAction: widget.action,
       textCapitalization: widget.capitalization,
-      controller: focused && !(widget.readonly ?? false) ? _controller : _displayController,
-     readOnly: widget.readonly ?? false,
+      controller: focused && !(widget.readonly) ? _controller : _displayController,
+     readOnly: widget.readonly,
       enableInteractiveSelection: widget.canSelect,
       autocorrect: false,
       inputFormatters: _formatters,
@@ -240,7 +239,7 @@ class _TextInputFieldState<V> extends Field<V, TextInputField<V>> {
         widget.onActionSubmit?.call(value);
       },
       onTap: () {
-        if (widget.readonly ?? false) return;
+        if (widget.readonly) return;
         if (_tabbed) {
           _tabbed = false;
         } else {
@@ -296,7 +295,7 @@ class _TextInputFieldState<V> extends Field<V, TextInputField<V>> {
   void _convertAndSubmit(String text) => super.submit(_convertValue(text));
 
   void _handleSuffixTap() {
-    if (widget.readonly ?? false) return;
+    if (widget.readonly) return;
     _tabbed = true;
 
     if (widget.type == TextInputFieldType.password || widget.type == TextInputFieldType.pin) {
@@ -319,7 +318,7 @@ class _TextInputFieldState<V> extends Field<V, TextInputField<V>> {
   }
 
   Icon _getIcon() {
-    if (widget.readonly ?? false) {
+    if (widget.readonly) {
       return Icon(Icons.lock_outline,
           color: widget.theme?.suffixIconReadonlyColor ??
               widget.theme?.suffixIconColor ??

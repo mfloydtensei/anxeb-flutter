@@ -40,7 +40,7 @@ class BarcodeInputField extends FieldWidget<String> {
     FieldFocusType? focusType,
     bool selected = false,
     Future<String> Function()? fetcher,
-    Function(String value)? applier,
+    Function(String?)? applier,
     FieldWidgetTheme? theme,
     this.controller,
     this.type = BarcodeInputFieldType.alphanumeric,
@@ -78,7 +78,7 @@ class BarcodeInputField extends FieldWidget<String> {
         );
 
   @override
-  State<BarcodeInputField> createState() => _BarcodeInputFieldState();
+  Field<String, BarcodeInputField> createState() => _BarcodeInputFieldState();
 }
 
 class _BarcodeInputFieldState extends Field<String, BarcodeInputField> {
@@ -192,8 +192,7 @@ class _BarcodeInputFieldState extends Field<String, BarcodeInputField> {
       decoration: InputDecoration(
         filled: true,
         contentPadding:
-            widget.scope.application.settings.fields.contentPaddingWithIcon ??
-                const EdgeInsets.symmetric(vertical: 7, horizontal: 0),
+            widget.scope.application.settings.fields.contentPaddingWithIcon,
         prefixIcon: widget.icon != null
             ? Icon(
                 widget.icon,
@@ -240,39 +239,33 @@ class _BarcodeInputFieldState extends Field<String, BarcodeInputField> {
                 borderSide: BorderSide.none,
                 borderRadius: widget.theme!.borderRadius!,
               )
-            : (widget.theme?.border ??
-                widget.scope.application.settings.fields.border ??
-                const UnderlineInputBorder(
-                  borderSide: BorderSide.none,
-                  borderRadius: BorderRadius.all(Radius.circular(8)),
-                )),
+            : (widget.theme?.border ?? widget.scope.application.settings.fields.border),
         disabledBorder: widget.theme?.borderless == true
             ? null
-            : (widget.theme?.disabledBorder ??
+            : (widget.theme?.disabledBorder as InputBorder? ??
                 widget.scope.application.settings.fields.disabledBorder),
         enabledBorder: widget.theme?.borderless == true
             ? null
-            : (widget.theme?.enabledBorder ??
+            : (widget.theme?.enabledBorder as InputBorder? ??
                 widget.scope.application.settings.fields.enabledBorder),
         focusedBorder: widget.theme?.borderless == true
             ? null
-            : (widget.theme?.focusedBorder ??
+            : (widget.theme?.focusedBorder as InputBorder? ??
                 widget.scope.application.settings.fields.focusedBorder),
         errorBorder: widget.theme?.borderless == true
             ? null
-            : (widget.theme?.errorBorder ??
+            : (widget.theme?.errorBorder as InputBorder? ??
                 widget.scope.application.settings.fields.errorBorder),
         focusedErrorBorder: widget.theme?.borderless == true
             ? null
-            : (widget.theme?.focusedErrorBorder ??
+            : (widget.theme?.focusedErrorBorder as InputBorder? ??
                 widget.scope.application.settings.fields.focusedErrorBorder),
         fillColor: focused
             ? (widget.theme?.focusColor ??
-                widget.scope.application.settings.fields.focusColor ??
-                widget.scope.application.settings.colors.focus)
+                widget.scope.application.settings.fields.focusColor)
             : (widget.theme?.fillColor ??
-                widget.scope.application.settings.fields.fillColor ??
-                widget.scope.application.settings.colors.input),
+                widget.scope.application.settings.fields.fillColor),
+
         hoverColor: widget.theme?.hoverColor ??
             widget.scope.application.settings.fields.hoverColor,
         errorStyle: widget.theme?.errorStyle ??
@@ -283,7 +276,7 @@ class _BarcodeInputFieldState extends Field<String, BarcodeInputField> {
           dragStartBehavior: DragStartBehavior.down,
           behavior: HitTestBehavior.opaque,
           onTap: () {
-            if (widget.readonly) return;
+            if (widget.readonly == true) return;
             _tabbed = true;
 
             if (focused && warning == null && _controller.text.isNotEmpty) {
@@ -307,7 +300,7 @@ class _BarcodeInputFieldState extends Field<String, BarcodeInputField> {
     final theme = widget.theme;
     final colors = widget.scope.application.settings.colors;
 
-    if (widget.readonly) {
+    if (widget.readonly == true) {
       return Icon(
         Icons.lock_outline,
         color: theme?.suffixIconReadonlyColor ?? theme?.suffixIconColor,

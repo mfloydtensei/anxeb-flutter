@@ -396,14 +396,16 @@ class Converters {
     return decimals != null ? double.parse(d.toStringAsFixed(decimals)) : d;
   }
 
-  EdgeInsets fromInsetToFraction(EdgeInsets inset, Size screenSize) {
-    return EdgeInsets.only(
-      left: inset.left * screenSize.width,
-      right: inset.right * screenSize.width,
-      top: inset.top * screenSize.height,
-      bottom: inset.bottom * screenSize.height,
-    );
-  }
+ EdgeInsets fromInsetToFraction(EdgeInsets? inset, Size screenSize) {
+  final safe = inset ?? EdgeInsets.zero;
+  return EdgeInsets.only(
+    left: safe.left * screenSize.width,
+    right: safe.right * screenSize.width,
+    top: safe.top * screenSize.height,
+    bottom: safe.bottom * screenSize.height,
+  );
+}
+
 
   TimeOfDay fromDateToTime(DateTime date) =>
       TimeOfDay(hour: date.toLocal().hour, minute: date.toLocal().minute);

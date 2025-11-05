@@ -13,14 +13,14 @@ class CheckBoxField extends FieldWidget<bool> {
     String? label,
     EdgeInsets? margin,
     EdgeInsets? padding,
-    ValueChanged<bool>? onChanged,
+    ValueChanged<bool?>? onChanged,
     GestureTapCallback? onTab,
     GestureTapCallback? onFocus,
     FormFieldValidator<bool>? validator,
     FieldFocusType? focusType,
     bool readonly = false,
     Future<bool> Function()? fetcher,
-    Function(bool value)? applier,
+    Function(bool?)? applier,
     FieldWidgetTheme? theme,
     this.controlAffinity,
   }) : super(
@@ -38,10 +38,10 @@ class CheckBoxField extends FieldWidget<bool> {
           applier: applier,
           theme: theme,
           label: label,
-        );
-
+          );
+ 
   @override
-  State<CheckBoxField> createState() => _CheckBoxFieldState();
+  Field<bool, CheckBoxField> createState() => _CheckBoxFieldState();
 }
 
 class _CheckBoxFieldState extends Field<bool, CheckBoxField> {
@@ -73,7 +73,7 @@ class _CheckBoxFieldState extends Field<bool, CheckBoxField> {
             )
           : null,
       value: value ?? false,
-      onChanged: widget.readonly
+      onChanged: (widget.readonly)
           ? null
           : (newValue) {
               if (newValue == null) return;
