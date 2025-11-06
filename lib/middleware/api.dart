@@ -12,14 +12,15 @@ enum ApiMethods { put, get, post, delete }
 class Api {
   final String _uri;
   final Dio _dio;
-  final String? token;
+  String? _token; // 🔹 token ya no es final, ahora se puede actualizar
 
   Api(
     this._uri, {
-    this.token,
+    String? token,
     Duration connectTimeout = const Duration(seconds: 7),
     Duration receiveTimeout = const Duration(seconds: 7),
-  }) : _dio = Dio(
+  })  : _token = token,
+        _dio = Dio(
           BaseOptions(
             baseUrl: _uri,
             connectTimeout: connectTimeout,
@@ -29,8 +30,8 @@ class Api {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
-          if (token != null && token!.isNotEmpty) {
-            options.headers['Authorization'] = 'Bearer $token';
+          if (_token != null && _token!.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $_token';
           }
           options.headers['Content-Type'] ??= 'application/json';
           options.headers['source'] = 'Anxeb';
@@ -221,7 +222,8 @@ class Api {
       for (final entry in files.entries) {
         final key = entry.key;
         final file = entry.value;
-        final contentType = lookupMimeType(file.name) ?? 'application/octet-stream';
+        final contentType =
+            lookupMimeType(file.name) ?? 'application/octet-stream';
         form[key] = MultipartFile.fromBytes(
           file.bytes!,
           filename: file.name,
@@ -243,6 +245,18 @@ class Api {
   }
 
   String get uri => _uri;
+
+  // ----------------------------
+  // Update token dynamically ✅
+  // ----------------------------
+  void updateToken(String? newToken) {
+    _token = newToken;
+    if (newToken != null && newToken.isNotEmpty) {
+      _dio.options.headers['Authorization'] = 'Bearer $newToken';
+    } else {
+      _dio.options.headers.remove('Authorization');
+    }
+  }
 }
 
 // ==========================================================
@@ -258,7 +272,8 @@ class ApiException implements Exception {
 
   factory ApiException.fromData(Map<String, dynamic> data) {
     return ApiException(
-      data['message'] ?? translate('anxeb.middleware.api.exception.internal_error'),
+      data['message'] ??
+          translate('anxeb.middleware.api.exception.internal_error'),
       data['code'] ?? 0,
       data,
     );
