@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:anxeb_flutter/anxeb.dart';
-import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:mime/mime.dart';
 import 'package:http_parser/http_parser.dart';

@@ -3,7 +3,6 @@ library anxeb_flutter;
 import 'package:anxeb_flutter/anxeb.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:go_router/go_router.dart';
 
 /// =======================================================
 /// ENTRY SCREEN (single-screen apps)

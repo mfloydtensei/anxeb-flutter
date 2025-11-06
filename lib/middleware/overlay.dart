@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:android_middleware/android_middleware.dart';
 import 'package:android_middleware/middleware/window_manager.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'device.dart';

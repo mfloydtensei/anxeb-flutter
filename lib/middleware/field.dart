@@ -1,12 +1,9 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide Overlay;
 import '../misc/after_init.dart';
 import 'form.dart';
 import 'scope.dart';
 
-/// =======================================================
-/// FieldWidgetTheme
-/// =======================================================
+
 class FieldWidgetTheme {
   final bool? isDense;
   final Color? fillColor;
