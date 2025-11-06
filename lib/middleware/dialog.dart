@@ -290,55 +290,54 @@ class ScopeDialogs {
   }) {
     final qrSize = size ?? _scope.window.available.width * 0.6;
 
-return MessageDialog(
-  _scope,
-  icon: icon ?? Icons.qr_code_2,
-  title: title ?? '',
-  iconSize: 65,
-  messageColor: _scope.application.settings.colors.text,
-  titleColor: _scope.application.settings.colors.info,
-  buttons: buttons ?? const [],
-  body: (context) => Column(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      SizedBox(
-        width: qrSize,
-        height: qrSize,
-        child: QrImageView(
-          data: value,
-          version: QrVersions.auto,
-          size: qrSize,
-          eyeStyle: QrEyeStyle(
-            eyeShape: QrEyeShape.square,
-            color: _scope.application.settings.colors.text,
-          ),
-          dataModuleStyle: QrDataModuleStyle(
-            dataModuleShape: QrDataModuleShape.square,
-            color: _scope.application.settings.colors.text,
-          ),
-          backgroundColor: Colors.transparent,
-        ),
-      ),
-      if (tip != null)
-        Container(
-          width: qrSize,
-          padding: const EdgeInsets.all(6),
-          child: Text(
-            tip,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w400,
-              color: _scope.application.settings.colors.primary,
+    return MessageDialog(
+      _scope,
+      icon: icon ?? Icons.qr_code_2,
+      title: title ?? '',
+      iconSize: 65,
+      messageColor: _scope.application.settings.colors.text,
+      titleColor: _scope.application.settings.colors.info,
+      buttons: buttons ?? const [],
+      body: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: qrSize,
+            height: qrSize,
+            child: QrImageView(
+              data: value,
+              version: QrVersions.auto,
+              size: qrSize,
+              eyeStyle: QrEyeStyle(
+                eyeShape: QrEyeShape.square,
+                color: _scope.application.settings.colors.text,
+              ),
+              dataModuleStyle: QrDataModuleStyle(
+                dataModuleShape: QrDataModuleShape.square,
+                color: _scope.application.settings.colors.text,
+              ),
+              backgroundColor: Colors.transparent,
             ),
           ),
-        ),
-    ],
-  ),
-  iconColor: _scope.application.settings.colors.primary,
-  dismissible: true,
-);
-
+          if (tip != null)
+            Container(
+              width: qrSize,
+              padding: const EdgeInsets.all(6),
+              child: Text(
+                tip,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: _scope.application.settings.colors.primary,
+                ),
+              ),
+            ),
+        ],
+      ),
+      iconColor: _scope.application.settings.colors.primary,
+      dismissible: true,
+    );
   }
 
   /// Date-time picker
@@ -365,14 +364,26 @@ return MessageDialog(
     );
   }
 
-  /// ✅ Added Prompt dialog (for text input)
+  /// ✅ Prompt dialog with inline validation
   Future<String?> prompt(
     String title, {
     String? hint,
     String? value,
     IconData? icon,
+    String? Function(String?)? validation,
   }) async {
     final controller = TextEditingController(text: value ?? '');
+    String? errorText;
+
+    Future<void> validateAndClose(BuildContext context) async {
+      final error = validation?.call(controller.text);
+      if (error != null) {
+        errorText = error;
+        (context as Element).markNeedsBuild();
+      } else {
+        Navigator.of(context).pop(true);
+      }
+    }
 
     final result = await MessageDialog(
       _scope,
@@ -382,13 +393,18 @@ return MessageDialog(
       dismissible: true,
       body: (context) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        child: TextField(
-          controller: controller,
-          decoration: InputDecoration(hintText: hint ?? ''),
+        child: StatefulBuilder(
+          builder: (context, setState) => TextField(
+            controller: controller,
+            decoration: InputDecoration(
+              hintText: hint ?? '',
+              errorText: errorText,
+            ),
+          ),
         ),
       ),
       buttons: [
-        DialogButton(translate('anxeb.common.accept'), true),
+        DialogButton(translate('anxeb.common.accept'), true, onTap: (context) => validateAndClose(context)),
         DialogButton(translate('anxeb.common.cancel'), false),
       ],
     ).show();
