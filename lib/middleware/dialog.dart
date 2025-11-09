@@ -370,6 +370,7 @@ class ScopeDialogs {
     String? hint,
     String? value,
     IconData? icon,
+    bool obscureText = false, 
     String? Function(String?)? validation,
   }) async {
     final controller = TextEditingController(text: value ?? '');
@@ -396,6 +397,7 @@ class ScopeDialogs {
         child: StatefulBuilder(
           builder: (context, setState) => TextField(
             controller: controller,
+            obscureText: obscureText,
             decoration: InputDecoration(
               hintText: hint ?? '',
               errorText: errorText,
