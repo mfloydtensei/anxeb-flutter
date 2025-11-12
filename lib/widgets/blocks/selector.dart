@@ -41,6 +41,15 @@ class SelectorBlock extends StatelessWidget {
     final app = scope.application;
     final colors = app.settings.colors;
 
+    // Intentar obtener token de manera genérica (para apps que extienden Application)
+    String? token;
+    try {
+      final dynamic dynApp = app;
+      token = dynApp.token ?? dynApp.session?.token;
+    } catch (_) {
+      token = null;
+    }
+
     final captionWidget = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -132,11 +141,17 @@ class SelectorBlock extends StatelessWidget {
         loadingPadding: const EdgeInsets.all(15),
         imageUrl: fullImageUrl,
         failedIconColor: colors.primary.withValues(alpha: 0.2),
-        headers: {'Authorization': 'Bearer ${app.api.token}'},
+
+        // ✅ Header adaptable: si hay token, lo agrega. Si no, sigue funcionando.
+        headers: {
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+
         outerRadius: 10,
         innerRadius: 5,
-        innerPadding:
-            flat ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+        innerPadding: flat
+            ? EdgeInsets.zero
+            : const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
         imagePadding:
             const EdgeInsets.only(left: 10, right: 10, top: 5, bottom: 5),
         outerFill: flat ? null : Colors.white,
@@ -152,9 +167,7 @@ class SelectorBlock extends StatelessWidget {
               ],
         fit: BoxFit.contain,
         shape: BoxShape.rectangle,
-        onTap: onTap == null ? null : () async {
-          onTap!();
-        },
+        onTap: onTap == null ? null : () async => onTap!(),
         horizontal: !onlyImage,
         expanded: true,
         margin: const EdgeInsets.symmetric(vertical: 5),
@@ -164,8 +177,8 @@ class SelectorBlock extends StatelessWidget {
                 children: [
                   Container(
                     width: width ?? 65,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     child: failedIcon ??
                         const Icon(
                           FontAwesome5.building,

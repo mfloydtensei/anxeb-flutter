@@ -15,6 +15,9 @@ import 'package:anxeb_flutter/parts/dialogs/form.dart';
 import 'package:anxeb_flutter/parts/dialogs/slider.dart';
 import 'package:anxeb_flutter/parts/panels/menu.dart';
 import 'package:anxeb_flutter/utils/referencer.dart';
+import 'package:anxeb_flutter/misc/dialog_process.dart' as Anxeb;
+
+
 
 /// =======================================================
 /// BASE DIALOG CLASS
@@ -363,6 +366,33 @@ class ScopeDialogs {
       title: title ?? '',
     );
   }
+
+    /// Progress dialog (para mostrar progreso de carga o subida)
+  MessageDialog progress(
+    String title, {
+    IconData? icon,
+    required Anxeb.DialogProcessController controller,
+    String? successMessage,
+    String? failedMessage,
+    String? busyMessage,
+  }) {
+    return MessageDialog(
+      _scope,
+      title: title,
+      icon: icon ?? Icons.hourglass_bottom,
+      message: busyMessage ?? translate('anxeb.common.loading'),
+      dismissible: false,
+      buttons: const [],
+      controller: controller,
+      onSuccess: () async {
+        _scope.alerts.success(successMessage ?? translate('anxeb.common.success')).show();
+      },
+      onFail: () async {
+        _scope.alerts.error(failedMessage ?? translate('anxeb.common.fail')).show();
+      },
+    );
+  }
+
 
   /// ✅ Prompt dialog with inline validation
   Future<String?> prompt(

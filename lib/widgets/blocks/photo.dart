@@ -103,14 +103,25 @@ class _PhotoBlockState extends State<PhotoBlock> {
         ? widget.url
         : api.getUri(widget.url);
 
-    // Se agregan parámetros de cache-busting y calidad
+    // 🔹 Se agregan parámetros de cache-busting y calidad
     url += (url.contains('?') ? '&' : '?') +
         'webp=${widget.quality ?? 60}&width=${widget.width?.toInt() ?? 300}&tick=${widget.tick ?? 1}';
+
+    // 🔹 Intentar obtener token dinámicamente, si la app extendida lo soporta
+    String? token;
+    try {
+      final dynamic dynApp = widget.scope.application;
+      token = dynApp.token ?? dynApp.session?.token;
+    } catch (_) {
+      token = null;
+    }
 
     _netImage = Anxeb.SecuredImage(
       url,
       scale: 1,
-      headers: {'Authorization': 'Bearer ${api.token}'},
+      headers: {
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
     );
 
     _stream = _netImage!.resolve(const ImageConfiguration());
@@ -153,14 +164,14 @@ class _PhotoBlockState extends State<PhotoBlock> {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Imagen cargada
+          // ✅ Imagen cargada
           AnimatedOpacity(
             opacity: isLoaded ? 1.0 : 0,
             duration: const Duration(milliseconds: 300),
             child: Container(decoration: decoration),
           ),
 
-          // Cargando
+          // ⏳ Cargando
           if (isLoading)
             AnimatedOpacity(
               opacity: 1.0,
@@ -178,7 +189,7 @@ class _PhotoBlockState extends State<PhotoBlock> {
               ),
             ),
 
-          // Error
+          // ❌ Error
           if (isError)
             AnimatedOpacity(
               opacity: 1.0,
@@ -196,7 +207,7 @@ class _PhotoBlockState extends State<PhotoBlock> {
                         )),
             ),
 
-          // Overlay interactivo
+          // 👆 Overlay interactivo
           Material(
             color: Colors.transparent,
             borderRadius: widget.border,

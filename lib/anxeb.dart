@@ -140,3 +140,5 @@ export 'screen/screen.dart';
 export 'page/navigator.dart';
 export 'screen/navigator.dart';
 export 'package:dotted_line/dotted_line.dart';
+export 'misc/dialog_process.dart';
+

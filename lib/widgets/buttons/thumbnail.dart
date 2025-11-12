@@ -3,7 +3,6 @@ import 'package:anxeb_flutter/anxeb.dart' as Anxeb;
 import 'package:anxeb_flutter/misc/icons.dart';
 import 'package:flutter/material.dart';
 import 'package:just_the_tooltip/just_the_tooltip.dart';
-import '../../middleware/application.dart';
 
 class ThumbnailButton extends StatefulWidget {
   final Anxeb.Scope scope;
@@ -66,11 +65,7 @@ class _ThumbnailButtonState extends State<ThumbnailButton> {
     // Ícono o imagen por defecto
     Widget defaultIcon;
     if (meta.image == false) {
-      defaultIcon = Icon(
-        meta.icon,
-        color: meta.color,
-        size: 28,
-      );
+      defaultIcon = Icon(meta.icon, color: meta.color, size: 28);
     } else if (_imageLoaded == null) {
       defaultIcon = const SizedBox(
         width: 26,
@@ -104,7 +99,7 @@ class _ThumbnailButtonState extends State<ThumbnailButton> {
           ),
         ),
 
-        // Gradiente inferior para overlay
+        // Gradiente inferior
         Container(
           decoration: BoxDecoration(
             borderRadius: borderRadius,
@@ -137,7 +132,8 @@ class _ThumbnailButtonState extends State<ThumbnailButton> {
 
         // Contenido textual + tooltip + eliminar
         Padding(
-          padding: const EdgeInsets.only(bottom: 6, left: 10, right: 10, top: 10),
+          padding:
+              const EdgeInsets.only(bottom: 6, left: 10, right: 10, top: 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -213,8 +209,9 @@ class _ThumbnailButtonState extends State<ThumbnailButton> {
                                         Text(
                                           Anxeb.Utils.convert
                                               .fromDateToHumanString(
-                                                  widget.modifiedDate!,
-                                                  complete: true),
+                                            widget.modifiedDate!,
+                                            complete: true,
+                                          ),
                                           style: const TextStyle(
                                             fontSize: 10,
                                             fontWeight: FontWeight.w400,
@@ -308,21 +305,36 @@ class _ThumbnailButtonState extends State<ThumbnailButton> {
         _netImage = Image.memory(widget.bytes!).image;
         _imageLoaded = true;
       } else if (widget.previewUrl != null) {
+        // 🔹 Intentar obtener token dinámico desde la aplicación extendida
+        String? token;
+        try {
+          final dynamic dynApp = widget.scope.application;
+          token = dynApp.token ?? dynApp.session?.token;
+        } catch (_) {
+          token = null;
+        }
+
+        final api = widget.scope.application.api;
+        final previewUri = api.getUri(widget.previewUrl!);
+
         _netImage = Anxeb.SecuredImage(
-          application.api.getUri(widget.previewUrl!),
-          headers: application.api.token != null
-              ? <String, String>{'Authorization': 'Bearer ${application.api.token}'}
-              : <String, String>{},
+          previewUri,
+          headers: {
+            if (token != null) 'Authorization': 'Bearer $token',
+          },
           scale: 1,
         );
         _imageLoaded = null;
 
         _netImage!.resolve(const ImageConfiguration()).addListener(
-              ImageStreamListener((_, __) {
-                if (mounted) setState(() => _imageLoaded = true);
-              }, onError: (_, __) {
-                if (mounted) setState(() => _imageLoaded = false);
-              }),
+              ImageStreamListener(
+                (_, __) {
+                  if (mounted) setState(() => _imageLoaded = true);
+                },
+                onError: (_, __) {
+                  if (mounted) setState(() => _imageLoaded = false);
+                },
+              ),
             );
       }
     } else {
@@ -330,6 +342,4 @@ class _ThumbnailButtonState extends State<ThumbnailButton> {
       _imageLoaded = null;
     }
   }
-
-  Application get application => widget.scope.application;
 }

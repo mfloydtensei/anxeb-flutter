@@ -2,7 +2,7 @@ import 'package:anxeb_flutter/middleware/dialog.dart';
 import 'package:anxeb_flutter/middleware/scope.dart';
 import 'package:anxeb_flutter/widgets/buttons/text.dart';
 import 'package:flutter/material.dart' hide Dialog, TextButton;
-
+import 'package:anxeb_flutter/misc/dialog_process.dart' as Anxeb;
 class MessageDialog extends ScopeDialog {
   final String? title;
   final String? message;
@@ -18,6 +18,10 @@ class MessageDialog extends ScopeDialog {
   final EdgeInsets? insetPadding;
   final BorderRadius? borderRadius;
   final double? width;
+  final Anxeb.DialogProcessController? controller;
+final Future<void> Function()? onSuccess;
+final Future<void> Function()? onFail;
+
 
   MessageDialog(
     Scope scope, {
@@ -35,6 +39,9 @@ class MessageDialog extends ScopeDialog {
     this.insetPadding,
     this.borderRadius,
     this.width,
+    this.controller,
+    this.onSuccess,
+    this.onFail,
     bool? dismissible,
   }) : super(scope) {
     super.dismissible = dismissible ?? false;
