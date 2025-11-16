@@ -23,7 +23,8 @@ apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion 28
-
+    namespace "com.ai.barcode"
+    //namespace "com.nodrix.anxeb.android_middleware"
     defaultConfig {
         minSdkVersion 16
     }

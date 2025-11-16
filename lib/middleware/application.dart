@@ -1,8 +1,8 @@
 import 'package:anxeb_flutter/anxeb.dart';
 import 'package:flutter/material.dart' hide Navigator, Overlay;
-import 'package:flutter_app_badger/flutter_app_badger.dart';
+//import 'package:flutter_app_badger/flutter_app_badger.dart';
 import 'disk.dart';
-import 'printer.dart';
+//import 'printer.dart';
 
 /// =======================================================
 /// APPLICATION CORE
@@ -14,9 +14,9 @@ class Application {
   late final Disk _disk;
   late final AuthProviders _auths;
   Analytics? _analytics;
-  bool _badgesSupport = false;
+  //bool _badgesSupport = false;
   LocalizationDelegate? _localization;
-  late final Printer _printer;
+ // late final Printer _printer;
   late final DeviceInfo _info;
 
   Application() {
@@ -24,7 +24,7 @@ class Application {
     _settings = Settings();
     _title = 'Anxeb';
     _disk = Disk();
-    _printer = Printer(this);
+ //   _printer = Printer(this);
     init();
     _auths = AuthProviders(this);
 
@@ -38,15 +38,15 @@ class Application {
   /// =======================================================
   /// BADGE HANDLING
   /// =======================================================
-  Future<void> setBadge(int value) async {
-    if (_badgesSupport) {
-      if (value > 0) {
-        await FlutterAppBadger.updateBadgeCount(value);
-      } else {
-        await FlutterAppBadger.removeBadge();
-      }
-    }
-  }
+  //Future<void> setBadge(int value) async {
+  //  if (_badgesSupport) {
+  //    if (value > 0) {
+  //      await FlutterAppBadger.updateBadgeCount(value);
+  //    } else {
+  //      await FlutterAppBadger.removeBadge();
+  //    }
+  //  }
+  //}
 
   /// =======================================================
   /// INITIALIZATION
@@ -57,8 +57,8 @@ class Application {
       supportedLocales: locales,
     );
 
-    _badgesSupport = _settings.general.badges == true &&
-        await FlutterAppBadger.isAppBadgeSupported();
+   //_badgesSupport = _settings.general.badges == true &&
+   //    await FlutterAppBadger.isAppBadgeSupported();
 
     if (_settings.analytics.available == true && _analytics != null) {
       await _analytics!.init(onMessage: onMessage);
@@ -81,7 +81,7 @@ class Application {
   @protected
   void onMessage(RemoteMessage message, MessageEventType event) {
     if (_analytics != null) {
-      setBadge(_analytics!.notifications.length);
+      //setBadge(_analytics!.notifications.length);
     }
   }
 
@@ -106,7 +106,7 @@ class Application {
   AuthProviders get auths => _auths;
   Analytics? get analytics => _analytics;
   Disk get disk => _disk;
-  Printer get printer => _printer;
+ // Printer get printer => _printer;
   DeviceInfo get info => _info;
   LocalizationDelegate? get localization => _localization;
   String get title => _title;

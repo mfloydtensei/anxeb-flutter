@@ -11,7 +11,7 @@ import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:path/path.dart' as Path;
 import 'package:photo_view/photo_view.dart';
-import 'package:share/share.dart';
+//import 'package:share/share.dart';
 import 'package:url_launcher/url_launcher.dart' as Launcher;
 
 class DocumentView extends ScreenWidget<Application> {
@@ -237,9 +237,9 @@ class _DocumentState extends ScreenView<DocumentView, Application> {
 
   void _share() {
     final title = widget.file.title ?? '';
-    final msg =
+    //final msg =
         '${translate('anxeb.helpers.document.dialog.shared_file')}\n\n$title';
-    final mime = _isPdf ? 'application/pdf' : 'image/${widget.file.extension}';
+   // final mime = _isPdf ? 'application/pdf' : 'image/${widget.file.extension}';
     final ext = _isPdf ? '.pdf' : '.${widget.file.extension}';
     final haveExt = Path.extension(_data!.path).isNotEmpty;
     final newFileName =
@@ -248,13 +248,13 @@ class _DocumentState extends ScreenView<DocumentView, Application> {
 
     final box = scope.context.findRenderObject() as RenderBox?;
     if (box != null) {
-      Share.shareFiles(
-        [newFileName],
-        mimeTypes: [mime],
-        text: msg,
-        subject: title,
-        sharePositionOrigin: box.localToGlobal(Offset.zero) & box.size,
-      );
+      //Share.shareFiles(
+        //[newFileName],
+        //mimeTypes: [mime],
+        //text: msg,
+        //subject: title,
+        //sharePositionOrigin: box.localToGlobal(Offset.zero) & box.size,
+      //);
     }
   }
 

@@ -18,12 +18,12 @@ class ActionsFooter extends ScreenFooter {
   @override
   Widget content() {
     final visibleActions = (actions ?? [])
-        .where((a) => a.isVisible.call!() != false)
+        .where((a) => a.isVisible?.call() ?? true)
         .map((a) => a.build())
         .toList();
 
     final visibleButtons = (buttons ?? [])
-        .where((b) => b.isVisible.call!() != false)
+        .where((b) => b.isVisible?.call() ?? true)
         .map((b) => b.build())
         .toList();
 

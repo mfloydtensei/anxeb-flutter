@@ -7,7 +7,7 @@ import 'package:anxeb_flutter/widgets/blocks/empty.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_translate/flutter_translate.dart';
-import 'package:image_crop/image_crop.dart';
+//import 'package:image_crop/image_crop.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import '../middleware/device.dart';
@@ -96,50 +96,40 @@ class _CameraHelperState extends ScreenView<CameraHelper, Application> {
 
       final xfile = await _camera!.takePicture();
       await xfile.saveTo(path);
-      File original = File(xfile.path);
+     
 
-      var properties = await ImageCrop.getImageOptions(file: original);
-      File reduced;
+     // var properties = await ImageCrop.getImageOptions(file: original);
 
-      if (widget.fullImage != true) {
-        reduced = await ImageCrop.sampleImage(file: original, preferredSize: 1000);
-      } else {
-        reduced = await ImageCrop.sampleImage(
-          file: original,
-          preferredSize: properties.width,
-        );
-      }
-
-      properties = await ImageCrop.getImageOptions(file: reduced);
+    //  properties = await ImageCrop.getImageOptions(file: reduced);
 
       File? cropped;
-      if (widget.fullImage != true) {
-        final horizontal = properties.width > properties.height;
-        final width = properties.width.toDouble();
-        final height = properties.height.toDouble();
-        const topOffset = 0.14577;
-        final size = horizontal ? height * 0.9 : width * 0.9;
-        final l = horizontal
-            ? (height / width) * topOffset
-            : ((width - size) / 2) / width;
-        final t = horizontal
-            ? ((height - size) / 2) / height
-            : (width / height) * topOffset;
+      //if (widget.fullImage != true) {
+      //  final horizontal = properties.width > properties.height;
+      //  final width = properties.width.toDouble();
+      //  final height = properties.height.toDouble();
+      //  const topOffset = 0.14577;
+      //  final size = horizontal ? height * 0.9 : width * 0.9;
+      //  final l = horizontal
+      //      ? (height / width) * topOffset
+      //      : ((width - size) / 2) / width;
+      //  final t = horizontal
+      //      ? ((height - size) / 2) / height
+      //      : (width / height) * topOffset;
+//
+      //  final w = size / width;
+      //  final h = size / height;
+//
+      //  cropped = await ImageCrop.cropImage(
+      //    file: reduced,
+      //    area: Rect.fromLTWH(l, t, w, h),
+      //  );
+      //}
 
-        final w = size / width;
-        final h = size / height;
-
-        cropped = await ImageCrop.cropImage(
-          file: reduced,
-          area: Rect.fromLTWH(l, t, w, h),
-        );
-      }
-
-      File finalFile = cropped ?? reduced;
-      finalFile = await finalFile.copy(path);
+      File? finalFile = cropped;
+      finalFile = await finalFile?.copy(path);
 
       if (preview) {
-        final previewImage = Image.file(finalFile).image;
+        final previewImage = Image.file(finalFile!).image;
         setState(() => _disabled = false);
 
         final result = await push(
@@ -157,7 +147,9 @@ class _CameraHelperState extends ScreenView<CameraHelper, Application> {
       } else {
         await scope.idle();
         setState(() => _disabled = false);
-        _submit(finalFile);
+        if (finalFile != null) {
+          _submit(finalFile);
+        }
       }
     } catch (err) {
       await scope.dialogs.error(err.toString()).show();

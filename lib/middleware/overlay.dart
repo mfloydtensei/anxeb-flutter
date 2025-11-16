@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'package:android_middleware/android_middleware.dart';
-import 'package:android_middleware/middleware/window_manager.dart';
+//import 'package:android_middleware/android_middleware.dart';
+//import 'package:android_middleware/middleware/window_manager.dart';
 import 'package:flutter/services.dart';
 
 import 'device.dart';
@@ -55,11 +55,11 @@ class Overlay {
 
     if (!Device.isWeb) {
       if (extendBodyFullScreen) {
-        AndroidMiddleware.windowManager
-            .addFlags(AndroidWindowManager.FLAG_LAYOUT_NO_LIMITS);
+       // AndroidMiddleware.windowManager
+       //     .addFlags(AndroidWindowManager.FLAG_LAYOUT_NO_LIMITS);
       } else {
-        AndroidMiddleware.windowManager
-            .clearFlags(AndroidWindowManager.FLAG_LAYOUT_NO_LIMITS);
+        // AndroidMiddleware.windowManager
+        //     .clearFlags(AndroidWindowManager.FLAG_LAYOUT_NO_LIMITS);
       }
 
       Future.delayed(Duration(milliseconds: instant ? 0 : 1000), () {

@@ -16,7 +16,7 @@ import 'utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:open_store/open_store.dart';
 import 'package:app_settings/app_settings.dart';
-import 'package:scan/scan.dart';
+//import 'package:scan/scan.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class Device {
@@ -147,12 +147,12 @@ class Device {
         allowMultiple: false,
         callback: (files) async {
           try {
-            final barcodeValue = await Scan.parse(files.first.path!);
-            if (barcodeValue?.isNotEmpty == true) {
-              return barcodeValue;
-            } else {
-              scope.alerts.error(translate('anxeb.device.scan.barcode_not_found')).show();
-            }
+            //final barcodeValue = await Scan.parse(files.first.path!);
+            //if (barcodeValue?.isNotEmpty == true) {
+            //  return barcodeValue;
+            //} else {
+            //  scope.alerts.error(translate('anxeb.device.scan.barcode_not_found')).show();
+            //}
           } catch (_) {
             scope.alerts.error(translate('anxeb.device.scan.barcode_scan_error')).show();
           }
